@@ -1,1 +1,1 @@
-See frontend/README.md to get the app running on ios/web
+See frontend/README.md and backend/README.md for help setting up the project locally for development.
