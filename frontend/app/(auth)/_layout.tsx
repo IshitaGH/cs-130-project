@@ -1,5 +1,5 @@
 import { useSession } from '@/contexts/AuthContext';
-import { useRouter, Slot } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { Text } from 'react-native';
 
@@ -9,13 +9,19 @@ export default function AuthLayout() {
 
   useEffect(() => {
     if (!isLoading && session) {
-      router.replace('/home'); // Redirect logged-in users to home
+      router.replace('/home');
     }
   }, [session, isLoading]);
 
   if (isLoading) {
     return <Text>Loading...</Text>;
   }
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+      }}
+    />
+  );
 
-  return <Slot />;
 }

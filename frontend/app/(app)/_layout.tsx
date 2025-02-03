@@ -1,8 +1,8 @@
 import { useSession } from "@/contexts/AuthContext";
 import { useRouter, Tabs } from "expo-router";
 import { useEffect } from "react";
-import { Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Text } from "react-native";
 
 export default function AppLayout() {
   const { session, isLoading } = useSession();
@@ -10,7 +10,7 @@ export default function AppLayout() {
 
   useEffect(() => {
     if (!isLoading && !session) {
-      router.replace("/login");
+      router.replace("/");
     }
   }, [session, isLoading]);
 
@@ -22,7 +22,7 @@ export default function AppLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: { backgroundColor: "#DFF7E2" },
+        tabBarStyle: { backgroundColor: "#ffffff" },
         tabBarActiveTintColor: "#00D09E",
         tabBarInactiveTintColor: "#555",
       }}
@@ -42,6 +42,24 @@ export default function AppLayout() {
           tabBarLabel: "Chores",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="list" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="expenses"
+        options={{
+          tabBarLabel: "Expenses",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="wallet" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          tabBarLabel: "Settings",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="settings" color={color} size={size} />
           ),
         }}
       />

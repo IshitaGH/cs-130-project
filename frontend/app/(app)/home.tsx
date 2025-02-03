@@ -28,11 +28,6 @@ export default function HomeScreen() {
     fetchMessage();
   }, []);
 
-  const handleSignOut = () => {
-    signOut();
-    router.replace("/");
-  };
-
   if (isLoading) {
     return (
       <View style={styles.container}>
@@ -43,11 +38,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome to Roomies!</Text>
-      <Text style={styles.subtitle}>{backendMessage}</Text>
-      <View style={styles.buttonWrapper}>
-        <Button title="Sign Out" onPress={handleSignOut} />
-      </View>
+      <Text style={styles.title}>{backendMessage}</Text>
     </View>
   );
 }
@@ -56,23 +47,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
-    padding: 20,
-    backgroundColor: "#F9F9F9",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 16,
-    textAlign: "center",
-    marginBottom: 20,
-    color: "#555", // Subtle gray text for the subtitle
-  },
-  buttonWrapper: {
-    alignItems: "center",
-    marginTop: 20,
+    color: "#00D09E",
   },
 });

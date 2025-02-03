@@ -1,9 +1,9 @@
 import { View, Text, StyleSheet } from "react-native";
 
-export default function ChoresScreen() {
+export default function ExpensesScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome to Chores!</Text>
+      <Text style={styles.title}>Welcome to Expenses!</Text>
     </View>
   );
 }

@@ -6,13 +6,10 @@ export default function IndexScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Logo */}
       <Image source={require("@/assets/images/icon.png")} style={styles.logo} />
 
-      {/* App Name */}
       <Text style={styles.title}>Roomies</Text>
 
-      {/* Buttons */}
       <TouchableOpacity
         style={styles.button}
         onPress={() => router.push("/login")}
@@ -35,13 +32,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#DFF7E2", // Matches the green background color
+    backgroundColor: "#DFF7E2",
   },
   logo: {
-    width: 200, // Adjust size as needed
-    height: 200, // Adjust size as needed
+    width: 200,
+    height: 200,
     marginBottom: 20,
-    resizeMode: "contain", // Ensures the image doesn't get distorted
+    resizeMode: "contain",
   },
   title: {
     fontSize: 36,
@@ -59,7 +56,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   buttonText: {
-    color: "#333333",
+    color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "600",
   },
