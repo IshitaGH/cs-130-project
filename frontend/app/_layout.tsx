@@ -1,10 +1,14 @@
 import { SessionProvider } from '@/contexts/AuthContext';
-import { Slot } from 'expo-router';
+import { Stack } from 'expo-router';
 
 export default function RootLayout() {
   return (
     <SessionProvider>
-      <Slot /> {/* Ensures all pages get wrapped inside the auth provider */}
+      <Stack
+        screenOptions={{
+          headerShown: false, // Hide headers globally; you can enable them on specific screens if needed
+        }}
+      />
     </SessionProvider>
   );
 }
