@@ -12,11 +12,6 @@ CORS(app) # Allow all origins for development -> will need to change for product
 
 users = {} # temporary database, resets everytime server restarts so not persistent
 
-# unprotected
-@app.route('/api/data')
-def get_data():
-    return {"message": "Hello, Roomies (this is from the Flask backend)!"}
-
 # Register
 @app.route("/register", methods=["POST"])
 def register():

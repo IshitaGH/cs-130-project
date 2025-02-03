@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useSession } from '@/src/AuthContext';
+import { useSession } from '@/contexts/AuthContext';
 import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 

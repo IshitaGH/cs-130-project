@@ -1,7 +1,6 @@
 import { useContext, createContext, type PropsWithChildren } from 'react';
-import { useStorageState } from '@/src/useStorageState';
-
-const API_URL = 'http://127.0.0.1:5000';
+import { useStorageState } from '@/hooks/useStorageState';
+import API_URL from '@/config/api'
 
 const AuthContext = createContext<{
   signIn: (email: string, password: string) => Promise<void>;

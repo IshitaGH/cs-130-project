@@ -1,10 +1,10 @@
-import { SessionProvider } from '@/src/AuthContext';
+import { SessionProvider } from '@/contexts/AuthContext';
 import { Slot } from 'expo-router';
 
 export default function RootLayout() {
   return (
     <SessionProvider>
-      <Slot /> {/* Ensures all pages get wrapped inside the provider */}
+      <Slot /> {/* Ensures all pages get wrapped inside the auth provider */}
     </SessionProvider>
   );
 }

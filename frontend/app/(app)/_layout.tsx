@@ -1,4 +1,4 @@
-import { useSession } from '@/src/AuthContext';
+import { useSession } from '@/contexts/AuthContext';
 import { useRouter, Slot } from 'expo-router';
 import { useEffect } from 'react';
 import { View, Text } from 'react-native';
