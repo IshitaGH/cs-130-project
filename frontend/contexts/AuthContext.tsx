@@ -1,6 +1,6 @@
 import { useContext, createContext, type PropsWithChildren } from 'react';
 import { useStorageState } from '@/hooks/useStorageState';
-import API_URL from '@/utils/api/apiClient'
+import { apiSignIn, apiCreateAccount } from '@/utils/api/apiClient'
 
 const AuthContext = createContext<{
   signIn: (email: string, password: string) => Promise<void>;
@@ -28,18 +28,8 @@ export function SessionProvider({ children }: PropsWithChildren) {
 
   async function signIn(username: string, password: string) {
     try {
-      const response = await fetch(`${API_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to sign in');
-      }
-
-      const data = await response.json();
-      setSession(data.access_token); // Save JWT
+      const jwt = await apiSignIn(username, password);
+      setSession(jwt);
     } catch (error) {
       console.error('Login error:', error);
     }
@@ -51,19 +41,9 @@ export function SessionProvider({ children }: PropsWithChildren) {
 
   async function createAccount(username: string, password: string) {
     try {
-      const response = await fetch(`${API_URL}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to create account');
-      }
+      await apiCreateAccount(username, password);
     } catch (error) {
       console.error('Registration error:', error);
-      throw error; // Re-throw error to display in the UI if needed
     }
   }
 
