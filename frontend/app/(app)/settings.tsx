@@ -1,9 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { useRouter } from "expo-router"
 import { useSession } from '@/contexts/AuthContext';
 
 export default function SettingsScreen() {
-  const router = useRouter();
   const { signOut } = useSession();
 
   return (

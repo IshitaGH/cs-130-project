@@ -1,12 +1,10 @@
 import { useSession } from "@/contexts/AuthContext";
-import { useRouter } from "expo-router";
-import { View, Text, Button, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { useEffect, useState } from "react";
-import API_URL from "@/config/api";
+import API_URL from "@/utils/api/apiClient";
 
 export default function HomeScreen() {
-  const { session, signOut, isLoading } = useSession();
-  const router = useRouter();
+  const { session, isLoading } = useSession();
   const [backendMessage, setBackendMessage] = useState<string | null>("loading");
 
   useEffect(() => {

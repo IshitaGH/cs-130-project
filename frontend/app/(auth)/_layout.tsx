@@ -1,7 +1,6 @@
 import { useSession } from '@/contexts/AuthContext';
 import { useRouter, Stack } from 'expo-router';
 import { useEffect } from 'react';
-import { Text } from 'react-native';
 
 export default function AuthLayout() {
   const { session, isLoading } = useSession();
@@ -14,7 +13,7 @@ export default function AuthLayout() {
   }, [session, isLoading]);
 
   if (isLoading) {
-    return <Text>Loading...</Text>;
+    return null;
   }
   return (
     <Stack

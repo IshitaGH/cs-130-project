@@ -1,6 +1,6 @@
 import { useContext, createContext, type PropsWithChildren } from 'react';
 import { useStorageState } from '@/hooks/useStorageState';
-import API_URL from '@/config/api'
+import API_URL from '@/utils/api/apiClient'
 
 const AuthContext = createContext<{
   signIn: (email: string, password: string) => Promise<void>;
