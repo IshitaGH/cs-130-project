@@ -1,135 +1,129 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Button, TextInput, Alert, Platform } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  TextInput,
+  Modal,
+  Dimensions,
+} from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 
 type Chore = {
   id: string;
   name: string;
-  roomate_responsible: string;
+  roommate_responsible: string;
   ends: string;
-  autorotate: boolean;
 };
 
 const currentUser = "Byron";
 
-const initialMockChores: Chore[] = [
-  { id: "1", name: "Dishes", roomate_responsible: "Byron", ends: "2025-03-01T23:59:59Z", autorotate: true },
-  { id: "2", name: "Clean Kitchen", roomate_responsible: "Claire", ends: "2025-04-01T23:59:59Z", autorotate: false },
-];
-
 export default function ChoresScreen() {
-  const [chores, setChores] = useState<Chore[]>(initialMockChores);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [newChore, setNewChore] = useState({ name: "", roomate_responsible: "", ends: new Date(), autorotate: false });
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [chores, setChores] = useState<Chore[]>([]);
+  const [isModalVisible, setModalVisible] = useState(false);
+  const [newChoreName, setNewChoreName] = useState("");
+  const [roommate, setRoommate] = useState("");
+  const [dueDate, setDueDate] = useState<string | null>(null);
+  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
 
-  const yourChores = chores.filter((chore) => chore.roomate_responsible === currentUser);
-  const roommatesChores = chores.filter((chore) => chore.roomate_responsible !== currentUser);
+  const addChore = () => {
+    if (!newChoreName.trim() || !roommate.trim() || !dueDate) return;
 
-  const handleAddChore = () => {
-    if (!newChore.name || !newChore.roomate_responsible) {
-      Alert.alert("Validation Error", "Please provide both a chore name and assigned roommate.");
-      return;
-    }
+    const newChore: Chore = {
+      id: (chores.length + 1).toString(),
+      name: newChoreName,
+      roommate_responsible: roommate,
+      ends: dueDate,
+    };
 
-    if (newChore.ends < new Date()) {
-      Alert.alert("Validation Error", "The due date cannot be in the past.");
-      return;
-    }
-
-    const newId = (chores.length + 1).toString();
-    setChores([
-      ...chores,
-      {
-        id: newId,
-        name: newChore.name,
-        roomate_responsible: newChore.roomate_responsible,
-        ends: newChore.ends.toISOString(),
-        autorotate: newChore.autorotate,
-      },
-    ]);
+    setChores([...chores, newChore]);
+    setNewChoreName("");
+    setRoommate("");
+    setDueDate(null);
     setModalVisible(false);
-    setNewChore({ name: "", roomate_responsible: "", ends: new Date(), autorotate: false });
   };
 
   const renderChoreRow = ({ item }: { item: Chore }) => (
     <View style={styles.choreRow}>
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
-      </View>
-      <View style={styles.choreInfo}>
-        <Text style={styles.choreName}>
-          {item.roomate_responsible}: {item.name}
-        </Text>
-        <Text style={styles.choreDate}>Ends: {new Date(item.ends).toLocaleDateString()}</Text>
-      </View>
-      <Text style={styles.remind}>Remind</Text>
+      <Text style={styles.choreText}>{item.roommate_responsible}: {item.name}</Text>
+      <Text style={styles.choreDate}>Due: {new Date(item.ends).toLocaleDateString()}</Text>
     </View>
   );
 
-  const handleDateChange = (event, selectedDate) => {
-    if (selectedDate) {
-      setNewChore((prev) => ({ ...prev, ends: selectedDate }));
-    }
-    setShowDatePicker(false);
-  };
-
   return (
     <View style={styles.container}>
-      {/* your chores */}
+      {/* Your Chores Section */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Your Chores</Text>
-        <FlatList data={yourChores} renderItem={renderChoreRow} keyExtractor={(item) => item.id} />
+        {chores.length > 0 ? (
+          <FlatList data={chores} renderItem={renderChoreRow} keyExtractor={(item) => item.id} />
+        ) : (
+          <Text style={styles.emptyText}>You have no chores assigned.</Text>
+        )}
       </View>
 
-      {/* roommates' chores */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Roommates' Chores</Text>
-        <FlatList data={roommatesChores} renderItem={renderChoreRow} keyExtractor={(item) => item.id} />
-      </View>
-
-      {/* assign */}
+      {/* Assign a Chore Button */}
       <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
         <MaterialIcons name="edit" size={20} color="#FFFFFF" />
         <Text style={styles.fabText}>Assign</Text>
       </TouchableOpacity>
 
-      {/* add new chore*/}
-      <Modal visible={modalVisible} animationType="slide">
+      {/* Modal for Creating a Chore */}
+      <Modal animationType="slide" transparent={true} visible={isModalVisible} onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Assign a New Chore</Text>
-          <TextInput
-            placeholder="Chore Name"
-            value={newChore.name}
-            onChangeText={(text) => setNewChore((prev) => ({ ...prev, name: text }))}
-            style={styles.input}
-          />
-          <TextInput
-            placeholder="Roommate Responsible"
-            value={newChore.roomate_responsible}
-            onChangeText={(text) => setNewChore((prev) => ({ ...prev, roomate_responsible: text }))}
-            style={styles.input}
-          />
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Create a New Chore</Text>
 
-          {/* open date picker*/}
-          <Button title="Select Due Date" onPress={() => setShowDatePicker(true)} />
-          <Text style={styles.selectedDate}>
-            Selected Date: {newChore.ends.toLocaleDateString()}
-          </Text>
-
-          {/* datepicker */}
-          {showDatePicker && (
-            <DateTimePicker
-              value={newChore.ends}
-              mode="date"
-              display={Platform.OS === "ios" ? "inline" : "default"}
-              onChange={handleDateChange}
+            {/* Chore Name Input */}
+            <TextInput
+              style={styles.input}
+              placeholder="Chore Name"
+              placeholderTextColor="#AAA"
+              value={newChoreName}
+              onChangeText={setNewChoreName}
             />
-          )}
 
-          <Button title="Add Chore" onPress={handleAddChore} />
-          <Button title="Cancel" onPress={() => setModalVisible(false)} color="red" />
+            {/* Roommate Responsible Input */}
+            <TextInput
+              style={styles.input}
+              placeholder="Roommate Responsible"
+              placeholderTextColor="#AAA"
+              value={roommate}
+              onChangeText={setRoommate}
+            />
+
+            {/* Due Date Picker */}
+            <TouchableOpacity style={styles.datePicker} onPress={() => setDatePickerVisible(true)}>
+              <MaterialIcons name="calendar-today" size={20} color="#007FFF" />
+              <Text style={styles.dateText}>
+                {dueDate ? new Date(dueDate).toLocaleDateString() : "Select Due Date"}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Date Picker Modal */}
+            <DateTimePickerModal
+              isVisible={isDatePickerVisible}
+              mode="date"
+              onConfirm={(date) => {
+                setDueDate(date.toISOString());
+                setDatePickerVisible(false);
+              }}
+              onCancel={() => setDatePickerVisible(false)}
+            />
+
+            {/* Save Chore Button */}
+            <TouchableOpacity style={styles.submitButton} onPress={addChore}>
+              <Text style={styles.submitButtonText}>Save Chore</Text>
+            </TouchableOpacity>
+
+            {/* Cancel Button */}
+            <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+              <Text style={styles.closeButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
     </View>
@@ -138,19 +132,22 @@ export default function ChoresScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: "#FFFFFF" },
-  card: { backgroundColor: "#F4FFF8", padding: 15, borderRadius: 12, marginBottom: 20 },
+  card: { backgroundColor: "#DFF7E280", borderRadius: 12, padding: 15, marginBottom: 20 },
   cardTitle: { fontSize: 18, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
-  choreRow: { flexDirection: "row", alignItems: "center", padding: 10, backgroundColor: "#FFFFFF", borderRadius: 8 },
-  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#CDEEEE", justifyContent: "center", alignItems: "center" },
-  avatarText: { fontSize: 16, fontWeight: "bold", color: "#007F5F" },
-  choreInfo: { flex: 1, paddingLeft: 15 },  
-  choreName: { fontSize: 16, fontWeight: "bold", color: "#333" },
+  choreRow: { padding: 10, backgroundColor: "#FFFFFF", borderRadius: 8, marginBottom: 10 },
+  choreText: { fontSize: 16, fontWeight: "bold", color: "#333" },
   choreDate: { fontSize: 14, color: "#666" },
-  remind: { fontSize: 14, fontWeight: "bold", color: "#007FFF" },
-  fab: { position: "absolute", bottom: 20, right: 20, flexDirection: "row", backgroundColor: "#00D09E", padding: 10, borderRadius: 12 },
-  fabText: { color: "#FFFFFF", fontWeight: "bold", marginLeft: 8 },
-  modalContainer: { padding: 20, backgroundColor: "#FFFFFF", flex: 1, justifyContent: "center" },
+  emptyText: { fontSize: 14, color: "#999", fontStyle: "italic", textAlign: "center" },
+  fab: { position: "absolute", bottom: 20, right: 20, flexDirection: "row", alignItems: "center", backgroundColor: "#00D09E", paddingVertical: 10, paddingHorizontal: 20, borderRadius: 12 },
+  fabText: { fontSize: 14, fontWeight: "bold", color: "#FFFFFF", marginLeft: 8 },
+  modalContainer: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0, 0, 0, 0.5)" },
+  modalContent: { backgroundColor: "#FFFFFF", padding: 20, borderTopLeftRadius: 16, borderTopRightRadius: 16, minHeight: Dimensions.get("window").height * 0.4 },
   modalTitle: { fontSize: 20, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
-  input: { borderWidth: 1, padding: 10, borderRadius: 8, borderColor: "#CCCCCC", marginBottom: 15 },
-  selectedDate: { fontSize: 16, fontWeight: "bold", color: "#007F5F", marginVertical: 10, textAlign: "center" },  // Center the date
+  input: { borderWidth: 1, borderColor: "#CCC", borderRadius: 8, padding: 10, marginBottom: 15, fontSize: 16, color: "#333" },
+  datePicker: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#CCC", borderRadius: 8, padding: 10, marginBottom: 15 },
+  dateText: { marginLeft: 10, fontSize: 16, color: "#333" },
+  submitButton: { backgroundColor: "#00D09E", paddingVertical: 15, borderRadius: 8, alignItems: "center", marginBottom: 10 },
+  submitButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
+  closeButton: { alignItems: "center", paddingVertical: 10 },
+  closeButtonText: { fontSize: 16, color: "#007FFF", fontWeight: "bold" },
 });
