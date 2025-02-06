@@ -75,13 +75,13 @@ export default function ChoresScreen() {
 
   return (
     <View style={styles.container}>
-      {/* your chores */}
+      {/* Your chores */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Your Chores</Text>
         <FlatList data={yourChores} renderItem={renderChoreRow} keyExtractor={(item) => item.id} />
       </View>
 
-      {/* roommates' chores */}
+      {/* Roommates' chores */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Roommates' Chores</Text>
         <FlatList data={roommatesChores} renderItem={renderChoreRow} keyExtractor={(item) => item.id} />
@@ -94,7 +94,12 @@ export default function ChoresScreen() {
       </TouchableOpacity>
 
       {/* Modal for Creating a Chore */}
-      <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
+      <Modal
+        animationType="fade" // Changed from "slide" to "fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.modalContainer}
@@ -175,7 +180,7 @@ const styles = StyleSheet.create({
   choreRow: { flexDirection: "row", alignItems: "center", padding: 10, backgroundColor: "#FFFFFF", borderRadius: 8 },
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#CDEEEE", justifyContent: "center", alignItems: "center" },
   avatarText: { fontSize: 16, fontWeight: "bold", color: "#007F5F" },
-  choreInfo: { flex: 1, paddingLeft: 15 },  
+  choreInfo: { flex: 1, paddingLeft: 15 },
   choreName: { fontSize: 16, fontWeight: "bold", color: "#333" },
   remind: { fontSize: 14, fontWeight: "bold", color: "#007FFF" },
   fab: { position: "absolute", bottom: 20, right: 20, flexDirection: "row", backgroundColor: "#00D09E", padding: 10, borderRadius: 12 },
