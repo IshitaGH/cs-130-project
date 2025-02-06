@@ -6,15 +6,17 @@ import { useRouter } from "expo-router";
 export default function LoginScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const { signIn } = useSession();
   const router = useRouter();
 
   const handleLogin = async () => {
+    setError(null);
     try {
       await signIn(username, password);
       router.replace("/home");
-    } catch (error) {
-      console.error("Login failed:", error);
+    } catch (err: any) {
+      setError(err.message);
     }
   };
 
@@ -40,6 +42,9 @@ export default function LoginScreen() {
         style={styles.input}
         placeholderTextColor="#aaa"
       />
+
+      {/* Display the error message */}
+      {error && <Text style={styles.errorText}>{error}</Text>}
 
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Sign In</Text>
@@ -105,5 +110,11 @@ const styles = StyleSheet.create({
     color: "#00D09E",
     fontSize: 14,
     textDecorationLine: "underline",
+  },
+  errorText: {
+    color: '#FF4C4C', 
+    fontSize: 14,
+    marginBottom: 10,
+    textAlign: 'center',
   },
 });

@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 export default function RegisterScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const { createAccount } = useSession();
   const router = useRouter();
 
@@ -13,8 +14,8 @@ export default function RegisterScreen() {
     try {
       await createAccount(username, password);
       router.replace("/login");
-    } catch (error) {
-      console.error("Registration failed:", error);
+    } catch (err: any) {
+      setError(err.message);
     }
   };
 
@@ -40,6 +41,9 @@ export default function RegisterScreen() {
         style={styles.input}
         placeholderTextColor="#aaa"
       />
+
+      {/* Display the error message */}
+      {error && <Text style={styles.errorText}>{error}</Text>}
 
       <TouchableOpacity style={styles.button} onPress={handleRegister}>
         <Text style={styles.buttonText}>Register</Text>
@@ -105,5 +109,11 @@ const styles = StyleSheet.create({
     color: "#00D09E",
     fontSize: 14,
     textDecorationLine: "underline",
+  },
+  errorText: {
+    color: '#FF4C4C',  
+    fontSize: 14,
+    marginBottom: 10,
+    textAlign: 'center',
   },
 });
