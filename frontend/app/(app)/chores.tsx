@@ -32,7 +32,7 @@ const initialMockChores: Chore[] = [
 ];
 
 export default function ChoresScreen() {
-  const [chores, setChores] = useState<Chore[]>(() => JSON.parse(JSON.stringify(initialMockChores)));
+  const [chores, setChores] = useState<Chore[]>(() => JSON.parse(JSON.stringify(initialMockChores))); // deep copy so each object in chores gets its own memory reference
   const [modalVisible, setModalVisible] = useState(false);
   const [newChoreName, setNewChoreName] = useState("");
   const [roommate, setRoommate] = useState("");
@@ -63,9 +63,15 @@ export default function ChoresScreen() {
     }
   }, [selectedChore]);
 
-  const yourChores = chores.filter((chore) => chore.roommate_responsible === currentUser);
-  const roommatesChores = chores.filter((chore) => chore.roommate_responsible !== currentUser);
+  // dynamically update 
+  const [yourChores, setYourChores] = useState<Chore[]>([]);
+  const [roommatesChores, setRoommatesChores] = useState<Chore[]>([]);
 
+  useEffect(() => {
+    setYourChores(chores.filter((chore) => chore.roommate_responsible === currentUser));
+    setRoommatesChores(chores.filter((chore) => chore.roommate_responsible !== currentUser));
+  }, [chores]);
+  
   const addOrUpdateChore = () => {
     if (!newChoreName.trim() || !roommate.trim() || !dueDate) return;
 
