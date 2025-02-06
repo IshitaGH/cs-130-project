@@ -145,7 +145,6 @@ export default function ChoresScreen() {
       );
     } else {
       setSelectedChore(chore);
-      setAndroidMenuVisible(true);
     }
   };
 
@@ -222,6 +221,7 @@ export default function ChoresScreen() {
             <DateTimePickerModal
               isVisible={isDatePickerVisible}
               mode="date"
+              minimumDate={new Date()}
               onConfirm={(date) => {
                 setDueDate(date.toISOString());
                 setDatePickerVisible(false);
