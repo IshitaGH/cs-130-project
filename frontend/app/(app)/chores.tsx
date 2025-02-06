@@ -124,10 +124,12 @@ export default function ChoresScreen() {
   };
 
   const openActionMenu = (chore: Chore) => {
+    const completeActionLabel = chore.completed ? "Mark as Incomplete" : "Mark as Complete";
+
     if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          options: ["Remind", "Mark as Complete", "Edit", "Delete", "Cancel"],
+          options: ["Remind", completeActionLabel, "Edit", "Delete", "Cancel"],
           destructiveButtonIndex: 3,
           cancelButtonIndex: 4,
         },
