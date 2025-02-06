@@ -1,6 +1,15 @@
 import { useState } from "react";
 import { useSession } from "@/contexts/AuthContext";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from "react-native";
+import {
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from "react-native";
 import { useRouter } from "expo-router";
 
 export default function LoginScreen() {
@@ -21,48 +30,59 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Image source={require("@/assets/images/icon.png")} style={styles.logo} />
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Image source={require("@/assets/images/icon.png")} style={styles.logo} />
 
-      <Text style={styles.title}>Login</Text>
+        <Text style={styles.title}>Login</Text>
 
-      <TextInput
-        placeholder="Username"
-        onChangeText={setUsername}
-        value={username}
-        style={styles.input}
-        placeholderTextColor="#aaa"
-      />
+        <TextInput
+          placeholder="Username"
+          onChangeText={setUsername}
+          value={username}
+          style={styles.input}
+          placeholderTextColor="#aaa"
+        />
 
-      <TextInput
-        placeholder="Password"
-        secureTextEntry
-        onChangeText={setPassword}
-        value={password}
-        style={styles.input}
-        placeholderTextColor="#aaa"
-      />
+        <TextInput
+          placeholder="Password"
+          secureTextEntry
+          onChangeText={setPassword}
+          value={password}
+          style={styles.input}
+          placeholderTextColor="#aaa"
+        />
 
-      {/* Display the error message */}
-      {error && <Text style={styles.errorText}>{error}</Text>}
+        {/* Display the error message */}
+        {error && <Text style={styles.errorText}>{error}</Text>}
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Sign In</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={handleLogin}>
+          <Text style={styles.buttonText}>Sign In</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-        <Text style={styles.backButtonText}>Back to Welcome</Text>
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Text style={styles.backButtonText}>Back to Welcome</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#DFF7E2",
+  },
+  scrollContainer: {
+    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#DFF7E2",
     paddingHorizontal: 20,
   },
   logo: {
@@ -112,9 +132,9 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
   },
   errorText: {
-    color: '#FF4C4C', 
+    color: "#FF4C4C",
     fontSize: 14,
     marginBottom: 10,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });
