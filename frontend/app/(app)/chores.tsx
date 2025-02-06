@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
@@ -36,6 +37,22 @@ export default function ChoresScreen() {
   const [roommate, setRoommate] = useState("");
   const [dueDate, setDueDate] = useState<string | null>(null);
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+  
+  // Animated value for sliding the content
+  const slideAnim = React.useRef(new Animated.Value(Dimensions.get("window").height)).current;
+
+  // When modalVisible changes, animate the modal content.
+  useEffect(() => {
+    if (modalVisible) {
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      slideAnim.setValue(Dimensions.get("window").height);
+    }
+  }, [modalVisible, slideAnim]);
 
   const yourChores = chores.filter((chore) => chore.roommate_responsible === currentUser);
   const roommatesChores = chores.filter((chore) => chore.roommate_responsible !== currentUser);
@@ -75,27 +92,23 @@ export default function ChoresScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Your chores */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Your Chores</Text>
         <FlatList data={yourChores} renderItem={renderChoreRow} keyExtractor={(item) => item.id} />
       </View>
 
-      {/* Roommates' chores */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Roommates' Chores</Text>
         <FlatList data={roommatesChores} renderItem={renderChoreRow} keyExtractor={(item) => item.id} />
       </View>
 
-      {/* Assign a Chore Button */}
       <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
         <MaterialIcons name="edit" size={20} color="#FFFFFF" />
         <Text style={styles.fabText}>Assign</Text>
       </TouchableOpacity>
 
-      {/* Modal for Creating a Chore */}
       <Modal
-        animationType="fade" // Changed from "slide" to "fade"
+        animationType="fade"
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
@@ -104,10 +117,10 @@ export default function ChoresScreen() {
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.modalContainer}
         >
-          <View style={styles.modalContent}>
+          {/* Wrap modalContent in an Animated.View */}
+          <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
             <Text style={styles.modalTitle}>Create a New Chore</Text>
 
-            {/* Chore Name Input */}
             <TextInput
               style={styles.input}
               placeholder="Chore Name"
@@ -116,7 +129,6 @@ export default function ChoresScreen() {
               onChangeText={setNewChoreName}
             />
 
-            {/* Roommate Responsible Input */}
             <TextInput
               style={styles.input}
               placeholder="Roommate Responsible"
@@ -125,7 +137,6 @@ export default function ChoresScreen() {
               onChangeText={setRoommate}
             />
 
-            {/* Due Date Picker */}
             <TouchableOpacity style={styles.datePicker} onPress={() => setDatePickerVisible(true)}>
               <MaterialIcons name="calendar-today" size={20} color="#007FFF" />
               <Text style={styles.dateText}>
@@ -133,7 +144,6 @@ export default function ChoresScreen() {
               </Text>
             </TouchableOpacity>
 
-            {/* Date Picker Modal */}
             <DateTimePickerModal
               isVisible={isDatePickerVisible}
               mode="date"
@@ -144,16 +154,14 @@ export default function ChoresScreen() {
               onCancel={() => setDatePickerVisible(false)}
             />
 
-            {/* Save Chore Button */}
             <TouchableOpacity style={styles.submitButton} onPress={addChore}>
               <Text style={styles.submitButtonText}>Save Chore</Text>
             </TouchableOpacity>
 
-            {/* Cancel Button */}
             <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
               <Text style={styles.closeButtonText}>Cancel</Text>
             </TouchableOpacity>
-          </View>
+          </Animated.View>
         </KeyboardAvoidingView>
       </Modal>
     </View>
@@ -164,11 +172,15 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: "#FFFFFF" },
   card: { backgroundColor: "#DFF7E280", borderRadius: 12, padding: 15, marginBottom: 20 },
   cardTitle: { fontSize: 18, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
-  choreText: { fontSize: 16, fontWeight: "bold", color: "#333" },
   choreDate: { fontSize: 14, color: "#666" },
-  emptyText: { fontSize: 14, color: "#999", fontStyle: "italic", textAlign: "center" },
   modalContainer: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0, 0, 0, 0.5)" },
-  modalContent: { backgroundColor: "#FFFFFF", padding: 20, borderTopLeftRadius: 16, borderTopRightRadius: 16, minHeight: Dimensions.get("window").height * 0.4 },
+  modalContent: { 
+    backgroundColor: "#FFFFFF", 
+    padding: 20, 
+    borderTopLeftRadius: 16, 
+    borderTopRightRadius: 16, 
+    minHeight: Dimensions.get("window").height * 0.4 
+  },
   modalTitle: { fontSize: 20, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
   input: { borderWidth: 1, borderColor: "#CCC", borderRadius: 8, padding: 10, marginBottom: 15, fontSize: 16, color: "#333" },
   datePicker: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#CCC", borderRadius: 8, padding: 10, marginBottom: 15 },
