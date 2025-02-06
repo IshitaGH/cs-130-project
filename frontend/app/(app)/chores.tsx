@@ -21,27 +21,26 @@ type Chore = {
   roommate_responsible: string;
   ends: string;
   autorotate: boolean;
+  completed: boolean;
 };
 
 const currentUser = "Byron";
 
 const initialMockChores: Chore[] = [
-  { id: "1", name: "Dishes", roommate_responsible: "Byron", ends: "2025-03-01T23:59:59Z", autorotate: true },
-  { id: "2", name: "Clean Kitchen", roommate_responsible: "Claire", ends: "2025-04-01T23:59:59Z", autorotate: false },
+  { id: "1", name: "Dishes", roommate_responsible: "Byron", ends: "2025-03-01T23:59:59Z", autorotate: true, completed: false },
+  { id: "2", name: "Clean Kitchen", roommate_responsible: "Claire", ends: "2025-04-01T23:59:59Z", autorotate: false, completed: false },
 ];
 
 export default function ChoresScreen() {
-  const [chores, setChores] = useState<Chore[]>([]);
+  const [chores, setChores] = useState<Chore[]>(() => JSON.parse(JSON.stringify(initialMockChores)));
   const [modalVisible, setModalVisible] = useState(false);
   const [newChoreName, setNewChoreName] = useState("");
   const [roommate, setRoommate] = useState("");
   const [dueDate, setDueDate] = useState<string | null>(null);
+  const [selectedChore, setSelectedChore] = useState<Chore | null>(null);
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
-  
-  // Animated value for sliding the content
   const slideAnim = React.useRef(new Animated.Value(Dimensions.get("window").height)).current;
 
-  // When modalVisible changes, animate the modal content.
   useEffect(() => {
     if (modalVisible) {
       Animated.timing(slideAnim, {
@@ -54,39 +53,92 @@ export default function ChoresScreen() {
     }
   }, [modalVisible, slideAnim]);
 
+  useEffect(() => {
+    if (selectedChore) {
+      setNewChoreName(selectedChore.name);
+      setRoommate(selectedChore.roommate_responsible);
+      setDueDate(selectedChore.ends);
+    } else {
+      resetModal();
+    }
+  }, [selectedChore]);
+
   const yourChores = chores.filter((chore) => chore.roommate_responsible === currentUser);
   const roommatesChores = chores.filter((chore) => chore.roommate_responsible !== currentUser);
 
-  const addChore = () => {
+  const addOrUpdateChore = () => {
     if (!newChoreName.trim() || !roommate.trim() || !dueDate) return;
 
-    const newChore: Chore = {
-      id: (chores.length + 1).toString(),
-      name: newChoreName,
-      roommate_responsible: roommate,
-      ends: dueDate,
-      autorotate: true,
-    };
+    if (selectedChore) {
+      setChores((prevChores) =>
+        prevChores.map((chore) =>
+          chore.id === selectedChore.id
+            ? { ...chore, name: newChoreName, roommate_responsible: roommate, ends: dueDate }
+            : chore
+        )
+      );
+    } else {
+      const newChore: Chore = {
+        id: (chores.length + 1).toString(),
+        name: newChoreName,
+        roommate_responsible: roommate,
+        ends: dueDate,
+        autorotate: true,
+        completed: false,
+      };
+      setChores([...chores, newChore]);
+    }
 
-    setChores([...chores, newChore]);
+    resetModal();
+  };
+
+  const resetModal = () => {
     setNewChoreName("");
     setRoommate("");
     setDueDate(null);
+    setSelectedChore(null);
     setModalVisible(false);
   };
 
+  const toggleComplete = (id: string) => {
+    setChores((prevChores) =>
+      prevChores.map((chore) =>
+        chore.id === id ? { ...chore, completed: !chore.completed } : chore
+      )
+    );
+  };
+
+  const deleteChore = (id: string) => {
+    setChores((prevChores) => prevChores.filter((chore) => chore.id !== id));
+  };
+
   const renderChoreRow = ({ item }: { item: Chore }) => (
-    <View style={styles.choreRow}>
+    <View style={[styles.choreRow, item.completed && styles.completedRow]}>
       <View style={styles.avatar}>
         <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
       </View>
       <View style={styles.choreInfo}>
-        <Text style={styles.choreName}>
+        <Text style={[styles.choreName, item.completed && styles.strikethrough]}>
           {item.roommate_responsible}: {item.name}
         </Text>
         <Text style={styles.choreDate}>Ends: {new Date(item.ends).toLocaleDateString()}</Text>
       </View>
-      <Text style={styles.remind}>Remind</Text>
+      <TouchableOpacity onPress={() => toggleComplete(item.id)}>
+        <MaterialIcons
+          name={item.completed ? "check-circle" : "radio-button-unchecked"}
+          size={24}
+          color={item.completed ? "#00D09E" : "#666"}
+        />
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => deleteChore(item.id)}>
+        <MaterialIcons name="delete" size={24} color="#FF4C4C" />
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => {
+        setSelectedChore(item);
+        setModalVisible(true);
+      }}>
+        <MaterialIcons name="edit" size={24} color="#007FFF" />
+      </TouchableOpacity>
     </View>
   );
 
@@ -113,13 +165,11 @@ export default function ChoresScreen() {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.modalContainer}
-        >
-          {/* Wrap modalContent in an Animated.View */}
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalContainer}>
           <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
-            <Text style={styles.modalTitle}>Create a New Chore</Text>
+            <Text style={styles.modalTitle}>
+              {selectedChore ? "Edit Chore" : "Create a New Chore"}
+            </Text>
 
             <TextInput
               style={styles.input}
@@ -154,11 +204,11 @@ export default function ChoresScreen() {
               onCancel={() => setDatePickerVisible(false)}
             />
 
-            <TouchableOpacity style={styles.submitButton} onPress={addChore}>
-              <Text style={styles.submitButtonText}>Save Chore</Text>
+            <TouchableOpacity style={styles.submitButton} onPress={addOrUpdateChore}>
+              <Text style={styles.submitButtonText}>{selectedChore ? "Update Chore" : "Save Chore"}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+            <TouchableOpacity style={styles.closeButton} onPress={resetModal}>
               <Text style={styles.closeButtonText}>Cancel</Text>
             </TouchableOpacity>
           </Animated.View>
@@ -174,12 +224,12 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 18, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
   choreDate: { fontSize: 14, color: "#666" },
   modalContainer: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0, 0, 0, 0.5)" },
-  modalContent: { 
-    backgroundColor: "#FFFFFF", 
-    padding: 20, 
-    borderTopLeftRadius: 16, 
-    borderTopRightRadius: 16, 
-    minHeight: Dimensions.get("window").height * 0.4 
+  modalContent: {
+    backgroundColor: "#FFFFFF",
+    padding: 20,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    minHeight: Dimensions.get("window").height * 0.4,
   },
   modalTitle: { fontSize: 20, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
   input: { borderWidth: 1, borderColor: "#CCC", borderRadius: 8, padding: 10, marginBottom: 15, fontSize: 16, color: "#333" },
@@ -197,4 +247,6 @@ const styles = StyleSheet.create({
   remind: { fontSize: 14, fontWeight: "bold", color: "#007FFF" },
   fab: { position: "absolute", bottom: 20, right: 20, flexDirection: "row", backgroundColor: "#00D09E", padding: 10, borderRadius: 12 },
   fabText: { color: "#FFFFFF", fontWeight: "bold", marginLeft: 8 },
+  strikethrough: { textDecorationLine: "line-through", color: "#999" },
+  completedRow: { backgroundColor: "#E0FFE6" },
 });
