@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Animated,
+  ActionSheetIOS,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
@@ -118,6 +119,34 @@ export default function ChoresScreen() {
     setChores((prevChores) => prevChores.filter((chore) => chore.id !== id));
   };
 
+  const remindChore = (chore: Chore) => {
+    alert(`Reminder sent for ${chore.name}!`);
+  };
+
+  const openActionMenu = (chore: Chore) => {
+    if (Platform.OS === "ios") {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ["Remind", "Mark as Complete", "Edit", "Delete", "Cancel"],
+          destructiveButtonIndex: 3,
+          cancelButtonIndex: 4,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 0) remindChore(chore);
+          else if (buttonIndex === 1) toggleComplete(chore.id);
+          else if (buttonIndex === 2) {
+            setSelectedChore(chore);
+            setModalVisible(true);
+          }
+          else if (buttonIndex === 3) deleteChore(chore.id);
+        }
+      );
+    } else {
+      setSelectedChore(chore);
+      setAndroidMenuVisible(true);
+    }
+  };
+
   const renderChoreRow = ({ item }: { item: Chore }) => (
     <View style={[styles.choreRow, item.completed && styles.completedRow]}>
       <View style={styles.avatar}>
@@ -129,24 +158,12 @@ export default function ChoresScreen() {
         </Text>
         <Text style={styles.choreDate}>Ends: {new Date(item.ends).toLocaleDateString()}</Text>
       </View>
-      <TouchableOpacity onPress={() => toggleComplete(item.id)}>
-        <MaterialIcons
-          name={item.completed ? "check-circle" : "radio-button-unchecked"}
-          size={24}
-          color={item.completed ? "#00D09E" : "#666"}
-        />
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => deleteChore(item.id)}>
-        <MaterialIcons name="delete" size={24} color="#FF4C4C" />
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => {
-        setSelectedChore(item);
-        setModalVisible(true);
-      }}>
-        <MaterialIcons name="edit" size={24} color="#007FFF" />
+      <TouchableOpacity onPress={() => openActionMenu(item)}>
+        <MaterialIcons name="more-vert" size={24} color="#666" />
       </TouchableOpacity>
     </View>
   );
+
 
   return (
     <View style={styles.container}>
