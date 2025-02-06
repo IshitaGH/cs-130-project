@@ -9,3 +9,6 @@ Installing dependencies
   2. Run `pip freeze > requirements.txt`
 
 To exit virtual environment, run `deactivate`
+
+
+NOTE: Make sure to turn off Airplay Receiver on Mac. It uses port 5000 as well.
