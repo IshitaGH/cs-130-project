@@ -18,8 +18,6 @@ Installing dependencies
   1. Run `pip install <package-name>`
   2. Run `pip freeze > requirements.txt`
 
-To exit virtual environment, run `deactivate`
-
 Checking Postgres Manually: `docker exec -it [insert_docker_container_name] psql -U [insert_username] -d [insert_database_name]`
 - Show tables: `\dt`
 - Exit: `\q`
@@ -41,4 +39,7 @@ flask db downgrade
 ```
 - If you want to get rid of a migration permanently, make sure to delete the migration file under migrations; if you just want to edit a migration (eg. change table name or field name), you can just edit the migration file (make sure you ran the downgrade command first!!) and then upgrade again
 
-Please run `black .` and `isort .` before making a pr :)
+NOTES:
+- Make sure to turn off Airplay Receiver on Mac. It uses port 5000 as well.
+- Please run `black .` and `isort .` before making a pr :)
+- To exit virtual environment, run `deactivate`

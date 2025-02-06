@@ -1,182 +1,200 @@
-import React from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  TextInput,
+  Modal,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  Animated,
+} from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 
 type Chore = {
   id: string;
   name: string;
-  roomate_responsible: string;
+  roommate_responsible: string;
   ends: string;
   autorotate: boolean;
 };
 
-const mockActiveChores = [
-  { id: "1", name: "Dishes", roomate_responsible: "Byron", ends: "2025-03-01T23:59:59Z", autorotate: true },
-  { id: "2", name: "Clean Kitchen", roomate_responsible: "Byron", ends: "2025-04-01T23:59:59Z", autorotate: true },
-  { id: "3", name: "Trash", roomate_responsible: "Byron", ends: "2025-03-01T23:59:59", autorotate: true },
-  { id: "4", name: "Clean Kitchen", roomate_responsible: "Byron", ends: "2025-04-01T23:59:59Z", autorotate: true },
-  { id: "5", name: "Trash", roomate_responsible: "Byron", ends: "2025-03-01T23:59:59", autorotate: true },
-  { id: "6", name: "Clean Kitchen", roomate_responsible: "Byron", ends: "2025-04-01T23:59:59Z", autorotate: true },
-  { id: "7", name: "Trash", roomate_responsible: "Byron", ends: "2025-03-01T23:59:59", autorotate: true },
-];
-
 const currentUser = "Byron";
 
-export default function ChoresScreen() {
-  const yourChores = mockActiveChores.filter((chore) => chore.roomate_responsible === currentUser);
-  const roommatesChores = mockActiveChores.filter((chore) => chore.roomate_responsible !== currentUser);
+const initialMockChores: Chore[] = [
+  { id: "1", name: "Dishes", roommate_responsible: "Byron", ends: "2025-03-01T23:59:59Z", autorotate: true },
+  { id: "2", name: "Clean Kitchen", roommate_responsible: "Claire", ends: "2025-04-01T23:59:59Z", autorotate: false },
+];
 
-  const renderChoreRow = ({ item }: { item: Chore }) => {
-    return (
-      <View style={styles.choreRow}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
-        </View>
-        <View style={styles.choreInfo}>
-          <Text style={styles.choreName}>
-            {item.roomate_responsible}: {item.name}
-          </Text>
-          <Text style={styles.choreDate}>Ends: {new Date(item.ends).toLocaleDateString()}</Text>
-        </View>
-        <Text style={styles.remind}>Remind</Text>
-      </View>
-    );
+export default function ChoresScreen() {
+  const [chores, setChores] = useState<Chore[]>([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [newChoreName, setNewChoreName] = useState("");
+  const [roommate, setRoommate] = useState("");
+  const [dueDate, setDueDate] = useState<string | null>(null);
+  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+  
+  // Animated value for sliding the content
+  const slideAnim = React.useRef(new Animated.Value(Dimensions.get("window").height)).current;
+
+  // When modalVisible changes, animate the modal content.
+  useEffect(() => {
+    if (modalVisible) {
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      slideAnim.setValue(Dimensions.get("window").height);
+    }
+  }, [modalVisible, slideAnim]);
+
+  const yourChores = chores.filter((chore) => chore.roommate_responsible === currentUser);
+  const roommatesChores = chores.filter((chore) => chore.roommate_responsible !== currentUser);
+
+  const addChore = () => {
+    if (!newChoreName.trim() || !roommate.trim() || !dueDate) return;
+
+    const newChore: Chore = {
+      id: (chores.length + 1).toString(),
+      name: newChoreName,
+      roommate_responsible: roommate,
+      ends: dueDate,
+      autorotate: true,
+    };
+
+    setChores([...chores, newChore]);
+    setNewChoreName("");
+    setRoommate("");
+    setDueDate(null);
+    setModalVisible(false);
   };
+
+  const renderChoreRow = ({ item }: { item: Chore }) => (
+    <View style={styles.choreRow}>
+      <View style={styles.avatar}>
+        <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
+      </View>
+      <View style={styles.choreInfo}>
+        <Text style={styles.choreName}>
+          {item.roommate_responsible}: {item.name}
+        </Text>
+        <Text style={styles.choreDate}>Ends: {new Date(item.ends).toLocaleDateString()}</Text>
+      </View>
+      <Text style={styles.remind}>Remind</Text>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
-      {/* Your Chores Card */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Your Chores</Text>
-        {yourChores.length > 0 ? (
-          <FlatList
-            data={yourChores}
-            renderItem={renderChoreRow}
-            keyExtractor={(item) => item.id}
-            style={styles.list}
-          />
-        ) : (
-          <Text style={styles.emptyText}>You have no chores assigned.</Text>
-        )}
+        <FlatList data={yourChores} renderItem={renderChoreRow} keyExtractor={(item) => item.id} />
       </View>
 
-      {/* Roommates' Chores Card */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Roommates Chores</Text>
-        {roommatesChores.length > 0 ? (
-          <FlatList
-            data={roommatesChores}
-            renderItem={renderChoreRow}
-            keyExtractor={(item) => item.id}
-            style={styles.list}
-          />
-        ) : (
-          <Text style={styles.emptyText}>Your roommates have no chores assigned.</Text>
-        )}
+        <Text style={styles.cardTitle}>Roommates' Chores</Text>
+        <FlatList data={roommatesChores} renderItem={renderChoreRow} keyExtractor={(item) => item.id} />
       </View>
-      {/* Assign a Chore Button */}
-      <TouchableOpacity style={styles.fab} onPress={() => console.log("Assign a Chore button pressed")}>
+
+      <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
         <MaterialIcons name="edit" size={20} color="#FFFFFF" />
         <Text style={styles.fabText}>Assign</Text>
       </TouchableOpacity>
+
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.modalContainer}
+        >
+          {/* Wrap modalContent in an Animated.View */}
+          <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
+            <Text style={styles.modalTitle}>Create a New Chore</Text>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Chore Name"
+              placeholderTextColor="#AAA"
+              value={newChoreName}
+              onChangeText={setNewChoreName}
+            />
+
+            <TextInput
+              style={styles.input}
+              placeholder="Roommate Responsible"
+              placeholderTextColor="#AAA"
+              value={roommate}
+              onChangeText={setRoommate}
+            />
+
+            <TouchableOpacity style={styles.datePicker} onPress={() => setDatePickerVisible(true)}>
+              <MaterialIcons name="calendar-today" size={20} color="#007FFF" />
+              <Text style={styles.dateText}>
+                {dueDate ? new Date(dueDate).toLocaleDateString() : "Select Due Date"}
+              </Text>
+            </TouchableOpacity>
+
+            <DateTimePickerModal
+              isVisible={isDatePickerVisible}
+              mode="date"
+              onConfirm={(date) => {
+                setDueDate(date.toISOString());
+                setDatePickerVisible(false);
+              }}
+              onCancel={() => setDatePickerVisible(false)}
+            />
+
+            <TouchableOpacity style={styles.submitButton} onPress={addChore}>
+              <Text style={styles.submitButtonText}>Save Chore</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+              <Text style={styles.closeButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: "#FFFFFF", // Screen background
+  container: { flex: 1, padding: 20, backgroundColor: "#FFFFFF" },
+  card: { backgroundColor: "#DFF7E280", borderRadius: 12, padding: 15, marginBottom: 20 },
+  cardTitle: { fontSize: 18, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
+  choreDate: { fontSize: 14, color: "#666" },
+  modalContainer: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0, 0, 0, 0.5)" },
+  modalContent: { 
+    backgroundColor: "#FFFFFF", 
+    padding: 20, 
+    borderTopLeftRadius: 16, 
+    borderTopRightRadius: 16, 
+    minHeight: Dimensions.get("window").height * 0.4 
   },
-  card: {
-    backgroundColor: "#F4FFF8", // Light greenish background
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#007F5F", // Dark green title
-    marginBottom: 10,
-  },
-  list: {
-    marginTop: 10,
-    maxHeight: 200,
-  },
-  choreRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 10,
-    marginBottom: 10,
-    backgroundColor: "#FFFFFF", // White background for rows
-    borderRadius: 8,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#CDEEEE", // Light blue avatar
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 10,
-  },
-  avatarText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#007F5F", // Dark green text for avatar
-  },
-  choreInfo: {
-    flex: 1,
-  },
-  choreName: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333", // Dark text for chore names
-  },
-  choreDate: {
-    fontSize: 14,
-    color: "#666", // Gray text for dates
-  },
-  remind: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#007FFF", // Blue "Remind" text
-  },
-  emptyText: {
-    fontSize: 14,
-    color: "#999",
-    fontStyle: "italic",
-    textAlign: "center",
-  },
-  fab: {
-    position: "absolute",
-    bottom: 20,
-    right: 20,
-    flexDirection: "row", // Icon and text side by side
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#00D09E", // Bright green
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 12, // Softened corners
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  fabText: {
-    fontSize: 14, // Smaller font size
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    textDecorationLine: "underline", // Underlined text
-    marginLeft: 8, // Spacing between icon and text
-  },
+  modalTitle: { fontSize: 20, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
+  input: { borderWidth: 1, borderColor: "#CCC", borderRadius: 8, padding: 10, marginBottom: 15, fontSize: 16, color: "#333" },
+  datePicker: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#CCC", borderRadius: 8, padding: 10, marginBottom: 15 },
+  dateText: { marginLeft: 10, fontSize: 16, color: "#333" },
+  submitButton: { backgroundColor: "#00D09E", paddingVertical: 15, borderRadius: 8, alignItems: "center", marginBottom: 10 },
+  submitButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
+  closeButton: { alignItems: "center", paddingVertical: 10 },
+  closeButtonText: { fontSize: 16, color: "#007FFF", fontWeight: "bold" },
+  choreRow: { flexDirection: "row", alignItems: "center", padding: 10, backgroundColor: "#FFFFFF", borderRadius: 8 },
+  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#CDEEEE", justifyContent: "center", alignItems: "center" },
+  avatarText: { fontSize: 16, fontWeight: "bold", color: "#007F5F" },
+  choreInfo: { flex: 1, paddingLeft: 15 },
+  choreName: { fontSize: 16, fontWeight: "bold", color: "#333" },
+  remind: { fontSize: 14, fontWeight: "bold", color: "#007FFF" },
+  fab: { position: "absolute", bottom: 20, right: 20, flexDirection: "row", backgroundColor: "#00D09E", padding: 10, borderRadius: 12 },
+  fabText: { color: "#FFFFFF", fontWeight: "bold", marginLeft: 8 },
 });
