@@ -19,17 +19,26 @@ type Chore = {
   name: string;
   roommate_responsible: string;
   ends: string;
+  autorotate: boolean;
 };
 
 const currentUser = "Byron";
 
+const initialMockChores: Chore[] = [
+  { id: "1", name: "Dishes", roommate_responsible: "Byron", ends: "2025-03-01T23:59:59Z", autorotate: true },
+  { id: "2", name: "Clean Kitchen", roommate_responsible: "Claire", ends: "2025-04-01T23:59:59Z", autorotate: false },
+];
+
 export default function ChoresScreen() {
   const [chores, setChores] = useState<Chore[]>([]);
-  const [isModalVisible, setModalVisible] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
   const [newChoreName, setNewChoreName] = useState("");
   const [roommate, setRoommate] = useState("");
   const [dueDate, setDueDate] = useState<string | null>(null);
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+
+  const yourChores = chores.filter((chore) => chore.roommate_responsible === currentUser);
+  const roommatesChores = chores.filter((chore) => chore.roommate_responsible !== currentUser);
 
   const addChore = () => {
     if (!newChoreName.trim() || !roommate.trim() || !dueDate) return;
@@ -39,6 +48,7 @@ export default function ChoresScreen() {
       name: newChoreName,
       roommate_responsible: roommate,
       ends: dueDate,
+      autorotate: true,
     };
 
     setChores([...chores, newChore]);
@@ -50,21 +60,31 @@ export default function ChoresScreen() {
 
   const renderChoreRow = ({ item }: { item: Chore }) => (
     <View style={styles.choreRow}>
-      <Text style={styles.choreText}>{item.roommate_responsible}: {item.name}</Text>
-      <Text style={styles.choreDate}>Due: {new Date(item.ends).toLocaleDateString()}</Text>
+      <View style={styles.avatar}>
+        <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
+      </View>
+      <View style={styles.choreInfo}>
+        <Text style={styles.choreName}>
+          {item.roommate_responsible}: {item.name}
+        </Text>
+        <Text style={styles.choreDate}>Ends: {new Date(item.ends).toLocaleDateString()}</Text>
+      </View>
+      <Text style={styles.remind}>Remind</Text>
     </View>
   );
 
   return (
     <View style={styles.container}>
-      {/* Your Chores Section */}
+      {/* your chores */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Your Chores</Text>
-        {chores.length > 0 ? (
-          <FlatList data={chores} renderItem={renderChoreRow} keyExtractor={(item) => item.id} />
-        ) : (
-          <Text style={styles.emptyText}>You have no chores assigned.</Text>
-        )}
+        <FlatList data={yourChores} renderItem={renderChoreRow} keyExtractor={(item) => item.id} />
+      </View>
+
+      {/* roommates' chores */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Roommates' Chores</Text>
+        <FlatList data={roommatesChores} renderItem={renderChoreRow} keyExtractor={(item) => item.id} />
       </View>
 
       {/* Assign a Chore Button */}
@@ -74,7 +94,7 @@ export default function ChoresScreen() {
       </TouchableOpacity>
 
       {/* Modal for Creating a Chore */}
-      <Modal animationType="slide" transparent={true} visible={isModalVisible} onRequestClose={() => setModalVisible(false)}>
+      <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.modalContainer}
@@ -139,12 +159,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: "#FFFFFF" },
   card: { backgroundColor: "#DFF7E280", borderRadius: 12, padding: 15, marginBottom: 20 },
   cardTitle: { fontSize: 18, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
-  choreRow: { padding: 10, backgroundColor: "#FFFFFF", borderRadius: 8, marginBottom: 10 },
   choreText: { fontSize: 16, fontWeight: "bold", color: "#333" },
   choreDate: { fontSize: 14, color: "#666" },
   emptyText: { fontSize: 14, color: "#999", fontStyle: "italic", textAlign: "center" },
-  fab: { position: "absolute", bottom: 20, right: 20, flexDirection: "row", alignItems: "center", backgroundColor: "#00D09E", paddingVertical: 10, paddingHorizontal: 20, borderRadius: 12 },
-  fabText: { fontSize: 14, fontWeight: "bold", color: "#FFFFFF", marginLeft: 8 },
   modalContainer: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0, 0, 0, 0.5)" },
   modalContent: { backgroundColor: "#FFFFFF", padding: 20, borderTopLeftRadius: 16, borderTopRightRadius: 16, minHeight: Dimensions.get("window").height * 0.4 },
   modalTitle: { fontSize: 20, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
@@ -155,4 +172,12 @@ const styles = StyleSheet.create({
   submitButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
   closeButton: { alignItems: "center", paddingVertical: 10 },
   closeButtonText: { fontSize: 16, color: "#007FFF", fontWeight: "bold" },
+  choreRow: { flexDirection: "row", alignItems: "center", padding: 10, backgroundColor: "#FFFFFF", borderRadius: 8 },
+  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#CDEEEE", justifyContent: "center", alignItems: "center" },
+  avatarText: { fontSize: 16, fontWeight: "bold", color: "#007F5F" },
+  choreInfo: { flex: 1, paddingLeft: 15 },  
+  choreName: { fontSize: 16, fontWeight: "bold", color: "#333" },
+  remind: { fontSize: 14, fontWeight: "bold", color: "#007FFF" },
+  fab: { position: "absolute", bottom: 20, right: 20, flexDirection: "row", backgroundColor: "#00D09E", padding: 10, borderRadius: 12 },
+  fabText: { color: "#FFFFFF", fontWeight: "bold", marginLeft: 8 },
 });
