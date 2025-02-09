@@ -23,21 +23,24 @@ type Chore = {
   ends: string;
   autorotate: boolean;
   completed: boolean;
+  recurrence: "none" | "daily" | "weekly" | "monthly";
 };
 
 const currentUser = "Byron";
 
 const initialMockChores: Chore[] = [
-  { id: "1", name: "Dishes", roommate_responsible: "Byron", ends: "2025-03-01T23:59:59Z", autorotate: true, completed: false },
-  { id: "2", name: "Clean Kitchen", roommate_responsible: "Claire", ends: "2025-04-01T23:59:59Z", autorotate: false, completed: false },
+  { id: "1", name: "Dishes", roommate_responsible: "Byron", ends: "2025-03-01T23:59:59Z", autorotate: true, completed: false, recurrence: "daily" },
+  { id: "2", name: "Clean Kitchen", roommate_responsible: "Claire", ends: "2025-04-01T23:59:59Z", autorotate: false, completed: false, recurrence: "weekly" },
 ];
 
+
 export default function ChoresScreen() {
-  const [chores, setChores] = useState<Chore[]>(() => JSON.parse(JSON.stringify(initialMockChores))); // deep copy so each object in chores gets its own memory reference
+  const [chores, setChores] = useState<Chore[]>(() => JSON.parse(JSON.stringify(initialMockChores)));
   const [modalVisible, setModalVisible] = useState(false);
   const [newChoreName, setNewChoreName] = useState("");
   const [roommate, setRoommate] = useState("");
   const [dueDate, setDueDate] = useState<string | null>(null);
+  const [recurrence, setRecurrence] = useState<"none" | "daily" | "weekly" | "monthly">("none");
   const [selectedChore, setSelectedChore] = useState<Chore | null>(null);
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const slideAnim = React.useRef(new Animated.Value(Dimensions.get("window").height)).current;
@@ -59,12 +62,12 @@ export default function ChoresScreen() {
       setNewChoreName(selectedChore.name);
       setRoommate(selectedChore.roommate_responsible);
       setDueDate(selectedChore.ends);
+      setRecurrence(selectedChore.recurrence);
     } else {
       resetModal();
     }
   }, [selectedChore]);
 
-  // dynamically update 
   const [yourChores, setYourChores] = useState<Chore[]>([]);
   const [roommatesChores, setRoommatesChores] = useState<Chore[]>([]);
 
@@ -72,48 +75,45 @@ export default function ChoresScreen() {
     setYourChores(chores.filter((chore) => chore.roommate_responsible === currentUser));
     setRoommatesChores(chores.filter((chore) => chore.roommate_responsible !== currentUser));
   }, [chores]);
-  
-  const addOrUpdateChore = () => {
-    if (!newChoreName.trim() || !roommate.trim() || !dueDate) return;
 
-    if (selectedChore) {
-      setChores((prevChores) =>
-        prevChores.map((chore) =>
-          chore.id === selectedChore.id
-            ? { ...chore, name: newChoreName, roommate_responsible: roommate, ends: dueDate }
-            : chore
-        )
-      );
-    } else {
-      const newChore: Chore = {
-        id: (chores.length + 1).toString(),
-        name: newChoreName,
-        roommate_responsible: roommate,
-        ends: dueDate,
-        autorotate: true,
-        completed: false,
-      };
-      setChores([...chores, newChore]);
-    }
-
-    resetModal();
-  };
-
-  const resetModal = () => {
-    setNewChoreName("");
-    setRoommate("");
-    setDueDate(null);
-    setSelectedChore(null);
-    setModalVisible(false);
+  const calculateNextDueDate = (currentDate: string, recurrence: "none" | "daily" | "weekly" | "monthly"): string => {
+    const date = new Date(currentDate);
+    if (recurrence === "daily") date.setDate(date.getDate() + 1);
+    if (recurrence === "weekly") date.setDate(date.getDate() + 7);
+    if (recurrence === "monthly") date.setMonth(date.getMonth() + 1);
+    return date.toISOString();
   };
 
   const toggleComplete = (id: string) => {
-    setChores((prevChores) =>
-      prevChores.map((chore) =>
-        chore.id === id ? { ...chore, completed: !chore.completed } : chore
-      )
-    );
+    setChores((prevChores) => {
+      const updatedChores: Chore[] = [];
+  
+      prevChores.forEach((chore) => {
+        if (chore.id === id) {
+          const updatedChore = { ...chore, completed: !chore.completed };
+          updatedChores.push(updatedChore);
+  
+          // If marking as complete and the chore has a recurrence, create a new recurring chore
+          if (!chore.completed && chore.recurrence !== "none") {
+            const newDueDate = calculateNextDueDate(chore.ends, chore.recurrence);
+            const newChore: Chore = {
+              ...chore,
+              id: `${chore.id}-${Date.now()}`,  // Ensure unique id
+              completed: false,
+              ends: newDueDate,  // Updated due date
+            };
+            updatedChores.push(newChore);  // Add the new chore to the list
+          }
+        } else {
+          // Push all other chores without modification
+          updatedChores.push(chore);
+        }
+      });
+  
+      return updatedChores;
+    });
   };
+  
 
   const deleteChore = (id: string) => {
     setChores((prevChores) => prevChores.filter((chore) => chore.id !== id));
@@ -125,7 +125,6 @@ export default function ChoresScreen() {
 
   const openActionMenu = (chore: Chore) => {
     const completeActionLabel = chore.completed ? "Mark as Incomplete" : "Mark as Complete";
-
     if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
         {
@@ -139,13 +138,44 @@ export default function ChoresScreen() {
           else if (buttonIndex === 2) {
             setSelectedChore(chore);
             setModalVisible(true);
-          }
-          else if (buttonIndex === 3) deleteChore(chore.id);
+          } else if (buttonIndex === 3) deleteChore(chore.id);
         }
       );
-    } else {
-      setSelectedChore(chore);
     }
+  };
+
+  const addOrUpdateChore = () => {
+    if (!newChoreName.trim() || !roommate.trim() || !dueDate) return;
+    if (selectedChore) {
+      setChores((prevChores) =>
+        prevChores.map((chore) =>
+          chore.id === selectedChore.id
+            ? { ...chore, name: newChoreName, roommate_responsible: roommate, ends: dueDate, recurrence }
+            : chore
+        )
+      );
+    } else {
+      const newChore: Chore = {
+        id: (chores.length + 1).toString(),
+        name: newChoreName,
+        roommate_responsible: roommate,
+        ends: dueDate,
+        autorotate: true,
+        completed: false,
+        recurrence,
+      };
+      setChores([...chores, newChore]);
+    }
+    resetModal();
+  };
+
+  const resetModal = () => {
+    setNewChoreName("");
+    setRoommate("");
+    setDueDate(null);
+    setRecurrence("none");
+    setSelectedChore(null);
+    setModalVisible(false);
   };
 
   const renderChoreRow = ({ item }: { item: Chore }) => (
@@ -164,7 +194,6 @@ export default function ChoresScreen() {
       </TouchableOpacity>
     </View>
   );
-
 
   return (
     <View style={styles.container}>
@@ -191,48 +220,33 @@ export default function ChoresScreen() {
       >
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalContainer}>
           <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
-            <Text style={styles.modalTitle}>
-              {selectedChore ? "Edit Chore" : "Create a New Chore"}
-            </Text>
+            <Text style={styles.modalTitle}>{selectedChore ? "Edit Chore" : "Create a New Chore"}</Text>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Chore Name"
-              placeholderTextColor="#AAA"
-              value={newChoreName}
-              onChangeText={setNewChoreName}
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Roommate Responsible"
-              placeholderTextColor="#AAA"
-              value={roommate}
-              onChangeText={setRoommate}
-            />
+            <TextInput style={styles.input} placeholder="Chore Name" value={newChoreName} onChangeText={setNewChoreName} />
+            <TextInput style={styles.input} placeholder="Roommate Responsible" value={roommate} onChangeText={setRoommate} />
 
             <TouchableOpacity style={styles.datePicker} onPress={() => setDatePickerVisible(true)}>
               <MaterialIcons name="calendar-today" size={20} color="#007FFF" />
-              <Text style={styles.dateText}>
-                {dueDate ? new Date(dueDate).toLocaleDateString() : "Select Due Date"}
-              </Text>
+              <Text style={styles.dateText}>{dueDate ? new Date(dueDate).toLocaleDateString() : "Select Due Date"}</Text>
             </TouchableOpacity>
 
-            <DateTimePickerModal
-              isVisible={isDatePickerVisible}
-              mode="date"
-              minimumDate={new Date()}
-              onConfirm={(date) => {
-                setDueDate(date.toISOString());
-                setDatePickerVisible(false);
-              }}
-              onCancel={() => setDatePickerVisible(false)}
-            />
+            <DateTimePickerModal isVisible={isDatePickerVisible} mode="date" onConfirm={(date) => {
+              setDueDate(date.toISOString());
+              setDatePickerVisible(false);
+            }} onCancel={() => setDatePickerVisible(false)} />
+
+            <Text style={styles.label}>Recurrence</Text>
+            <View style={styles.dropdown}>
+              {["none", "daily", "weekly", "monthly"].map((option) => (
+                <TouchableOpacity key={option} onPress={() => setRecurrence(option as any)}>
+                  <Text style={[styles.option, recurrence === option && styles.selectedOption]}>{option}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
             <TouchableOpacity style={styles.submitButton} onPress={addOrUpdateChore}>
               <Text style={styles.submitButtonText}>{selectedChore ? "Update Chore" : "Save Chore"}</Text>
             </TouchableOpacity>
-
             <TouchableOpacity style={styles.closeButton} onPress={resetModal}>
               <Text style={styles.closeButtonText}>Cancel</Text>
             </TouchableOpacity>
@@ -274,4 +288,8 @@ const styles = StyleSheet.create({
   fabText: { color: "#FFFFFF", fontWeight: "bold", marginLeft: 8 },
   strikethrough: { textDecorationLine: "line-through", color: "#999" },
   completedRow: { backgroundColor: "#E0FFE6" },
+  label: { fontSize: 16, fontWeight: "bold", color: "#007F5F", marginBottom: 5,},
+  dropdown: { flexDirection: "row", justifyContent: "space-between", marginBottom: 15,},
+  option: { padding: 10, backgroundColor: "#EEE", borderRadius: 5, fontSize: 16, color: "#333",},
+  selectedOption: { backgroundColor: "#00D09E", color: "#FFFFFF",},
 });
