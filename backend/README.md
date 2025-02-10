@@ -1,17 +1,34 @@
-To start up backend server
+To start up backend server locally:
   1. First start up a python virtual environment `python -m venv venv` and run `source venv/bin/activate`
   2. Install dependencies: i.e. run `pip install -r requirements.txt`
   3. Make sure you have docker installed.
   4. Set up the docker container:
-     ```
-     docker run --name [insert_docker_container_name] \
-       -e POSTGRES_USER=[insert_username] \
-       -e POSTGRES_PASSWORD=[insert_password] \
-       -e POSTGRES_DB=[insert_database_name] \
-       -p 5432:5432 -d postgres
-     ```
-  5. Run `flask db init`
+      ```
+      docker run --name [insert_docker_container_name] \
+        -e POSTGRES_USER=[insert_username] \
+        -e POSTGRES_PASSWORD=[insert_password] \
+        -e POSTGRES_DB=[insert_database_name] \
+        -p 5432:5432 -d postgres
+      ```
+  5. Create .env file in the current directory with the following:
+    ```FLASK_SQLALCHEMY_DATABASE_URI=postgresql://[insert_username]:[insert_password]@db:5432/[insert_database_name]```
   6. Run the Flask server: `python app.py`; I think we need to run `flask run`
+
+To start up backend server within Docker:
+  1. Make sure you have docker installed.
+  2. Create .env file in the current directory with the following:
+     ```
+     POSTGRES_USER=[insert_username]
+     POSTGRES_PASSWORD=[insert_password]
+     POSTGRES_DB=[insert_database_name]
+     FLASK_SQLALCHEMY_DATABASE_URI=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+     ```
+  3. Run `docker compose up` to start the backend.
+
+Additional notes:
+  * To start with docker terminal: `docker compose run backend bash`
+    * You can then run `python app.py`
+  * To take down backend `docker compose down` (this is automatically done when you exit though).
 
 Installing dependencies
   0. Make sure you are in the virtual environment with all packages already installed (`pip install -r requirements.txt`)
