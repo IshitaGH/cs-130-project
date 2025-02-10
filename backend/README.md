@@ -58,15 +58,15 @@ To start up backend server within Docker:
   3. Run `docker compose up` to start the backend.
 
 Additional notes:
-  * To start with docker terminal: `docker compose run backend bash`
-    * You can then run `python app.py`
-  * To take down backend `docker compose down` (this is automatically done when you exit though).
-
-Checking Postgres manually within Docker
-1. `apt-get update`
-2. `apt-get install -y postgresql-client`
-3. `psql -U [insert_username] -d [insert_database_name]`
-
+  * To start with docker terminal: 
+    * `docker-compose up -d`
+    * `docker compose exec backend bash`
+  * You can then run `python app.py`
+  * Checking Postgres manually within Docker
+    1. `apt-get update`
+    2. `apt-get install -y postgresql-client`
+    3. `psql -h db -U [insert_username] -d [insert_database_name]`
+  * To take down backend `docker compose down`.
 
 # Additional NOTES
 - Make sure to turn off Airplay Receiver on Mac. It uses port 5000 as well.
