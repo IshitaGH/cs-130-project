@@ -66,6 +66,7 @@ Additional notes:
     1. `apt-get update`
     2. `apt-get install -y postgresql-client`
     3. `psql -h db -U [insert_username] -d [insert_database_name]`
+  * Add/Edit Tables in Database is same as above but in docker backend bash.
   * To take down backend `docker compose down`.
 
 # Additional NOTES
