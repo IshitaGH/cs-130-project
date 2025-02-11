@@ -15,21 +15,106 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 
+interface Expense {
+  id: number;
+  description: string;
+  amount: number;
+  payer: string;
+  date: string;
+}
+
+interface ExpenseCardProps {
+  title: string;
+  current: boolean;
+  expenses: Expense[];
+  updateExpenses: (title: string, updatedExpenses: Expense[]) => void;
+}
+
+interface BalanceMap {
+  [key: string]: number
+}
+
 const initialMockExpenses = [
-  { id: "1", description: "Groceries", amount: 50, payer: "Byron", date: new Date().toLocaleDateString() },
-  { id: "2", description: "Electric Bill", amount: 30, payer: "Claire", date: new Date().toLocaleDateString() },
+  {
+    title: "Current period expenses",
+    current: true,
+    expenses: [
+      { id: 4, description: "Groceries", amount: 50, payer: "Byron", date: new Date().toLocaleDateString() },
+      { id: 3, description: "Electric Bill", amount: 30, payer: "Claire", date: new Date().toLocaleDateString() },
+    ]
+  },
+  {
+    title: "Jan 10 to Feb 10 expenses",
+    current: false,
+    expenses: [
+      { id: 2, description: "Rent", amount: 4000, payer: "Nik", date: new Date(2025, 0, 29).toLocaleDateString() },
+      { id: 1, description: "Internet", amount: 30, payer: "Ishita", date: new Date(2025, 0, 23).toLocaleDateString() },
+    ]
+  }
 ];
 
 const roommates = ["Byron", "Claire", "Nira", "Nik", "Caolinn", "Ishita"];
 
+const ExpenseCard: React.FC<ExpenseCardProps> = ({ title, current, expenses, updateExpenses }) => {
+  const [expanded, setExpanded] = useState<boolean>(current);
+
+  const handleDeleteExpense = (expenseId: number) => {
+    const updatedExpenses = expenses.filter((exp) => exp.id !== expenseId);
+    updateExpenses(title, updatedExpenses);
+  };
+
+  return (
+    <View style={styles.card}>
+      <TouchableOpacity style={styles.cardHeader} onPress={() => setExpanded(!expanded)}>
+        <Text style={styles.cardTitle}>{title}</Text>
+        <MaterialIcons name={expanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={24} color="black" />
+      </TouchableOpacity>
+
+      {expanded && (
+        <>
+          <FlatList
+            data={expenses}
+            renderItem={({ item }) => (
+              <View style={styles.expenseRow}>
+                <View style={styles.expenseInfo}>
+                  <Text style={styles.expenseDescription}>{item.description}: ${item.amount}</Text>
+                  <Text style={styles.expensePayer}>Paid by {item.payer} on {item.date}</Text>
+                </View>
+                <TouchableOpacity onPress={() => handleDeleteExpense(item.id)}>
+                  <MaterialIcons name="delete" size={24} color="#E57373" />
+                </TouchableOpacity>
+              </View>
+            )}
+            keyExtractor={(item) => item.id.toString()}
+          />
+
+          {current && (
+            <TouchableOpacity style={styles.expenseCloseButton} onPress={() => setExpanded(false)}>
+              <Text style={styles.expenseCloseButtonText}>Close expense period</Text>
+            </TouchableOpacity>
+          )}
+        </>
+      )}
+    </View>
+  );
+};
+
 export default function ExpensesScreen() {
-  const [expenses, setExpenses] = useState([...initialMockExpenses]);
+  // const [expenses, setExpenses] = useState([...initialMockExpenses]);
+  const [expenseCards, setExpenseCards] = useState<{ title: string; current: Boolean; expenses: Expense[] }[]>([...initialMockExpenses]);
   const [modalVisible, setModalVisible] = useState(false);
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [payer, setPayer] = useState(roommates[0]);
-  const [balances, setBalances] = useState({});
+  const [balances, setBalances] = useState<BalanceMap>({});
   const slideAnim = React.useRef(new Animated.Value(Dimensions.get("window").height)).current;
+
+  // Function to update expenses for a specific card
+  const updateExpenses = (title: string, updatedExpenses: Expense[]) => {
+    setExpenseCards((prevCards) =>
+      prevCards.map((card) => (card.title === title ? { ...card, expenses: updatedExpenses } : card))
+    );
+  };
 
   useEffect(() => {
     if (modalVisible) {
@@ -43,16 +128,12 @@ export default function ExpensesScreen() {
     }
   }, [modalVisible, slideAnim]);
 
-  useEffect(() => {
-    calculateBalances();
-  }, [expenses]);
-
   const calculateBalances = () => {
-    let balanceSheet = {};
+    let balanceSheet: BalanceMap = {};
     roommates.forEach((roommate) => (balanceSheet[roommate] = 0));
     let totalRoommates = roommates.length;
 
-    expenses.forEach(({ amount, payer }) => {
+    (expenseCards.find(card => card.current) ?? { expenses: [] }).expenses.forEach(({ amount, payer }) => {
       let splitAmount = amount / totalRoommates;
       roommates.forEach((roommate) => {
         if (roommate === payer) {
@@ -65,16 +146,23 @@ export default function ExpensesScreen() {
     setBalances(balanceSheet);
   };
 
+  useEffect(calculateBalances, [expenseCards[0].expenses]);
+
   const addExpense = () => {
     if (!description || !amount || !payer) return;
     const newExpense = {
-      id: Math.random().toString(),
+      id: Math.random(),
       description,
       amount: parseFloat(amount),
       payer,
       date: new Date().toLocaleDateString(),
     };
-    setExpenses([...expenses, newExpense]);
+
+    setExpenseCards((prevCards) =>
+      prevCards.map((card) => (card.current ? { ...card, expenses: [newExpense, ...card.expenses] } : card))
+    );
+
+    // setExpenses([...expenses, newExpense]);
     setDescription("");
     setAmount("");
     setPayer(roommates[0]);
@@ -100,24 +188,9 @@ export default function ExpensesScreen() {
         ))}
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Expenses</Text>
-        <FlatList
-          data={expenses}
-          renderItem={({ item }) => (
-            <View style={styles.expenseRow}>
-              <View style={styles.expenseInfo}>
-                <Text style={styles.expenseDescription}>{item.description} - ${item.amount}</Text>
-                <Text style={styles.expensePayer}>Paid by: {item.payer} on {item.date}</Text>
-              </View>
-              <TouchableOpacity onPress={() => setExpenses(expenses.filter(exp => exp.id !== item.id))}>
-                <MaterialIcons name="delete" size={24} color="#E57373" />
-              </TouchableOpacity>
-            </View>
-          )}
-          keyExtractor={(item) => item.id}
-        />
-      </View>
+      {expenseCards.map((card) => (
+        <ExpenseCard key={card.title} title={card.title} current={card.current} expenses={card.expenses} updateExpenses={updateExpenses} />
+      ))}
 
       <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
         <MaterialIcons name="add" size={24} color="#FFFFFF" />
@@ -156,6 +229,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: "#FFFFFF" },
   card: { backgroundColor: "#DFF7E280", borderRadius: 12, padding: 15, marginBottom: 20 },
   cardTitle: { fontSize: 18, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
+  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 10 },
   balanceRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 5 },
   roommateName: { fontSize: 16, fontWeight: "bold", color: "#333" },
   balanceAmount: { fontSize: 16, fontWeight: "bold" },
@@ -163,6 +237,7 @@ const styles = StyleSheet.create({
   expenseInfo: { flex: 1 },
   expenseDescription: { fontSize: 16, fontWeight: "bold", color: "#333" },
   expensePayer: { fontSize: 14, color: "#666" },
+  modalTitle: { fontSize: 20, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
   modalContainer: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0, 0, 0, 0.5)" },
   modalContent: { backgroundColor: "#FFFFFF", padding: 20, borderTopLeftRadius: 16, borderTopRightRadius: 16 },
   input: { borderWidth: 1, borderColor: "#CCC", borderRadius: 8, padding: 10, marginBottom: 15 },
@@ -170,21 +245,8 @@ const styles = StyleSheet.create({
   submitButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
   closeButton: { alignItems: "center", paddingVertical: 10 },
   closeButtonText: { fontSize: 16, color: "#007FFF", fontWeight: "bold" },
-  fab: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#00A680",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 24,
-    position: "absolute",
-    bottom: 20,
-    right: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  fabText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold", marginLeft: 8 },
+  expenseCloseButton: { alignSelf: "center", marginTop: 10, paddingVertical: 10, paddingHorizontal: 20, backgroundColor: "#00D09E", padding: 10, borderRadius: 12 },
+  expenseCloseButtonText: { color: "#FFFFFF", fontWeight: "bold" },
+  fab: { position: "absolute", bottom: 20, right: 20, flexDirection: "row", backgroundColor: "#00D09E", padding: 10, borderRadius: 12 },
+  fabText: { color: "#FFFFFF", fontWeight: "bold", marginLeft: 8, alignSelf: "center" },
 });
