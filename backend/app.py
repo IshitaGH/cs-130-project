@@ -12,7 +12,8 @@ from flask_jwt_extended import (
 )
 
 from database import db, migrate
-from models.expense import Expense
+from models.chore import Chore
+from models.expense import Expense, Roommate_Expense
 from models.roommate import Room, Roommate
 
 load_dotenv()

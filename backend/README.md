@@ -10,8 +10,7 @@ To start up backend server
        -e POSTGRES_DB=[insert_database_name] \
        -p 5432:5432 -d postgres
      ```
-  5. Run `flask db init`
-  6. Run the Flask server: `python app.py`; I think we need to run `flask run`
+  5. Run the Flask server: `python app.py`; I think we need to run `flask run`
 
 Installing dependencies
   0. Make sure you are in the virtual environment with all packages already installed (`pip install -r requirements.txt`)
