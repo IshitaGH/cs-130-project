@@ -39,3 +39,7 @@ class Roommate(db.Model):
     expense_list = relationship(
         "expenses", secondary="roommate_expenses", back_populates="roommate_list"
     )
+
+    chores = relationship(
+        "chores", foreign_keys="[chores.assignee_fkey]", back_populates="assignee"
+    )

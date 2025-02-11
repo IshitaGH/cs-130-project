@@ -17,7 +17,6 @@ To start up backend server locally:
     ```FLASK_SQLALCHEMY_DATABASE_URI=postgresql://[insert_username]:[insert_password]@db:5432/[insert_database_name]```
   6. Run the Flask server: `python app.py`; I think we need to run `flask run`
 
-
 Installing dependencies
   0. Make sure you are in the virtual environment with all packages already installed (`pip install -r requirements.txt`)
   1. Run `pip install <package-name>`
