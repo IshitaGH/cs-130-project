@@ -37,7 +37,7 @@ class Roommate(db.Model):
     # TODO: password auth
 
     expense_list = relationship(
-        "expenses", secondary="roommate_expenses", back_populates="roommate_list"
+        "Expense", secondary="roommate_expenses", back_populates="roommate_list"
     )
 
     chores = relationship(
