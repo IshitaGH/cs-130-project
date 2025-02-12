@@ -86,4 +86,4 @@ def home():
     return "Need to figure out what we want here"
 
 
-app.route("/create-room", methods=["POST"])(create_room)
+app.route("/room", methods=["POST"])(create_room)
