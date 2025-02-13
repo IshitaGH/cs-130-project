@@ -179,7 +179,7 @@ export default function ChoresScreen() {
       </View>
 
       <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
-        <MaterialIcons name="edit" size={20} color="#FFFFFF" />
+        <MaterialIcons name="edit" size={24} color="#FFFFFF" />
         <Text style={styles.fabText}>Assign</Text>
       </TouchableOpacity>
 
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
   choreName: { fontSize: 16, fontWeight: "bold", color: "#333" },
   remind: { fontSize: 14, fontWeight: "bold", color: "#007FFF" },
   fab: { position: "absolute", bottom: 20, right: 20, flexDirection: "row", backgroundColor: "#00D09E", padding: 10, borderRadius: 12 },
-  fabText: { color: "#FFFFFF", fontWeight: "bold", marginLeft: 8 },
+  fabText: { color: "#FFFFFF", fontWeight: "bold", marginLeft: 8, alignSelf: "center" },
   strikethrough: { textDecorationLine: "line-through", color: "#999" },
   completedRow: { backgroundColor: "#E0FFE6" },
 });
