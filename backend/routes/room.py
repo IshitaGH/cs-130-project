@@ -59,3 +59,28 @@ def get_room(room_id):
         "invite_code": room.invite_code,
     }
     return jsonify(room_data)
+
+
+def get_room_by_roommate():
+    data = request.json
+
+    roommate_id = data["roommate_id"]
+    if not roommate_id:
+        return jsonify({"error": "roommate id is required"}), 400
+
+    roommate = Roommate.query.get(roommate_id)
+    if not roommate:
+        return jsonify({"error": "Roommate not found"}), 404
+
+    room = Room.query.get(roommate.room_fkey)
+    if not room:
+        return jsonify({"message": "Not been assigned a room yet!"}), 404
+
+    room_data = {
+        "id": room.id,
+        "name": room.name,
+        "created_at": room.created_at.isoformat(),
+        "updated_at": room.updated_at.isoformat(),
+        "invite_code": room.invite_code,
+    }
+    return jsonify(room_data)
