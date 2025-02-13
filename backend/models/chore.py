@@ -29,5 +29,5 @@ class Chore(db.Model):
     assignor_fkey = Column(Integer, ForeignKey("roommates.id"), nullable=False)
 
     assignee = relationship(
-        "roommates", foreign_keys=[assignee_fkey], back_populates="chores"
+        "Roommate", foreign_keys=[assignee_fkey], back_populates="chores"
     )

@@ -32,7 +32,7 @@ class Expense(db.Model):
     roommate_fkey = Column(Integer, ForeignKey("roommates.id"), nullable=False)
 
     roommate_list = relationship(
-        "roommates", secondary="roommate_expenses", back_populates="expense_list"
+        "Roommate", secondary="roommate_expenses", back_populates="expense_list"
     )
 
 

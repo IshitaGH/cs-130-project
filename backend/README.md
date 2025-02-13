@@ -42,5 +42,5 @@ To start up backend server within Docker:
 
 # Additional NOTES
 - Make sure to turn off Airplay Receiver on Mac. It uses port 5000 as well.
-- Please run `black .` and `isort .` before making a pr :)
+- Please run `black .` and `isort .` in the backend folder before making a pr :)
 - To exit virtual environment, run `deactivate`
