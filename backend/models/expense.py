@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import (
+    Boolean,
     Column,
     DateTime,
     Double,
@@ -44,3 +45,12 @@ class Roommate_Expense(db.Model):
     percentage = Column(Double, nullable=False)
 
     __table_args__ = (PrimaryKeyConstraint("expense_fkey", "roommate_fkey"),)
+
+
+class Expense_Period(db.Model):
+    __tablename__ = "expense_periods"
+    id = Column(Integer, primary_key=True, nullable=False)
+    room_fkey = Column(ForeignKey("rooms"))
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=True)
+    open = Column(Boolean, nullable=False)
