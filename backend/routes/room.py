@@ -5,7 +5,7 @@ from datetime import datetime
 from flask import jsonify, request
 
 from database import db
-from models.roommate import Room
+from models.roommate import Room, Roommate
 
 
 def generate_invite_code(length=8):
@@ -45,3 +45,17 @@ def create_room():
         ),
         201,
     )
+
+
+def get_room(room_id):
+    room = Room.query.get(room_id)
+    if not room:
+        return jsonify({"error": "Room not found"}), 404
+    room_data = {
+        "id": room.id,
+        "name": room.name,
+        "created_at": room.created_at.isoformat(),
+        "updated_at": room.updated_at.isoformat(),
+        "invite_code": room.invite_code,
+    }
+    return jsonify(room_data)
