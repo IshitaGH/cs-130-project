@@ -15,7 +15,7 @@ from database import db, migrate
 from models.chore import Chore
 from models.expense import Expense, Roommate_Expense
 from models.roommate import Room, Roommate
-from routes.room import create_room
+from routes.room import create_room, get_room
 
 load_dotenv()
 
@@ -87,3 +87,4 @@ def home():
 
 
 app.route("/room", methods=["POST"])(create_room)
+app.route("/room/<int:room_id>", methods=["GET"])(get_room)
