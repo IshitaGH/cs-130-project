@@ -34,15 +34,10 @@ def create_roommate():
     )
 
 
-def join_room():
+def join_room(roommate_id):
     data = request.json
 
-    roommate_id = data["roommate_id"]
     invite_code = data["invite_code"]
-
-    if not roommate_id:
-        return jsonify({"error": "roommate id missing"}), 404
-
     if not invite_code:
         return jsonify({"error": "invite code is missing"}), 404
 

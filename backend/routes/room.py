@@ -12,7 +12,7 @@ def generate_invite_code(length=8):
     return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
 
-def create_room():
+def create_room(roommate_id):
     data = request.json
 
     if "name" not in data or not data["name"].strip():
@@ -31,6 +31,11 @@ def create_room():
     )
 
     db.session.add(new_room)
+    db.session.flush()
+
+    roommate = Roommate.query.get(roommate_id)
+    roommate.room_fkey = new_room.id
+
     db.session.commit()
 
     return (
@@ -61,13 +66,7 @@ def get_room(room_id):
     return jsonify(room_data)
 
 
-def get_room_by_roommate():
-    data = request.json
-
-    roommate_id = data["roommate_id"]
-    if not roommate_id:
-        return jsonify({"error": "roommate id is required"}), 400
-
+def get_room_by_roommate(roommate_id):
     roommate = Roommate.query.get(roommate_id)
     if not roommate:
         return jsonify({"error": "Roommate not found"}), 404
