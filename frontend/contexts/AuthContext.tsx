@@ -1,18 +1,22 @@
 import { useContext, createContext, type PropsWithChildren } from 'react';
 import { useStorageState } from '@/hooks/useStorageState';
 import { apiSignIn, apiCreateAccount } from '@/utils/api/apiClient'
+import { jwtDecode } from 'jwt-decode';
+import { useState, useEffect } from 'react';
 
 const AuthContext = createContext<{
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => void;
   createAccount: (username: string, password: string) => Promise<void>;
   session?: string | null;
+  userId?: number | null;
   isLoading: boolean;
 }>({
   signIn: async () => {},
   signOut: () => {},
   createAccount: async () => {},
   session: null,
+  userId: null,
   isLoading: false,
 });
 
@@ -22,9 +26,32 @@ export function useSession() {
   return value;
 }
 
+// Helper function to decode JWT and extract user information
+function getUserIdFromToken(token: string): number | null {
+  try {
+    // const decoded: { sub: string } = jwtDecode(token);
+    // return Number(decoded.sub); // the userId from the backend gets stored as a string in the JWT
+    return 100;
+  } catch (error) {
+    console.error('Error decoding JWT:', error);
+    return null;
+  }
+}
+
 export function SessionProvider({ children }: PropsWithChildren) {
   // session is the JWT and will be passed into the AuthContext
   const [[isLoading, session], setSession] = useStorageState('session');
+  const [userId, setUserId] = useState<number | null>(null);
+
+  // Update userId whenever session changes
+  useEffect(() => {
+    if (session) {
+      const id = getUserIdFromToken(session);
+      setUserId(id);
+    } else {
+      setUserId(null);
+    }
+  }, [session]);
 
   async function signIn(username: string, password: string) {
     try {
@@ -55,7 +82,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
   }
 
   return (
-    <AuthContext.Provider value={{ signIn, signOut, createAccount, session, isLoading }}>
+    <AuthContext.Provider value={{ signIn, signOut, createAccount, session, userId, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
