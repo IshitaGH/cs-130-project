@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  SectionList,
   TouchableOpacity,
   TextInput,
   Modal,
@@ -12,9 +12,12 @@ import {
   Platform,
   Animated,
   ActionSheetIOS,
+  RefreshControl
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
+import { useSession } from "@/contexts/AuthContext";
+import { apiGetChores } from "@/utils/api/apiClient";
 
 type Chore = {
   id: string;
@@ -29,7 +32,13 @@ const currentUser = "Byron";
 
 const initialMockChores: Chore[] = [
   { id: "1", name: "Dishes", roommate_responsible: "Byron", ends: "2025-03-01T23:59:59Z", autorotate: true, completed: false },
-  { id: "2", name: "Clean Kitchen", roommate_responsible: "Claire", ends: "2025-04-01T23:59:59Z", autorotate: false, completed: false },
+  { id: "2", name: "Clean Kitchen", roommate_responsible: "Byron", ends: "2025-04-01T23:59:59Z", autorotate: false, completed: false },
+  { id: "3", name: "Vacuum Living Room", roommate_responsible: "David", ends: "2025-05-01T23:59:59Z", autorotate: true, completed: false },
+  { id: "4", name: "Take Out Trash", roommate_responsible: "David", ends: "2025-06-01T23:59:59Z", autorotate: false, completed: false },
+  { id: "5", name: "Mop Bathroom", roommate_responsible: "Byron", ends: "2025-07-01T23:59:59Z", autorotate: true, completed: false },
+  { id: "6", name: "Wash Car", roommate_responsible: "Byron", ends: "2025-08-01T23:59:59Z", autorotate: false, completed: false },
+  { id: "7", name: "Water Plants", roommate_responsible: "Byron", ends: "2025-09-01T23:59:59Z", autorotate: true, completed: false },
+  { id: "8", name: "Feed Pets", roommate_responsible: "Byron", ends: "2025-10-01T23:59:59Z", autorotate: false, completed: false },
 ];
 
 export default function ChoresScreen() {
@@ -41,6 +50,47 @@ export default function ChoresScreen() {
   const [selectedChore, setSelectedChore] = useState<Chore | null>(null);
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const slideAnim = React.useRef(new Animated.Value(Dimensions.get("window").height)).current;
+  const [refreshing, setRefreshing] = useState(false);
+  const { session } = useSession();
+
+  // dynamically update 
+  const [yourChores, setYourChores] = useState<Chore[]>([]);
+  const [roommatesChores, setRoommatesChores] = useState<Chore[]>([]);
+
+  useEffect(() => {
+    setYourChores(chores.filter((chore) => chore.roommate_responsible === currentUser));
+    setRoommatesChores(chores.filter((chore) => chore.roommate_responsible !== currentUser));
+  }, [chores]);
+
+  // TODO: once backend is setup, the chores should be fetched when the screen is opened
+  // useEffect(() => {
+  //   const fetchInitialChores = async () => {
+  //     try {
+  //       const fetchedChores = await apiGetChores(session);
+  //       setChores(fetchedChores);
+  //     } catch (error) {
+  //       console.error('Error fetching initial chores:', error);
+  //     }
+  //   };
+
+  //   fetchInitialChores();
+  // }, [session]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    const fetchChores = async () => {
+      try {
+        const fetchedChores = await apiGetChores(session);
+        setChores(fetchedChores);
+      } catch (error) {
+        console.error('Error fetching chores:', error);
+      } finally {
+        setRefreshing(false);
+      }
+    };
+
+    fetchChores();
+  };
 
   useEffect(() => {
     if (modalVisible) {
@@ -64,15 +114,6 @@ export default function ChoresScreen() {
     }
   }, [selectedChore]);
 
-  // dynamically update 
-  const [yourChores, setYourChores] = useState<Chore[]>([]);
-  const [roommatesChores, setRoommatesChores] = useState<Chore[]>([]);
-
-  useEffect(() => {
-    setYourChores(chores.filter((chore) => chore.roommate_responsible === currentUser));
-    setRoommatesChores(chores.filter((chore) => chore.roommate_responsible !== currentUser));
-  }, [chores]);
-  
   const addOrUpdateChore = () => {
     if (!newChoreName.trim() || !roommate.trim() || !dueDate) return;
 
@@ -165,18 +206,33 @@ export default function ChoresScreen() {
     </View>
   );
 
+  // Combine the two lists into sections for the SectionList component
+  const sections = [
+    { title: "Your Chores", data: yourChores },
+    { title: "Roommates' Chores", data: roommatesChores },
+  ];
 
   return (
     <View style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Your Chores</Text>
-        <FlatList data={yourChores} renderItem={renderChoreRow} keyExtractor={(item) => item.id} />
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Roommates' Chores</Text>
-        <FlatList data={roommatesChores} renderItem={renderChoreRow} keyExtractor={(item) => item.id} />
-      </View>
+      <SectionList
+        sections={sections}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => renderChoreRow({ item })}
+        renderSectionHeader={({ section: { title } }) => (
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionHeaderText}>{title}</Text>
+          </View>
+        )}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#00D09E"
+            colors={["#00D09E"]}
+          />
+        }
+      />
 
       <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
         <MaterialIcons name="edit" size={20} color="#FFFFFF" />
@@ -245,9 +301,34 @@ export default function ChoresScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: "#FFFFFF" },
-  card: { backgroundColor: "#DFF7E280", borderRadius: 12, padding: 15, marginBottom: 20 },
-  cardTitle: { fontSize: 18, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
+  listContent: { paddingBottom: 100 },
+  sectionHeader: { 
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 10, 
+    paddingHorizontal: 15,
+  },
+  sectionHeaderText: { 
+    fontSize: 18, 
+    fontWeight: "bold", 
+    color: "#007F5F",
+  },
+  input: { borderWidth: 1, borderColor: "#CCC", borderRadius: 8, padding: 10, marginBottom: 15, fontSize: 16, color: "#333" },
+  datePicker: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#CCC", borderRadius: 8, padding: 10, marginBottom: 15 },
+  dateText: { marginLeft: 10, fontSize: 16, color: "#333" },
+  submitButton: { backgroundColor: "#00D09E", paddingVertical: 15, borderRadius: 8, alignItems: "center", marginBottom: 10 },
+  submitButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
+  closeButton: { alignItems: "center", paddingVertical: 10 },
+  closeButtonText: { fontSize: 16, color: "#007FFF", fontWeight: "bold" },
+  choreRow: { flexDirection: "row", alignItems: "center", padding: 10, backgroundColor: "#FFFFFF", borderRadius: 8, marginBottom: 8 },
+  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#CDEEEE", justifyContent: "center", alignItems: "center" },
+  avatarText: { fontSize: 16, fontWeight: "bold", color: "#007F5F" },
+  choreInfo: { flex: 1, paddingLeft: 15 },
+  choreName: { fontSize: 16, fontWeight: "bold", color: "#333" },
   choreDate: { fontSize: 14, color: "#666" },
+  strikethrough: { textDecorationLine: "line-through", color: "#999" },
+  completedRow: { backgroundColor: "#E0FFE6" },
+  fab: { position: "absolute", bottom: 20, right: 20, flexDirection: "row", backgroundColor: "#00D09E", padding: 10, borderRadius: 12 },
+  fabText: { color: "#FFFFFF", fontWeight: "bold", marginLeft: 8 },
   modalContainer: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0, 0, 0, 0.5)" },
   modalContent: {
     backgroundColor: "#FFFFFF",
@@ -257,21 +338,4 @@ const styles = StyleSheet.create({
     minHeight: Dimensions.get("window").height * 0.4,
   },
   modalTitle: { fontSize: 20, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
-  input: { borderWidth: 1, borderColor: "#CCC", borderRadius: 8, padding: 10, marginBottom: 15, fontSize: 16, color: "#333" },
-  datePicker: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#CCC", borderRadius: 8, padding: 10, marginBottom: 15 },
-  dateText: { marginLeft: 10, fontSize: 16, color: "#333" },
-  submitButton: { backgroundColor: "#00D09E", paddingVertical: 15, borderRadius: 8, alignItems: "center", marginBottom: 10 },
-  submitButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
-  closeButton: { alignItems: "center", paddingVertical: 10 },
-  closeButtonText: { fontSize: 16, color: "#007FFF", fontWeight: "bold" },
-  choreRow: { flexDirection: "row", alignItems: "center", padding: 10, backgroundColor: "#FFFFFF", borderRadius: 8 },
-  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#CDEEEE", justifyContent: "center", alignItems: "center" },
-  avatarText: { fontSize: 16, fontWeight: "bold", color: "#007F5F" },
-  choreInfo: { flex: 1, paddingLeft: 15 },
-  choreName: { fontSize: 16, fontWeight: "bold", color: "#333" },
-  remind: { fontSize: 14, fontWeight: "bold", color: "#007FFF" },
-  fab: { position: "absolute", bottom: 20, right: 20, flexDirection: "row", backgroundColor: "#00D09E", padding: 10, borderRadius: 12 },
-  fabText: { color: "#FFFFFF", fontWeight: "bold", marginLeft: 8 },
-  strikethrough: { textDecorationLine: "line-through", color: "#999" },
-  completedRow: { backgroundColor: "#E0FFE6" },
 });
