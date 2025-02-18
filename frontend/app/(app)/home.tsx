@@ -9,6 +9,8 @@ export default function HomeScreen() {
 
   useEffect(() => {
     const fetchMessage = async () => {
+      if (!session) return;
+
       try {
         const greeting = await apiGetMessage(session);
         setBackendMessage(greeting);
@@ -16,7 +18,7 @@ export default function HomeScreen() {
         console.error("Error fetching message:", error);
       }
     };
-  
+
     fetchMessage();
   }, [session]);
 

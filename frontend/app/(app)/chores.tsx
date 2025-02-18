@@ -51,7 +51,7 @@ export default function ChoresScreen() {
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const slideAnim = React.useRef(new Animated.Value(Dimensions.get("window").height)).current;
   const [refreshing, setRefreshing] = useState(false);
-  const { session } = useSession();
+  const { session, userId } = useSession();
 
   // dynamically update 
   const [yourChores, setYourChores] = useState<Chore[]>([]);
