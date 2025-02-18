@@ -32,3 +32,14 @@ def create_roommate():
         ),
         201,
     )
+
+
+def leave_room(roommate_id):
+    roommate = Roommate.query.get(roommate_id)
+    if not roommate:
+        return jsonify({"error": "Roommate not found"}), 404
+
+    roommate.room_fkey = None
+    db.session.commit()
+
+    return jsonify({"message": "Roommate has left the room"}), 200
