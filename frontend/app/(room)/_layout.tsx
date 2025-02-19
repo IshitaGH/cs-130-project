@@ -4,10 +4,16 @@ import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 
 export default function RoomLayout() {
-  const { session, sessionLoading } = useSession();
+  const { session, sessionLoading, signInLoading } = useSession();
   const router = useRouter();
 
-  if (sessionLoading) {
+  useEffect(() => {
+    if (!sessionLoading && !session && !signInLoading) {
+      router.replace("/");
+    }
+  }, [session, sessionLoading, signInLoading]);
+
+  if (sessionLoading || signInLoading) {
     return null;
   }
   return (

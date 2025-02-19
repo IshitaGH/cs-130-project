@@ -5,14 +5,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { Text, TouchableOpacity } from "react-native";
 
 export default function AppLayout() {
-  const { session, sessionLoading } = useSession();
+  const { session, sessionLoading, signInLoading } = useSession();
   const router = useRouter();
 
   useEffect(() => {
-    if (!sessionLoading && !session) {
+    if (!sessionLoading && !session && !signInLoading) {
       router.replace("/");
     }
-  }, [session, sessionLoading]);
+  }, [session, sessionLoading, signInLoading]);
 
   if (sessionLoading) {
     return <Text>Loading...</Text>;

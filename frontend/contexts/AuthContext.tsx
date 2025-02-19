@@ -11,6 +11,7 @@ const AuthContext = createContext<{
   session?: string | null;
   userId?: number | null;
   sessionLoading: boolean;
+  signInLoading: boolean;
 }>({
   signIn: async () => {},
   signOut: () => {},
@@ -18,6 +19,7 @@ const AuthContext = createContext<{
   session: null,
   userId: null,
   sessionLoading: false,
+  signInLoading: false,
 });
 
 // useSession must be wrapped in a <SessionProvider />
@@ -41,6 +43,7 @@ function getUserIdFromToken(token: string): number | null {
 export function SessionProvider({ children }: PropsWithChildren) {
   // session is the JWT and will be passed into the AuthContext
   const [[sessionLoading, session], setSession] = useStorageState('session');
+  const [signInLoading, setSignInLoading] = useState<boolean>(false);
   const [userId, setUserId] = useState<number | null>(null);
 
   // Update userId whenever session changes
@@ -55,6 +58,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
 
   async function signIn(username: string, password: string) {
     try {
+      setSignInLoading(true);
       console.log("Calling apiSignIn...");
       const jwt = await apiSignIn(username, password);
       console.log("Sign-in successful, setting session with JWT token.");
@@ -63,6 +67,8 @@ export function SessionProvider({ children }: PropsWithChildren) {
       // Pass the error message up so the UI can display it
       console.error('Login error:', error.message);
       throw error;
+    } finally {
+      setSignInLoading(false);
     }
   }
 
@@ -82,7 +88,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
   }
 
   return (
-    <AuthContext.Provider value={{ signIn, signOut, createAccount, session, userId, sessionLoading }}>
+    <AuthContext.Provider value={{ signIn, signOut, createAccount, session, userId, sessionLoading, signInLoading }}>
       {children}
     </AuthContext.Provider>
   );
