@@ -16,7 +16,7 @@ from models.chore import Chore
 from models.expense import Expense, Roommate_Expense
 from models.roommate import Room, Roommate
 from routes.room import create_room, get_room, get_room_by_roommate
-from routes.roommate import create_roommate
+from routes.roommate import create_roommate, leave_room
 
 load_dotenv()
 
@@ -92,3 +92,4 @@ app.route("/room/<int:room_id>", methods=["GET"])(get_room)
 
 app.route("/roommate", methods=["POST"])(create_roommate)
 app.route("/roommate/room", methods=["GET"])(get_room_by_roommate)
+app.route("/roommates/<int:roommate_id>/rooms/leave", methods=["POST"])(leave_room)
