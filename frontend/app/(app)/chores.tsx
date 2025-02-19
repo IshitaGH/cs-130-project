@@ -170,11 +170,21 @@ export default function ChoresScreen() {
 
   const toggleComplete = (id: string) => {
     setChores(prevChores =>
-      prevChores.map(chore =>
-        chore.id === id ? { ...chore, completed: !chore.completed } : chore
-      )
+      prevChores.map(chore => {
+        if (chore.id === id) {
+          // If it's not a task, do not allow marking as complete.
+          if (!chore.is_task) {
+            alert("This chore is an ongoing responsibility and cannot be marked as complete.");
+            return chore;
+          }
+          // Otherwise, toggle the completed flag.
+          return { ...chore, completed: !chore.completed };
+        }
+        return chore;
+      })
     );
   };
+  
 
   const deleteChore = (id: string) => {
     setChores(prevChores => prevChores.filter(chore => chore.id !== id));
