@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { apiGetMessage } from "@/utils/api/apiClient";
 
 export default function HomeScreen() {
-  const { session, isLoading } = useSession();
+  const { session, sessionLoading } = useSession();
   const [backendMessage, setBackendMessage] = useState<string | null>("loading");
 
   useEffect(() => {
@@ -22,7 +22,7 @@ export default function HomeScreen() {
     fetchMessage();
   }, [session]);
 
-  if (isLoading) {
+  if (sessionLoading) {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Loading...</Text>
