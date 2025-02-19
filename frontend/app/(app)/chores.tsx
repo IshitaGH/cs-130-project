@@ -66,9 +66,13 @@ export default function ChoresScreen() {
   const [roommatesChores, setRoommatesChores] = useState<Chore[]>([]);
 
   useEffect(() => {
-    setYourChores(chores.filter((chore) => chore.roommate_responsible === currentUser));
-    setRoommatesChores(chores.filter((chore) => chore.roommate_responsible !== currentUser));
+    const your = chores.filter(chore => chore.roommate_responsible === currentUser);
+    const roommates = chores.filter(chore => chore.roommate_responsible !== currentUser);
+  
+    setYourChores(sortChores(your));
+    setRoommatesChores(sortChores(roommates));
   }, [chores]);
+  
 
   // TODO: once backend is setup, the chores should be fetched when the screen is opened
   // useEffect(() => {
@@ -121,6 +125,14 @@ export default function ChoresScreen() {
       resetModal();
     }
   }, [selectedChore]);
+
+  const sortChores = (choreList: Chore[]) => {
+    return choreList.sort((a, b) => {
+      if (a.completed === b.completed) return 0;
+      // Return -1 if a is not completed and b is completed (so a comes first)
+      return a.completed ? 1 : -1;
+    });
+  };
 
   const addOrUpdateChore = () => {
     if (!newChoreName.trim() || !roommate.trim() || !dueDate) return;
