@@ -12,7 +12,8 @@ import {
   Platform,
   Animated,
   ActionSheetIOS,
-  RefreshControl
+  RefreshControl,
+  Switch,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
@@ -25,24 +26,26 @@ type Chore = {
   roommate_responsible: string;
   ends: string;
   autorotate: boolean;
+  is_task: boolean;
   completed: boolean;
+  recurrence?: string; // new field for recurrence frequency
 };
 
 const currentUser = "Byron";
 
 const initialMockChores: Chore[] = [
-  { id: "1", name: "Dishes", roommate_responsible: "Byron", ends: "2025-03-01T23:59:59Z", autorotate: true, completed: false },
-  { id: "2", name: "Clean Kitchen", roommate_responsible: "Byron", ends: "2025-04-01T23:59:59Z", autorotate: false, completed: false },
-  { id: "3", name: "Vacuum Living Room", roommate_responsible: "David", ends: "2025-05-01T23:59:59Z", autorotate: true, completed: false },
-  { id: "4", name: "Take Out Trash", roommate_responsible: "David", ends: "2025-06-01T23:59:59Z", autorotate: false, completed: false },
-  { id: "5", name: "Mop Bathroom", roommate_responsible: "Byron", ends: "2025-07-01T23:59:59Z", autorotate: true, completed: false },
-  { id: "6", name: "Wash Car", roommate_responsible: "Byron", ends: "2025-08-01T23:59:59Z", autorotate: false, completed: false },
-  { id: "7", name: "Water Plants", roommate_responsible: "Byron", ends: "2025-09-01T23:59:59Z", autorotate: true, completed: false },
-  { id: "8", name: "Feed Pets", roommate_responsible: "Byron", ends: "2025-10-01T23:59:59Z", autorotate: false, completed: false },
+  { id: "1", name: "Dishes", roommate_responsible: "Byron", ends: "2025-03-01T23:59:59Z", autorotate: true, is_task: true, completed: false, recurrence: "none" },
+  { id: "2", name: "Clean Kitchen", roommate_responsible: "Byron", ends: "2025-04-01T23:59:59Z", autorotate: false, is_task: false, completed: false, recurrence: "weekly" },
+  { id: "3", name: "Vacuum Living Room", roommate_responsible: "David", ends: "2025-05-01T23:59:59Z", autorotate: true, is_task: true, completed: false, recurrence: "daily" },
+  { id: "4", name: "Take Out Trash", roommate_responsible: "David", ends: "2025-06-01T23:59:59Z", autorotate: false, is_task: false, completed: false, recurrence: "monthly" },
+  { id: "5", name: "Mop Bathroom", roommate_responsible: "Byron", ends: "2025-07-01T23:59:59Z", autorotate: true, is_task: true, completed: false, recurrence: "none" },
+  { id: "6", name: "Wash Car", roommate_responsible: "Byron", ends: "2025-08-01T23:59:59Z", autorotate: false, is_task: false, completed: false, recurrence: "none" },
+  { id: "7", name: "Water Plants", roommate_responsible: "Byron", ends: "2025-09-01T23:59:59Z", autorotate: true, is_task: true, completed: false, recurrence: "daily" },
+  { id: "8", name: "Feed Pets", roommate_responsible: "Byron", ends: "2025-10-01T23:59:59Z", autorotate: false, is_task: false, completed: false, recurrence: "none" },
 ];
 
 export default function ChoresScreen() {
-  const [chores, setChores] = useState<Chore[]>(() => JSON.parse(JSON.stringify(initialMockChores))); // deep copy so each object in chores gets its own memory reference
+  const [chores, setChores] = useState<Chore[]>(() => JSON.parse(JSON.stringify(initialMockChores)));
   const [modalVisible, setModalVisible] = useState(false);
   const [newChoreName, setNewChoreName] = useState("");
   const [roommate, setRoommate] = useState("");
@@ -53,7 +56,12 @@ export default function ChoresScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const { session, userId } = useSession();
 
-  // dynamically update 
+  // New state for whether the chore is a task (completable)
+  const [isTask, setIsTask] = useState(true);
+  // New state for recurrence frequency ("none", "daily", "weekly", "monthly")
+  const [recurrence, setRecurrence] = useState("none");
+
+  // Derived state for display (your chores vs. roommates' chores)
   const [yourChores, setYourChores] = useState<Chore[]>([]);
   const [roommatesChores, setRoommatesChores] = useState<Chore[]>([]);
 
@@ -72,7 +80,6 @@ export default function ChoresScreen() {
   //       console.error('Error fetching initial chores:', error);
   //     }
   //   };
-
   //   fetchInitialChores();
   // }, [session]);
 
@@ -88,7 +95,6 @@ export default function ChoresScreen() {
         setRefreshing(false);
       }
     };
-
     fetchChores();
   };
 
@@ -109,6 +115,8 @@ export default function ChoresScreen() {
       setNewChoreName(selectedChore.name);
       setRoommate(selectedChore.roommate_responsible);
       setDueDate(selectedChore.ends);
+      setIsTask(selectedChore.is_task);
+      setRecurrence(selectedChore.recurrence || "none");
     } else {
       resetModal();
     }
@@ -118,10 +126,18 @@ export default function ChoresScreen() {
     if (!newChoreName.trim() || !roommate.trim() || !dueDate) return;
 
     if (selectedChore) {
-      setChores((prevChores) =>
-        prevChores.map((chore) =>
+      setChores(prevChores =>
+        prevChores.map(chore =>
           chore.id === selectedChore.id
-            ? { ...chore, name: newChoreName, roommate_responsible: roommate, ends: dueDate }
+            ? {
+                ...chore,
+                name: newChoreName,
+                roommate_responsible: roommate,
+                ends: dueDate,
+                is_task: isTask,
+                recurrence: recurrence,
+                autorotate: isTask, // if something is a task, it should autorotate (logic here can be changed)
+              }
             : chore
         )
       );
@@ -131,8 +147,10 @@ export default function ChoresScreen() {
         name: newChoreName,
         roommate_responsible: roommate,
         ends: dueDate,
-        autorotate: true,
+        is_task: isTask,
+        autorotate: isTask,
         completed: false,
+        recurrence: recurrence,
       };
       setChores([...chores, newChore]);
     }
@@ -144,20 +162,22 @@ export default function ChoresScreen() {
     setNewChoreName("");
     setRoommate("");
     setDueDate(null);
+    setIsTask(true);
+    setRecurrence("none");
     setSelectedChore(null);
     setModalVisible(false);
   };
 
   const toggleComplete = (id: string) => {
-    setChores((prevChores) =>
-      prevChores.map((chore) =>
+    setChores(prevChores =>
+      prevChores.map(chore =>
         chore.id === id ? { ...chore, completed: !chore.completed } : chore
       )
     );
   };
 
   const deleteChore = (id: string) => {
-    setChores((prevChores) => prevChores.filter((chore) => chore.id !== id));
+    setChores(prevChores => prevChores.filter(chore => chore.id !== id));
   };
 
   const remindChore = (chore: Chore) => {
@@ -180,8 +200,7 @@ export default function ChoresScreen() {
           else if (buttonIndex === 2) {
             setSelectedChore(chore);
             setModalVisible(true);
-          }
-          else if (buttonIndex === 3) deleteChore(chore.id);
+          } else if (buttonIndex === 3) deleteChore(chore.id);
         }
       );
     } else {
@@ -199,6 +218,7 @@ export default function ChoresScreen() {
           {item.roommate_responsible}: {item.name}
         </Text>
         <Text style={styles.choreDate}>Ends: {new Date(item.ends).toLocaleDateString()}</Text>
+        <Text style={styles.choreDate}>Recurrence: {item.recurrence || "None"}</Text>
       </View>
       <TouchableOpacity onPress={() => openActionMenu(item)}>
         <MaterialIcons name="more-vert" size={24} color="#666" />
@@ -206,7 +226,6 @@ export default function ChoresScreen() {
     </View>
   );
 
-  // Combine the two lists into sections for the SectionList component
   const sections = [
     { title: "Your Chores", data: yourChores },
     { title: "Roommates' Chores", data: roommatesChores },
@@ -267,6 +286,27 @@ export default function ChoresScreen() {
               onChangeText={setRoommate}
             />
 
+            {/* Is Task Switch */}
+            <View style={styles.switchContainer}>
+              <Text style={styles.switchLabel}>Is this a task?</Text>
+              <Switch
+                value={isTask}
+                onValueChange={(newValue) => setIsTask(newValue)}
+              />
+            </View>
+
+            {/* Custom Dropdown for Recurrence */}
+            <Text style={styles.label}>Recurrence</Text>
+            <View style={styles.dropdown}>
+              {["none", "daily", "weekly", "monthly"].map((option) => (
+                <TouchableOpacity key={option} onPress={() => setRecurrence(option)}>
+                  <Text style={[styles.option, recurrence === option && styles.selectedOption]}>
+                    {option}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
             <TouchableOpacity style={styles.datePicker} onPress={() => setDatePickerVisible(true)}>
               <MaterialIcons name="calendar-today" size={20} color="#007FFF" />
               <Text style={styles.dateText}>
@@ -302,16 +342,8 @@ export default function ChoresScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: "#FFFFFF" },
   listContent: { paddingBottom: 100 },
-  sectionHeader: { 
-    backgroundColor: "#FFFFFF",
-    paddingVertical: 10, 
-    paddingHorizontal: 15,
-  },
-  sectionHeaderText: { 
-    fontSize: 18, 
-    fontWeight: "bold", 
-    color: "#007F5F",
-  },
+  sectionHeader: { backgroundColor: "#FFFFFF", paddingVertical: 10, paddingHorizontal: 15 },
+  sectionHeaderText: { fontSize: 18, fontWeight: "bold", color: "#007F5F" },
   input: { borderWidth: 1, borderColor: "#CCC", borderRadius: 8, padding: 10, marginBottom: 15, fontSize: 16, color: "#333" },
   datePicker: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#CCC", borderRadius: 8, padding: 10, marginBottom: 15 },
   dateText: { marginLeft: 10, fontSize: 16, color: "#333" },
@@ -330,12 +362,14 @@ const styles = StyleSheet.create({
   fab: { position: "absolute", bottom: 20, right: 20, flexDirection: "row", backgroundColor: "#00D09E", padding: 10, borderRadius: 12 },
   fabText: { color: "#FFFFFF", fontWeight: "bold", marginLeft: 8 },
   modalContainer: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0, 0, 0, 0.5)" },
-  modalContent: {
-    backgroundColor: "#FFFFFF",
-    padding: 20,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    minHeight: Dimensions.get("window").height * 0.4,
-  },
+  modalContent: { backgroundColor: "#FFFFFF", padding: 20, borderTopLeftRadius: 16, borderTopRightRadius: 16, minHeight: Dimensions.get("window").height * 0.4 },
   modalTitle: { fontSize: 20, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
+  switchContainer: { flexDirection: "row", alignItems: "center", marginBottom: 15 },
+  switchLabel: { fontSize: 16, color: "#333", marginRight: 10 },
+  label: { fontSize: 16, fontWeight: "bold", color: "#007F5F", marginBottom: 5 },
+  dropdown: { flexDirection: "row", justifyContent: "space-between", marginBottom: 15 },
+  option: { padding: 10, backgroundColor: "#EEE", borderRadius: 5, fontSize: 16, color: "#333" },
+  selectedOption: { backgroundColor: "#00D09E", color: "#FFFFFF" },
+  pickerLabel: { fontSize: 16, color: "#333", marginBottom: 5 },
+  picker: { height: 50, marginBottom: 15 },
 });
