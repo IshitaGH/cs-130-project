@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 const AuthContext = createContext<{
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => void;
-  createAccount: (username: string, password: string) => Promise<void>;
+  createAccount: (firstName: string, lastName: string, username: string, password: string) => Promise<void>;
   session?: string | null;
   userId?: number | null;
   sessionLoading: boolean;
@@ -76,10 +76,10 @@ export function SessionProvider({ children }: PropsWithChildren) {
     setSession(null);
   }
 
-  async function createAccount(username: string, password: string) {
+  async function createAccount(firstName: string, lastName: string, username: string, password: string) {
     try {
       console.log("Calling apiCreateAccount...");
-      await apiCreateAccount(username, password);
+      await apiCreateAccount(firstName, lastName, username, password);
       console.log("User successfully created.");
     } catch (error: any) {
       console.error('Registration error:', error.message);

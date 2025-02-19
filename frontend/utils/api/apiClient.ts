@@ -21,11 +21,11 @@ export async function apiSignIn(username: string, password: string) {
 }
 
 // returns void or throws an error
-export async function apiCreateAccount(username: string, password: string) {
+export async function apiCreateAccount(firstName: string, lastName: string, username: string, password: string) {
   const response = await fetch(`${API_URL}/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ firstName, lastName, username, password }),
   });
 
   if (!response.ok) {
