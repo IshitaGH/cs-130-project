@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useSession } from "@/contexts/AuthContext";
+import { apiGetRoom } from "@/utils/api/apiClient";
 import {
   Text,
   TextInput,
@@ -23,7 +24,14 @@ export default function LoginScreen() {
     setError(null);
     try {
       await signIn(username, password);
-      router.replace("/home");
+      const roomData = await apiGetRoom();
+      if (roomData.room_id === null) {
+        router.replace("/room-landing")
+      }
+      else {
+        console.log(roomData.room_id)
+        router.replace("/home");
+      }
     } catch (err: any) {
       setError(err.message);
     }

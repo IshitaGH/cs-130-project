@@ -19,7 +19,7 @@ export default function LoginScreen() {
   const { createAccount } = useSession();
   const router = useRouter();
 
-  const handleLogin = async () => {
+  const handleRegister = async () => {
     setError(null);
     try {
       await createAccount(username, password);
@@ -62,7 +62,7 @@ export default function LoginScreen() {
         {/* Display the error message */}
         {error && <Text style={styles.errorText}>{error}</Text>}
 
-        <TouchableOpacity style={styles.button} onPress={handleLogin}>
+        <TouchableOpacity style={styles.button} onPress={handleRegister}>
           <Text style={styles.buttonText}>Register</Text>
         </TouchableOpacity>
 

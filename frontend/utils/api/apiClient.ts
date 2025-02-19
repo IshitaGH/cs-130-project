@@ -34,6 +34,70 @@ export async function apiCreateAccount(username: string, password: string) {
   }
 }
 
+export async function apiGetRoom() {
+  // const response = await fetch(`${API_URL}/room`, {
+  //   method: 'GET',
+  // });
+
+  // if (!response.ok) {
+  //   const errorData = await response.json();
+  //   throw new Error('Failed to fetch Room');
+  // }  
+  
+  // const data = await response.json();
+  // return data;
+  return { room_id: null }
+}
+
+export async function apiJoinRoom(inviteCode: string) {
+  // const response = await fetch(`${API_URL}/rooms/join`, {
+  //   method: 'POST',
+  //   headers: { 'Content-Type': 'application/json' },
+  //   body: JSON.stringify({ 'invite_code' : inviteCode}),
+  // });
+
+  // if (!response.ok) {
+  //   const errorData = await response.json();
+  //   throw new Error('Failed to fetch Room');
+  // }  
+  
+  // const data = await response.json();
+  // return data;
+  return { room_id: 1 }
+}
+
+export async function apiCreateRoom(roomName: string) {
+  // const response = await fetch(`${API_URL}/rooms`, {
+  //   method: 'POST',
+  //   headers: { 'Content-Type': 'application/json' },
+  //   body: JSON.stringify({ name: roomName}),
+  // });
+
+  // if (!response.ok) {
+  //   const errorData = await response.json();
+  //   throw new Error('Failed to fetch Room');
+  // }  
+  
+  // const data = await response.json();
+  // return data;
+  return { room_id: 1 }
+}
+
+export async function apiLeaveRoom() {
+  // const response = await fetch(`${API_URL}/rooms/leave`, {
+  //   method: 'POST',
+  // });
+
+  // if (!response.ok) {
+  //   const errorData = await response.json();
+  //   throw new Error('Failed to fetch Room');
+  // }  
+  
+  // const data = await response.json();
+  // return data;
+  return { room_id: null }
+}
+
 // returns the message from the backend or throws an error
 export async function apiGetMessage(session: any) {
   const response = await fetch(`${API_URL}/protected`, {
