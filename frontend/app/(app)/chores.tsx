@@ -257,6 +257,7 @@ export default function ChoresScreen() {
     <View style={styles.container}>
       <SectionList
         sections={sections}
+        showsVerticalScrollIndicator={false}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => renderChoreRow({ item })}
         renderSectionHeader={({ section: { title } }) => (
