@@ -16,7 +16,7 @@ from models.chore import Chore
 from models.expense import Expense, Roommate_Expense
 from models.roommate import Room, Roommate
 from routes.room import create_room, get_room, get_room_by_roommate
-from routes.roommate import create_roommate
+from routes.roommate import create_roommate, join_room
 
 load_dotenv()
 
@@ -87,8 +87,9 @@ def home():
     return "Need to figure out what we want here"
 
 
-app.route("/room", methods=["POST"])(create_room)
-app.route("/room/<int:room_id>", methods=["GET"])(get_room)
+app.route("/rooms/<int:roommate_id>", methods=["POST"])(create_room)
+app.route("/rooms/<int:room_id>", methods=["GET"])(get_room)
 
-app.route("/roommate", methods=["POST"])(create_roommate)
-app.route("/roommate/room", methods=["GET"])(get_room_by_roommate)
+app.route("/roommates", methods=["POST"])(create_roommate)
+app.route("/roommates/<int:roommate_id>/rooms", methods=["GET"])(get_room_by_roommate)
+app.route("/roommates/<int:roommate_id>/rooms/join", methods=["POST"])(join_room)
