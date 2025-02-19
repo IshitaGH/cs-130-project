@@ -10,14 +10,14 @@ const AuthContext = createContext<{
   createAccount: (username: string, password: string) => Promise<void>;
   session?: string | null;
   userId?: number | null;
-  isLoading: boolean;
+  sessionLoading: boolean;
 }>({
   signIn: async () => {},
   signOut: () => {},
   createAccount: async () => {},
   session: null,
   userId: null,
-  isLoading: false,
+  sessionLoading: false,
 });
 
 // useSession must be wrapped in a <SessionProvider />
@@ -40,7 +40,7 @@ function getUserIdFromToken(token: string): number | null {
 
 export function SessionProvider({ children }: PropsWithChildren) {
   // session is the JWT and will be passed into the AuthContext
-  const [[isLoading, session], setSession] = useStorageState('session');
+  const [[sessionLoading, session], setSession] = useStorageState('session');
   const [userId, setUserId] = useState<number | null>(null);
 
   // Update userId whenever session changes
@@ -82,7 +82,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
   }
 
   return (
-    <AuthContext.Provider value={{ signIn, signOut, createAccount, session, userId, isLoading }}>
+    <AuthContext.Provider value={{ signIn, signOut, createAccount, session, userId, sessionLoading }}>
       {children}
     </AuthContext.Provider>
   );
