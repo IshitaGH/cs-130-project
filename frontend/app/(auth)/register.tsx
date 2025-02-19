@@ -15,6 +15,9 @@ import { useRouter } from "expo-router";
 export default function LoginScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+
   const [error, setError] = useState<string | null>(null);
   const { createAccount } = useSession();
   const router = useRouter();
@@ -22,7 +25,7 @@ export default function LoginScreen() {
   const handleRegister = async () => {
     setError(null);
     try {
-      await createAccount(username, password);
+      await createAccount(firstName, lastName, username, password);
       router.replace("/login");
     } catch (err: any) {
       setError(err.message);
@@ -41,6 +44,22 @@ export default function LoginScreen() {
         <Image source={require("@/assets/images/icon.png")} style={styles.logo} />
 
         <Text style={styles.title}>Register</Text>
+
+        <TextInput
+          placeholder="First Name"
+          onChangeText={setFirstName}
+          value={firstName}
+          style={styles.input}
+          placeholderTextColor="#aaa"
+        />
+
+        <TextInput
+          placeholder="Last Name"
+          onChangeText={setLastName}
+          value={lastName}
+          style={styles.input}
+          placeholderTextColor="#aaa"
+        />
 
         <TextInput
           placeholder="Username"
