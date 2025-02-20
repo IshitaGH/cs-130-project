@@ -48,10 +48,9 @@ class Roommate_Expense(db.Model):
 
 
 class Expense_Period(db.Model):
-   __tablename__ = "expense_periods"
-   id = Column(Integer, primary_key=True, nullable=False)
-   room_fkey = Column(Integer, ForeignKey("rooms.id"), nullable=False)
-   start_date = Column(DateTime, nullable=False)
-   end_date = Column(DateTime, nullable=True)
-   open = Column(Boolean, nullable=False)
-
+    __tablename__ = "expense_periods"
+    id = Column(Integer, primary_key=True, nullable=False)
+    room_fkey = Column(Integer, ForeignKey("rooms.id"), nullable=False)
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=True)
+    open = Column(Boolean, nullable=False)
