@@ -66,8 +66,6 @@ def register():
    return "", 201
 
 
-
-
 # Login
 @app.route("/login", methods=["POST"])
 def login():
@@ -80,10 +78,8 @@ def login():
        return jsonify({"message": "Invalid credentials"}), 401
 
 
-   access_token = create_access_token(identity=roommate.id)
+   access_token = create_access_token(identity=str(roommate.id))
    return jsonify({"access_token": access_token}), 200
-
-
 
 
 # Protected Route (Requires Authentication)
