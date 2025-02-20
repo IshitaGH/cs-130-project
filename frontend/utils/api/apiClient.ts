@@ -25,7 +25,7 @@ export async function apiCreateAccount(firstName: string, lastName: string, user
   const response = await fetch(`${API_URL}/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ firstName, lastName, username, password }),
+    body: JSON.stringify({ first_name: firstName, last_name: lastName, username, password }),
   });
 
   if (!response.ok) {
