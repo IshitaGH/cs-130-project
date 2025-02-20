@@ -34,6 +34,9 @@ interface BalanceMap {
   [key: string]: number
 }
 
+const CURRENT_USER = "Caolinn"; //replace this with an API call when ready
+
+
 const initialMockExpenses = [
   {
     title: "Current period expenses",
@@ -128,25 +131,31 @@ export default function ExpensesScreen() {
     }
   }, [modalVisible, slideAnim]);
 
-  const calculateBalances = () => {
+  const calculatePersonalBalances = () => {
     let balanceSheet: BalanceMap = {};
     roommates.forEach((roommate) => (balanceSheet[roommate] = 0));
     let totalRoommates = roommates.length;
-
+  
     (expenseCards.find(card => card.current) ?? { expenses: [] }).expenses.forEach(({ amount, payer }) => {
       let splitAmount = amount / totalRoommates;
+      
       roommates.forEach((roommate) => {
-        if (roommate === payer) {
-          balanceSheet[roommate] += amount - splitAmount;
-        } else {
-          balanceSheet[roommate] -= splitAmount;
+        if (roommate !== CURRENT_USER) {
+          if (payer === CURRENT_USER) {
+            // You paid, so they owe you their share
+            balanceSheet[roommate] += splitAmount;
+          } else if (roommate === payer) {
+            // They paid, so you owe them your share
+            balanceSheet[roommate] -= splitAmount;
+          }
         }
       });
     });
+  
     setBalances(balanceSheet);
   };
 
-  useEffect(calculateBalances, [expenseCards[0].expenses]);
+  useEffect(calculatePersonalBalances, [expenseCards[0].expenses]);
 
   const addExpense = () => {
     if (!description || !amount || !payer) return;
@@ -171,9 +180,11 @@ export default function ExpensesScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Balances</Text>
-        {roommates.map((name) => (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>Balances</Text>
+      {roommates
+        .filter((name) => name !== CURRENT_USER) // Exclude the current user
+        .map((name) => (
           <View key={name} style={styles.balanceRow}>
             <Text style={styles.roommateName}>{name}:</Text>
             <Text
@@ -186,7 +197,8 @@ export default function ExpensesScreen() {
             </Text>
           </View>
         ))}
-      </View>
+    </View>
+
 
       {expenseCards.map((card) => (
         <ExpenseCard key={card.title} title={card.title} current={card.current} expenses={card.expenses} updateExpenses={updateExpenses} />
