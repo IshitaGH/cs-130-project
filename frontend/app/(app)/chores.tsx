@@ -135,7 +135,10 @@ export default function ChoresScreen() {
   };
 
   const addOrUpdateChore = () => {
-    if (!newChoreName.trim() || !roommate.trim() || !dueDate) return;
+    if (!newChoreName.trim() || !roommate.trim() || !dueDate) {
+      alert("Must fill in all fields");
+      return;
+    }
 
     if (selectedChore) {
       setChores(prevChores =>
