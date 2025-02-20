@@ -15,10 +15,11 @@ from database import db, migrate
 from models.chore import Chore
 from models.expense import Expense, Roommate_Expense
 from models.roommate import Room, Roommate
-from routes.room import create_room, get_room, get_room_by_roommate
+from routes.room import create_room, get_current_room, join_room, leave_room
 from routes.roommate import create_roommate
 
 load_dotenv()
+
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
@@ -30,25 +31,36 @@ jwt = JWTManager(app)  # Must take app as a parameter to use secret key
 bcrypt = Bcrypt(app)
 CORS(app)  # Allow all origins for development -> will need to change for production
 
+
 db.init_app(app)
 migrate.init_app(app, db)
-
-users = {}  # temporary database, resets everytime server restarts so not persistent
 
 
 # Register
 @app.route("/register", methods=["POST"])
 def register():
     data = request.get_json()
+    first_name = data.get("firstName")
+    last_name = data.get("lastName")
     username = data.get("username")
     password = data.get("password")
 
-    if username in users:
-        return jsonify({"message": "User already exists"}), 400
+    if not (first_name and last_name and username and password):
+        return jsonify({"message": "All fields are required"}), 400
+
+    if Roommate.query.filter_by(username=username).first():
+        return jsonify({"message": "Username already exists"}), 400
 
     hashed_pw = bcrypt.generate_password_hash(password).decode("utf-8")
-    users[username] = hashed_pw
-    return jsonify({"message": "User registered successfully"}), 201
+    new_roommate = Roommate(
+        first_name=first_name,
+        last_name=last_name,
+        username=username,
+        password_hash=hashed_pw,
+    )
+    db.session.add(new_roommate)
+    db.session.commit()
+    return "", 201
 
 
 # Login
@@ -58,12 +70,11 @@ def login():
     username = data.get("username")
     password = data.get("password")
 
-    if username not in users or not bcrypt.check_password_hash(
-        users[username], password
-    ):
+    roommate = Roommate.query.filter_by(username=username).first()
+    if not roommate or not bcrypt.check_password_hash(roommate.password_hash, password):
         return jsonify({"message": "Invalid credentials"}), 401
 
-    access_token = create_access_token(identity=username)
+    access_token = create_access_token(identity=str(roommate.id))
     return jsonify({"access_token": access_token}), 200
 
 
@@ -87,8 +98,21 @@ def home():
     return "Need to figure out what we want here"
 
 
-app.route("/room", methods=["POST"])(create_room)
-app.route("/room/<int:room_id>", methods=["GET"])(get_room)
+@app.route("/room", methods=["GET"])
+def get_current_room_route():
+    return get_current_room()
 
-app.route("/roommate", methods=["POST"])(create_roommate)
-app.route("/roommate/room", methods=["GET"])(get_room_by_roommate)
+
+@app.route("/rooms", methods=["POST"])
+def create_room_route():
+    return create_room()
+
+
+@app.route("/rooms/join", methods=["POST"])
+def join_room_route():
+    return join_room()
+
+
+@app.route("/rooms/leave", methods=["POST"])
+def leave_room_route():
+    return leave_room()

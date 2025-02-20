@@ -21,11 +21,11 @@ export async function apiSignIn(username: string, password: string) {
 }
 
 // returns void or throws an error
-export async function apiCreateAccount(username: string, password: string) {
+export async function apiCreateAccount(firstName: string, lastName: string, username: string, password: string) {
   const response = await fetch(`${API_URL}/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ firstName, lastName, username, password }),
   });
 
   if (!response.ok) {
@@ -34,7 +34,7 @@ export async function apiCreateAccount(username: string, password: string) {
   }
 }
 
-export async function apiGetRoom() {
+export async function apiGetRoom(session: any) {
   // const response = await fetch(`${API_URL}/room`, {
   //   method: 'GET',
   // });
@@ -49,7 +49,7 @@ export async function apiGetRoom() {
   return { room_id: null }
 }
 
-export async function apiJoinRoom(inviteCode: string) {
+export async function apiJoinRoom(session: any, inviteCode: string) {
   // const response = await fetch(`${API_URL}/rooms/join`, {
   //   method: 'POST',
   //   headers: { 'Content-Type': 'application/json' },
@@ -66,7 +66,7 @@ export async function apiJoinRoom(inviteCode: string) {
   return { room_id: 1 }
 }
 
-export async function apiCreateRoom(roomName: string) {
+export async function apiCreateRoom(session: any, roomName: string) {
   // const response = await fetch(`${API_URL}/rooms`, {
   //   method: 'POST',
   //   headers: { 'Content-Type': 'application/json' },
@@ -83,7 +83,7 @@ export async function apiCreateRoom(roomName: string) {
   return { room_id: 1 }
 }
 
-export async function apiLeaveRoom() {
+export async function apiLeaveRoom(session: any) {
   // const response = await fetch(`${API_URL}/rooms/leave`, {
   //   method: 'POST',
   // });
