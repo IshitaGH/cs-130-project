@@ -4,12 +4,18 @@ from datetime import datetime
 from flask import jsonify, request
 from database import db
 from models.roommate import Room, Roommate
+from flask_jwt_extended import (
+   JWTManager,
+   create_access_token,
+   get_jwt_identity,
+   jwt_required,
+)
 
 
 def generate_invite_code(length=8):
    return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
-
+@jwt_required()
 def get_current_room():
    roommate_id = get_jwt_identity()
    roommate = Roommate.query.get(roommate_id)
@@ -26,7 +32,7 @@ def get_current_room():
        "updated_at": room.updated_at.isoformat()
    }), 200
 
-
+@jwt_required()
 def create_room():
    roommate_id = get_jwt_identity()
    data = request.get_json()
@@ -64,7 +70,7 @@ def create_room():
    }), 201
 
 
-
+@jwt_required()
 def join_room():
    roommate_id = get_jwt_identity()
    data = request.get_json()
@@ -91,7 +97,7 @@ def join_room():
        "updated_at": room.updated_at.isoformat()
    }), 200
 
-
+@jwt_required()
 def leave_room():
    roommate_id = get_jwt_identity()
    roommate = Roommate.query.get(roommate_id)
@@ -103,7 +109,7 @@ def leave_room():
    db.session.commit()
    return "", 200
 
-
+@jwt_required()
 def get_roommates_in_room():
    roommate_id = get_jwt_identity()
    current_roommate = Roommate.query.get(roommate_id)
