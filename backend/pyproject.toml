@@ -1,0 +1,17 @@
+[tool.black]
+line-length = 88  # Adjust as needed
+exclude = '''
+/(
+    __pycache__ |
+    migrations |
+    venv |
+    .flaskenv |
+    .gitignore |
+    README.md |
+    requirements.txt
+)/
+'''
+
+[tool.isort]
+profile = "black"  # Keep formatting consistent with Black
+skip = ["__pycache__", "migrations", "venv", ".flaskenv", ".gitignore", "README.md", "requirements.txt"]

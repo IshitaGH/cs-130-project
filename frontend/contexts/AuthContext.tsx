@@ -1,19 +1,25 @@
 import { useContext, createContext, type PropsWithChildren } from 'react';
 import { useStorageState } from '@/hooks/useStorageState';
 import { apiSignIn, apiCreateAccount } from '@/utils/api/apiClient'
+import { jwtDecode } from 'jwt-decode';
+import { useState, useEffect } from 'react';
 
 const AuthContext = createContext<{
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => void;
-  createAccount: (username: string, password: string) => Promise<void>;
+  createAccount: (firstName: string, lastName: string, username: string, password: string) => Promise<void>;
   session?: string | null;
-  isLoading: boolean;
+  userId?: number | null;
+  sessionLoading: boolean;
+  signInLoading: boolean;
 }>({
   signIn: async () => {},
   signOut: () => {},
   createAccount: async () => {},
   session: null,
-  isLoading: false,
+  userId: null,
+  sessionLoading: false,
+  signInLoading: false,
 });
 
 // useSession must be wrapped in a <SessionProvider />
@@ -22,12 +28,37 @@ export function useSession() {
   return value;
 }
 
+// Helper function to decode JWT and extract user information
+function getUserIdFromToken(token: string): number | null {
+  try {
+    // const decoded: { sub: string } = jwtDecode(token);
+    // return Number(decoded.sub); // the userId from the backend gets stored as a string in the JWT
+    return 100;
+  } catch (error) {
+    console.error('Error decoding JWT:', error);
+    return null;
+  }
+}
+
 export function SessionProvider({ children }: PropsWithChildren) {
   // session is the JWT and will be passed into the AuthContext
-  const [[isLoading, session], setSession] = useStorageState('session');
+  const [[sessionLoading, session], setSession] = useStorageState('session');
+  const [signInLoading, setSignInLoading] = useState<boolean>(false);
+  const [userId, setUserId] = useState<number | null>(null);
+
+  // Update userId whenever session changes
+  useEffect(() => {
+    if (session) {
+      const id = getUserIdFromToken(session);
+      setUserId(id);
+    } else {
+      setUserId(null);
+    }
+  }, [session]);
 
   async function signIn(username: string, password: string) {
     try {
+      setSignInLoading(true);
       console.log("Calling apiSignIn...");
       const jwt = await apiSignIn(username, password);
       console.log("Sign-in successful, setting session with JWT token.");
@@ -36,6 +67,8 @@ export function SessionProvider({ children }: PropsWithChildren) {
       // Pass the error message up so the UI can display it
       console.error('Login error:', error.message);
       throw error;
+    } finally {
+      setSignInLoading(false);
     }
   }
 
@@ -43,10 +76,10 @@ export function SessionProvider({ children }: PropsWithChildren) {
     setSession(null);
   }
 
-  async function createAccount(username: string, password: string) {
+  async function createAccount(firstName: string, lastName: string, username: string, password: string) {
     try {
       console.log("Calling apiCreateAccount...");
-      await apiCreateAccount(username, password);
+      await apiCreateAccount(firstName, lastName, username, password);
       console.log("User successfully created.");
     } catch (error: any) {
       console.error('Registration error:', error.message);
@@ -55,7 +88,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
   }
 
   return (
-    <AuthContext.Provider value={{ signIn, signOut, createAccount, session, isLoading }}>
+    <AuthContext.Provider value={{ signIn, signOut, createAccount, session, userId, sessionLoading, signInLoading }}>
       {children}
     </AuthContext.Provider>
   );

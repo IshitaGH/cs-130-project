@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import { apiGetMessage } from "@/utils/api/apiClient";
 
 export default function HomeScreen() {
-  const { session, isLoading } = useSession();
+  const { session, sessionLoading } = useSession();
   const [backendMessage, setBackendMessage] = useState<string | null>("loading");
 
   useEffect(() => {
     const fetchMessage = async () => {
+      if (!session) return;
+
       try {
         const greeting = await apiGetMessage(session);
         setBackendMessage(greeting);
@@ -16,11 +18,11 @@ export default function HomeScreen() {
         console.error("Error fetching message:", error);
       }
     };
-  
+
     fetchMessage();
   }, [session]);
 
-  if (isLoading) {
+  if (sessionLoading) {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Loading...</Text>

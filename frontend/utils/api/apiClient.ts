@@ -1,63 +1,129 @@
-// localhost doesn't work because Flask does not by default allow localhost in CORS policy (even though it resolves to 127.0.0.1)
-// const API_URL = "http://127.0.0.1:5000";
-const API_URL = "http://172.16.0.2:5000";  // set to your computer's IP if trying to use Expo Go
+// Create a file at frontend/config.ts that exports constant API_URL with your device's IP address
+// Example: `export const API_URL = "http://YOUR_LOCAL_IP_ADDRESS:5000";`
+// Localhost might not work because Flask doesn't recognize it in its CORS policy
+import { API_URL } from '@/config';
 
 // returns jwt or throws an error
 export async function apiSignIn(username: string, password: string) {
-  console.log("Attempting to sign in:", { username, password }); 
   const response = await fetch(`${API_URL}/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password }),
   });
-  console.log("Server response status:", response.status);
 
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || 'Failed to sign in');
   }
-
   
   const data = await response.json();
-  console.log("Received JWT token:");
   return data.access_token;
 }
 
 // returns void or throws an error
-export async function apiCreateAccount(username: string, password: string) {
-  console.log("Attempting to create account for:", { username, password });
+export async function apiCreateAccount(firstName: string, lastName: string, username: string, password: string) {
   const response = await fetch(`${API_URL}/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ firstName, lastName, username, password }),
   });
-
-  console.log("Server response status:", response.status);  // Log status code
-
 
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || 'Failed to create account');
   }
-  console.log("User successfully registered");
+}
+
+export async function apiGetRoom(session: any) {
+  // const response = await fetch(`${API_URL}/room`, {
+  //   method: 'GET',
+  // });
+
+  // if (!response.ok) {
+  //   const errorData = await response.json();
+  //   throw new Error('Failed to fetch Room');
+  // }  
+  
+  // const data = await response.json();
+  // return data;
+  return { room_id: null }
+}
+
+export async function apiJoinRoom(session: any, inviteCode: string) {
+  // const response = await fetch(`${API_URL}/rooms/join`, {
+  //   method: 'POST',
+  //   headers: { 'Content-Type': 'application/json' },
+  //   body: JSON.stringify({ 'invite_code' : inviteCode}),
+  // });
+
+  // if (!response.ok) {
+  //   const errorData = await response.json();
+  //   throw new Error('Failed to fetch Room');
+  // }  
+  
+  // const data = await response.json();
+  // return data;
+  return { room_id: 1 }
+}
+
+export async function apiCreateRoom(session: any, roomName: string) {
+  // const response = await fetch(`${API_URL}/rooms`, {
+  //   method: 'POST',
+  //   headers: { 'Content-Type': 'application/json' },
+  //   body: JSON.stringify({ name: roomName}),
+  // });
+
+  // if (!response.ok) {
+  //   const errorData = await response.json();
+  //   throw new Error('Failed to fetch Room');
+  // }  
+  
+  // const data = await response.json();
+  // return data;
+  return { room_id: 1 }
+}
+
+export async function apiLeaveRoom(session: any) {
+  // const response = await fetch(`${API_URL}/rooms/leave`, {
+  //   method: 'POST',
+  // });
+
+  // if (!response.ok) {
+  //   const errorData = await response.json();
+  //   throw new Error('Failed to fetch Room');
+  // }  
+  
+  // const data = await response.json();
+  // return data;
+  return { room_id: null }
 }
 
 // returns the message from the backend or throws an error
 export async function apiGetMessage(session: any) {
-  console.log("Fetching protected message using session token:", session);
-
   const response = await fetch(`${API_URL}/protected`, {
     headers: {
       Authorization: `Bearer ${session}`,
     },
   });
 
-  console.log("Server response status:", response.status);  // Log status code
+  if (!response.ok) {
+    throw new Error('Failed to get message');
+  }
+  const data = await response.json();
+  return data.message;
+}
+
+// returns the message from the backend or throws an error
+export async function apiGetChores(session: any) {
+  const response = await fetch(`${API_URL}/chores`, {
+    headers: {
+      Authorization: `Bearer ${session}`,
+    },
+  });
 
   if (!response.ok) {
     throw new Error('Failed to get message');
   }
   const data = await response.json();
-  console.log("Received protected message");
-  return data.message;
+  return data;
 }
