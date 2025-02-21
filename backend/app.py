@@ -17,6 +17,7 @@ from models.expense import Expense, Roommate_Expense
 from models.roommate import Room, Roommate
 from routes.room import create_room, get_current_room, join_room, leave_room
 from routes.roommate import create_roommate
+from routes.expense import create_expense
 
 load_dotenv()
 
@@ -116,3 +117,7 @@ def join_room_route():
 @app.route("/rooms/leave", methods=["POST"])
 def leave_room_route():
     return leave_room()
+
+@app.route("/rooms/expense", methods=["POST"])
+def create_expense_route():
+    return create_expense()
