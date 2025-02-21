@@ -11,9 +11,18 @@ from flask_jwt_extended import (
 
 from database import db
 from models.expense import Expense
+from models.roommate import Room, Roommate
 
 @jwt_required()
 def create_expense():
+    roommate_id = get_jwt_identity()
+    roommate = Roommate.query.get(roommate_id)
+    if not roommate or not roommate.room_fkey:
+        return jsonify({"room_id": None}), 200
+    room = Room.query.get(roommate.room_fkey)
+    if not room:
+        return jsonify({"message": "Room not found"}), 404
+
     data = request.get_json()
 
     new_expense = Expense(
@@ -22,8 +31,8 @@ def create_expense():
         title=data["title"].strip(),
         cost=data["cost"],
         description=data["description"].strip(),
-        room_fkey=data["room_fkey"],
-        roommate_fkey=data["roommate_fkey"]
+        room_fkey=room.id,
+        roommate_fkey=roommate.id
     )
 
     db.session.add(new_expense)
