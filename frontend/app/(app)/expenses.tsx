@@ -206,66 +206,67 @@ export default function ExpensesScreen() {
   };
 
   return (
-    <View style={styles.container}>
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>Current period balances</Text>
-      {roommates
-        .filter((name) => name !== CURRENT_USER) // Exclude the current user
-        .map((name) => (
-          <View key={name} style={styles.balanceRow}>
-            <Text style={styles.roommateName}>{name}:</Text>
-            <Text
-              style={[
-                styles.balanceAmount,
-                { color: balances[name] > 0 ? "#00D09E" : balances[name] < 0 ? "#E57373" : "#333" },
-              ]}
-            >
-              ${balances[name]?.toFixed(2) || "0.00"}
-            </Text>
-          </View>
+    <View style={{ flex: 1 }}>
+      <View style={styles.container}>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Current period balances</Text>
+          {roommates
+            .filter((name) => name !== CURRENT_USER) // Exclude the current user
+            .map((name) => (
+              <View key={name} style={styles.balanceRow}>
+                <Text style={styles.roommateName}>{name}:</Text>
+                <Text
+                  style={[
+                    styles.balanceAmount,
+                    { color: balances[name] > 0 ? "#00D09E" : balances[name] < 0 ? "#E57373" : "#333" },
+                  ]}
+                >
+                  ${balances[name]?.toFixed(2) || "0.00"}
+                </Text>
+              </View>
+            ))}
+        </View>
+
+        {expenseCards.map((card) => (
+          <ExpenseCard key={card.title} title={card.title} current={card.current} expenses={card.expenses} updateExpenses={updateExpenses} />
         ))}
-    </View>
 
-
-      {expenseCards.map((card) => (
-        <ExpenseCard key={card.title} title={card.title} current={card.current} expenses={card.expenses} updateExpenses={updateExpenses} />
-      ))}
-
+        <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalContainer}>
+            <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
+              <Text style={styles.modalTitle}>Add Expense</Text>
+              <TextInput style={styles.input} placeholder="Description" value={description} onChangeText={setDescription} />
+              <TextInput style={styles.input} placeholder="Amount" keyboardType="numeric" value={amount} onChangeText={setAmount} />
+              <Picker
+                selectedValue={payer}
+                onValueChange={(itemValue) => setPayer(itemValue)}
+                style={styles.input}
+              >
+                {roommates.map((roommate) => (
+                  <Picker.Item key={roommate} label={roommate} value={roommate} />
+                ))}
+              </Picker>
+              <TouchableOpacity style={styles.submitButton} onPress={addExpense}>
+                <Text style={styles.submitButtonText}>Save Expense</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+                <Text style={styles.closeButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </KeyboardAvoidingView>
+        </Modal>
+      </View>
+      
       <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
         <MaterialIcons name="add" size={24} color="#FFFFFF" />
         <Text style={styles.fabText}>Add Expense</Text>
       </TouchableOpacity>
-
-      <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalContainer}>
-          <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
-            <Text style={styles.modalTitle}>Add Expense</Text>
-            <TextInput style={styles.input} placeholder="Description" value={description} onChangeText={setDescription} />
-            <TextInput style={styles.input} placeholder="Amount" keyboardType="numeric" value={amount} onChangeText={setAmount} />
-            <Picker
-              selectedValue={payer}
-              onValueChange={(itemValue) => setPayer(itemValue)}
-              style={styles.input}
-            >
-              {roommates.map((roommate) => (
-                <Picker.Item key={roommate} label={roommate} value={roommate} />
-              ))}
-            </Picker>
-            <TouchableOpacity style={styles.submitButton} onPress={addExpense}>
-              <Text style={styles.submitButtonText}>Save Expense</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-              <Text style={styles.closeButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </KeyboardAvoidingView>
-      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#FFFFFF" },
+  container: { flex: 1, overflow: 'scroll', padding: 20, backgroundColor: "#FFFFFF" },
   card: { backgroundColor: "#DFF7E280", borderRadius: 12, padding: 15, marginBottom: 20 },
   cardTitle: { fontSize: 18, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 10 },
