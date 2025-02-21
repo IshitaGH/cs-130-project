@@ -207,25 +207,24 @@ export default function ExpensesScreen() {
 
   return (
     <View style={styles.container}>
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>Current period balances</Text>
-      {roommates
-        .filter((name) => name !== CURRENT_USER) // Exclude the current user
-        .map((name) => (
-          <View key={name} style={styles.balanceRow}>
-            <Text style={styles.roommateName}>{name}:</Text>
-            <Text
-              style={[
-                styles.balanceAmount,
-                { color: balances[name] > 0 ? "#00D09E" : balances[name] < 0 ? "#E57373" : "#333" },
-              ]}
-            >
-              ${balances[name]?.toFixed(2) || "0.00"}
-            </Text>
-          </View>
-        ))}
-    </View>
-
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Current period balances</Text>
+        {roommates
+          .filter((name) => name !== CURRENT_USER) // Exclude the current user
+          .map((name) => (
+            <View key={name} style={styles.balanceRow}>
+              <Text style={styles.roommateName}>{name}:</Text>
+              <Text
+                style={[
+                  styles.balanceAmount,
+                  { color: balances[name] > 0 ? "#00D09E" : balances[name] < 0 ? "#E57373" : "#333" },
+                ]}
+              >
+                ${balances[name]?.toFixed(2) || "0.00"}
+              </Text>
+            </View>
+          ))}
+      </View>
 
       {expenseCards.map((card) => (
         <ExpenseCard key={card.title} title={card.title} current={card.current} expenses={card.expenses} updateExpenses={updateExpenses} />
@@ -265,7 +264,7 @@ export default function ExpensesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#FFFFFF" },
+  container: { flex: 1, overflow: 'scroll', padding: 20, backgroundColor: "#FFFFFF" },
   card: { backgroundColor: "#DFF7E280", borderRadius: 12, padding: 15, marginBottom: 20 },
   cardTitle: { fontSize: 18, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 10 },
