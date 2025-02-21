@@ -1,11 +1,18 @@
 from datetime import datetime
 
 from flask import jsonify, request
+from flask_jwt_extended import (
+    JWTManager,
+    create_access_token,
+    get_jwt_identity,
+    jwt_required,
+)
+
 
 from database import db
 from models.expense import Expense
 
-
+@jwt_required()
 def create_expense():
     data = request.get_json()
 
