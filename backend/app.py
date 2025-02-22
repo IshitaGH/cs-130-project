@@ -17,7 +17,7 @@ from models.expense import Expense, Roommate_Expense
 from models.roommate import Room, Roommate
 from routes.room import create_room, get_current_room, join_room, leave_room
 from routes.roommate import create_roommate
-from routes.expense import create_expense, get_expense, update_expense
+from routes.expense import create_expense, get_expense, update_expense, remove_expense
 
 load_dotenv()
 
@@ -129,3 +129,7 @@ def get_expense_route():
 @app.route("/rooms/expense", methods=["PUT"])
 def update_expense_route():
     return update_expense()
+
+@app.route("/rooms/expense", methods=["DELETE"])
+def remove_exense_route():
+    return remove_expense()

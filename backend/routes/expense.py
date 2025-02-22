@@ -123,3 +123,28 @@ def update_expense():
         ),
         201,
     )
+
+@jwt_required()
+def remove_expense():
+    roommate_id = get_jwt_identity()
+    roommate = Roommate.query.get(roommate_id)
+    if not roommate or not roommate.room_fkey:
+        return jsonify({"room_id": None}), 200
+    room = Room.query.get(roommate.room_fkey)
+    if not room:
+        return jsonify({"message": "Room not found"}), 404
+
+    data = request.get_json()
+    
+    expense = Expense.query.filter_by(
+        roommate_fkey=roommate_id, 
+        room_fkey=room.id,
+        title=data["title"].strip()
+    ).first()
+    
+    if expense:
+        db.session.delete(expense)
+        db.session.commit()
+        return jsonify({"message": "Expense deleted successfully"})
+    else:
+        return jsonify({"message": "Expense not found"}), 4404
