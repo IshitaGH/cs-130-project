@@ -64,7 +64,7 @@ def get_expense():
     if not room:
         return jsonify({"message": "Room not found"}), 404
 
-    expenses = Expense.query.filter_by(roommate_fkey=roommate_id).all()
+    expenses = Expense.query.filter_by(roommate_fkey=roommate.id).all()
 
     result = []
     for expense in expenses:
@@ -81,3 +81,44 @@ def get_expense():
             }
         )
     return jsonify(result), 200
+
+@jwt_required()
+def update_expense():
+    roommate_id = get_jwt_identity()
+    roommate = Roommate.query.get(roommate_id)
+    if not roommate or not roommate.room_fkey:
+        return jsonify({"room_id": None}), 200
+    room = Room.query.get(roommate.room_fkey)
+    if not room:
+        return jsonify({"message": "Room not found"}), 404
+
+    data = request.get_json()
+    
+    expense = Expense.query.filter_by(
+        roommate_fkey=roommate_id, 
+        room_fkey=room.id,
+        title=data["title"].strip()
+    ).first()
+    
+    if expense:
+        expense.updated_at=datetime.utcnow()
+        expense.cost=data["cost"]
+        expense.description=data["description"].strip()
+    else:
+        return jsonify({"message": "Expense not found"}), 4404
+    
+    return (
+        jsonify(
+            {
+                "id": expense.id,
+                "title": expense.title,
+                "created_at": expense.created_at.isoformat(),
+                "updated_at": expense.updated_at.isoformat(),
+                "cost": expense.cost,
+                "description": expense.description,
+                "room_fkey": expense.room_fkey,
+                "roommate_fkey": expense.roommate_fkey
+            }
+        ),
+        201,
+    )
