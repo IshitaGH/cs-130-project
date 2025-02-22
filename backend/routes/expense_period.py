@@ -86,3 +86,23 @@ def get_expense_period():
             }
         )   
     return jsonify(expense_period_result), 200
+
+@jwt_required()
+def close_expense_period():
+    roommate_id = get_jwt_identity()
+    roommate = Roommate.query.get(roommate_id)
+    if not roommate or not roommate.room_fkey:
+        return jsonify({"room_id": None}), 200
+    room = Room.query.get(roommate.room_fkey)
+    if not room:
+        return jsonify({"message": "Room not found"}), 404
+
+    expense_period = Expense_Period.query.filter_by(room_fkey=room.id, open=True).first()
+
+    if expense_period:
+        expense_period.open=False
+        expense_period.end_date=datetime.utcnow()
+        db.session.commit()
+        return create_expense_period()
+    else:
+        return jsonify({"message": "Open expense period not found"})
