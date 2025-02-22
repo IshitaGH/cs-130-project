@@ -22,14 +22,12 @@ def create_expense_period():
     room = Room.query.get(roommate.room_fkey)
     if not room:
         return jsonify({"message": "Room not found"}), 404
-
-    data = request.get_json()
     
     new_expense_period = Expense_Period(
         room_fkey=room.id,
         start_date=datetime.utcnow(),
         end_date=datetime.utcnow(),
-        open=data["open"]
+        open=True
     )
 
     db.session.add(new_expense_period)
