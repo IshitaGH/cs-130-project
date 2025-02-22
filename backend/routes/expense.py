@@ -10,7 +10,7 @@ from flask_jwt_extended import (
 
 
 from database import db
-from models.expense import Expense
+from models.expense import Expense, Expense_Period
 from models.roommate import Room, Roommate
 
 @jwt_required()
@@ -22,15 +22,21 @@ def create_expense():
     room = Room.query.get(roommate.room_fkey)
     if not room:
         return jsonify({"message": "Room not found"}), 404
+    
+    expense_period = Expense_Period.query.filter_by(room_fkey=room.id, open=True).first()
+
+    if not expense_period:
+        return jsonify({"message": "Open expense period not found"})
 
     data = request.get_json()
-
+    
     new_expense = Expense(
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
         title=data["title"].strip(),
         cost=data["cost"],
         description=data["description"].strip(),
+        expense_period_fkey=expense_period.id,
         room_fkey=room.id,
         roommate_fkey=roommate.id
     )
@@ -47,6 +53,7 @@ def create_expense():
                 "updated_at": new_expense.updated_at.isoformat(),
                 "cost": new_expense.cost,
                 "description": new_expense.description,
+                "expense_period_fkey": new_expense.expense_period_fkey,
                 "room_fkey": new_expense.room_fkey,
                 "roommate_fkey": new_expense.roommate_fkey
             }
