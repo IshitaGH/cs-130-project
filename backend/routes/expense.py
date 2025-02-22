@@ -53,3 +53,31 @@ def create_expense():
         ),
         201,
     )
+
+@jwt_required()
+def get_expense():
+    roommate_id = get_jwt_identity()
+    roommate = Roommate.query.get(roommate_id)
+    if not roommate or not roommate.room_fkey:
+        return jsonify({"room_id": None}), 200
+    room = Room.query.get(roommate.room_fkey)
+    if not room:
+        return jsonify({"message": "Room not found"}), 404
+
+    expenses = Expense.query.filter_by(roommate_fkey=roommate_id).all()
+
+    result = []
+    for expense in expenses:
+        result.append(
+            {
+                "id": expense.id,
+                "title": expense.title,
+                "created_at": expense.created_at.isoformat(),
+                "updated_at": expense.updated_at.isoformat(),
+                "cost": expense.cost,
+                "description": expense.description,
+                "room_fkey": expense.room_fkey,
+                "roommate_fkey": expense.roommate_fkey
+            }
+        )
+    return jsonify(result), 200
