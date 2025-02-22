@@ -45,3 +45,44 @@ def create_expense_period():
         ),
         201,
     )
+    
+@jwt_required()
+def get_expense_period():
+    roommate_id = get_jwt_identity()
+    roommate = Roommate.query.get(roommate_id)
+    if not roommate or not roommate.room_fkey:
+        return jsonify({"room_id": None}), 200
+    room = Room.query.get(roommate.room_fkey)
+    if not room:
+        return jsonify({"message": "Room not found"}), 404
+
+    expense_periods = Expense_Period.query.filter_by(room_fkey=room.id).all()
+
+    expense_period_result = []
+    for expense_period in expense_periods:
+        expense_result = []
+        expenses = Expense.query.filter_by(expense_period_fkey=expense_period.id).all()
+        for expense in expenses:
+            expense_result.append(
+                {
+                    "id": expense.id,
+                    "title": expense.title,
+                    "created_at": expense.created_at.isoformat(),
+                    "updated_at": expense.updated_at.isoformat(),
+                    "cost": expense.cost,
+                    "description": expense.description,
+                    "expense_period_fkey": expense.expense_period_fkey,
+                    "room_fkey": expense.room_fkey,
+                    "roommate_fkey": expense.roommate_fkey
+                }
+            )
+        expense_period_result.append(
+            {
+                "id": expense_period.id,
+                "room_fkey": expense_period.room_fkey,
+                "start_date": expense_period.start_date.isoformat(),
+                "end_date": expense_period.end_date.isoformat(),
+                "expenses": expense_result
+            }
+        )   
+    return jsonify(expense_period_result), 200
