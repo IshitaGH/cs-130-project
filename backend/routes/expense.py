@@ -102,8 +102,8 @@ def update_expense():
     
     if expense:
         expense.updated_at=datetime.utcnow()
-        expense.cost=data["cost"]
-        expense.description=data["description"].strip()
+        expense.cost=data["cost"] if "cost" in data else expense.cost
+        expense.description=data["description"].strip() if "description" in data else expense.description
         db.session.commit()
     else:
         return jsonify({"message": "Expense not found"}), 4404
