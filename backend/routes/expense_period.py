@@ -24,9 +24,7 @@ def create_expense_period():
         return jsonify({"message": "Room not found"}), 404
 
     data = request.get_json()
-    # data["open"]
-
-    # return "hello"
+    
     new_expense_period = Expense_Period(
         room_fkey=room.id,
         start_date=datetime.utcnow(),
