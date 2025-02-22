@@ -64,7 +64,7 @@ def get_expense():
     if not room:
         return jsonify({"message": "Room not found"}), 404
 
-    expenses = Expense.query.filter_by(roommate_fkey=roommate.id).all()
+    expenses = Expense.query.filter_by(room_fkey=room.id).all()
 
     result = []
     for expense in expenses:
@@ -104,6 +104,7 @@ def update_expense():
         expense.updated_at=datetime.utcnow()
         expense.cost=data["cost"]
         expense.description=data["description"].strip()
+        db.session.commit()
     else:
         return jsonify({"message": "Expense not found"}), 4404
     
