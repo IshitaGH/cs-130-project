@@ -83,6 +83,7 @@ def get_expense():
                 "updated_at": expense.updated_at.isoformat(),
                 "cost": expense.cost,
                 "description": expense.description,
+                "expense_period_fkey": expense.expense_period_fkey,
                 "room_fkey": expense.room_fkey,
                 "roommate_fkey": expense.roommate_fkey
             }
