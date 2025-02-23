@@ -106,3 +106,20 @@ def close_expense_period():
         return create_expense_period()
     else:
         return jsonify({"message": "Open expense period not found"})
+
+@jwt_required()
+def delete_expense_period():
+    data = request.get_json()
+    
+    expense_period = Expense_Period.query.filter_by(id=data["id"]).first()
+    
+    expenses = Expense.query.filter_by(expense_period_fkey=expense_period.id).all()
+    
+    if expense_period:
+        db.session.delete(expense_period)
+        for expense in expenses:
+            db.session.delete(expense)
+        db.session.commit()
+        return jsonify({"message": "Expense period deleted successfully"})
+    else:
+        return jsonify({"message": "Expense period not found"}), 4404
