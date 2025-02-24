@@ -136,10 +136,32 @@ def update_expense():
         expense.updated_at=datetime.utcnow()
         expense.cost=data["cost"] if "cost" in data else expense.cost
         expense.description=data["description"].strip() if "description" in data else expense.description
-        db.session.commit()
+        
+        if "expenses" in data:
+            expenses = data.get("expenses", [])
+            for ex in expenses:
+                roommate = Roommate.query.filter_by(room_fkey=room.id, username=ex.get("username").strip()).first()
+                if roommate:
+                    roommate_expense=Roommate_Expense.query.filter_by(roommate_fkey=roommate.id, expense_fkey=expense.id).first()
+                    roommate_expense.percentage=ex.get("percentage")
+                else:
+                    return jsonify(message=f"Rooommate " + ex.get("username").strip() + " not found")
     else:
         return jsonify({"message": "Expense not found"}), 4404
     
+    db.session.commit()
+    
+    roommate_expenses_result=[]
+    roommate_expenses=Roommate_Expense.query.filter_by(expense_fkey=expense.id).all()
+    for roommate_expense in roommate_expenses:
+        roommate_expenses_result.append(
+                {
+                    "expense_fkey": roommate_expense.expense_fkey,
+                    "roommate_fkey": roommate_expense.roommate_fkey,
+                    "percentage": roommate_expense.percentage
+                }
+            )
+
     return (
         jsonify(
             {
@@ -151,7 +173,8 @@ def update_expense():
                 "description": expense.description,
                 "expense_period_fkey": expense.expense_period_fkey,
                 "room_fkey": expense.room_fkey,
-                "roommate_fkey": expense.roommate_fkey
+                "roommate_fkey": expense.roommate_fkey,
+                "roommate_expenses": roommate_expenses_result
             }
         ),
         201,
