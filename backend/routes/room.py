@@ -119,7 +119,7 @@ def leave_room():
 
     roommate.room_fkey = None
     db.session.commit()
-    return "", 200
+    return {}, 200
 
 
 @jwt_required()

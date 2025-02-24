@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "@/contexts/AuthContext";
 import { apiGetRoom } from "@/utils/api/apiClient";
 import {
@@ -17,25 +17,30 @@ export default function LoginScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const { signIn } = useSession();
+  const { session, signIn, sessionLoading, signInLoading } = useSession();
   const router = useRouter();
 
   const handleLogin = async () => {
     setError(null);
     try {
       await signIn(username, password);
-      const roomData = await apiGetRoom();
-      if (roomData.room_id === null) {
-        router.replace("/room-landing")
-      }
-      else {
-        console.log(roomData.room_id)
-        router.replace("/home");
-      }
     } catch (err: any) {
       setError(err.message);
     }
   };
+
+  useEffect(() => {
+    if (!sessionLoading && !signInLoading && session) {
+      (async () => {
+        const roomData = await apiGetRoom(session);
+        if (roomData.room_id === null) {
+          router.replace("/room-landing");
+        } else {
+          router.replace("/home");
+        }
+      })();
+    }
+  }, [session, sessionLoading, signInLoading]);
 
   return (
     <KeyboardAvoidingView

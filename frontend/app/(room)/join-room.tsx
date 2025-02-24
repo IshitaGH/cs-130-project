@@ -1,17 +1,25 @@
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
+import { useSession } from "@/contexts/AuthContext";
+import { apiJoinRoom } from "@/utils/api/apiClient";
 
 export default function JoinRoomScreen() {
   const [inviteCode, setInviteCode] = useState("");
   const router = useRouter();
+  const { session } = useSession();
 
-  const handleJoinRoom = () => {
-    // Logic to join a room using the invite code goes here
-    console.log("Joining room with invite code:", inviteCode);
+  const handleJoinRoom = async () => {
+    try {
+      await apiJoinRoom(session, inviteCode);
+      router.replace("/home");
+    } catch (error) {
+      console.error(error);
+      return;
+    }
+    console.log("Room joined successfully");
     router.replace("/home");
   };
-
 
   return (
     <View style={styles.container}>

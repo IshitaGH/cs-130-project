@@ -7,11 +7,23 @@ export default function SettingsScreen() {
   const { session, signOut } = useSession();
   const router = useRouter();
 
+  const handleLeaveRoom = async () => {
+    let data;
+    try {
+      data = await apiLeaveRoom(session);
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+    console.log("Room left");
+    router.replace("/room-landing");
+  };
+
   return (
     <View style={styles.container}>
       <TouchableOpacity
         style={styles.button}
-        onPress={async () => { apiLeaveRoom(session); router.replace("/room-landing") }}>
+        onPress={handleLeaveRoom}>
         <Text style={styles.buttonText}>Leave Room</Text>
       </TouchableOpacity>
       <TouchableOpacity
