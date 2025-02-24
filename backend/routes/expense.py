@@ -96,9 +96,19 @@ def get_expense():
         return jsonify({"message": "Room not found"}), 404
 
     expenses = Expense.query.filter_by(room_fkey=room.id).all()
-
+    
     result = []
     for expense in expenses:
+        roommate_expenses_result=[]
+        roommate_expenses=Roommate_Expense.query.filter_by(expense_fkey=expense.id).all()
+        for roommate_expense in roommate_expenses:
+            roommate_expenses_result.append(
+                    {
+                        "expense_fkey": roommate_expense.expense_fkey,
+                        "roommate_fkey": roommate_expense.roommate_fkey,
+                        "percentage": roommate_expense.percentage
+                    }
+                )
         result.append(
             {
                 "id": expense.id,
@@ -109,7 +119,8 @@ def get_expense():
                 "description": expense.description,
                 "expense_period_fkey": expense.expense_period_fkey,
                 "room_fkey": expense.room_fkey,
-                "roommate_fkey": expense.roommate_fkey
+                "roommate_fkey": expense.roommate_fkey,
+                "roommate_expenses": roommate_expenses_result
             }
         )
     return jsonify(result), 200
