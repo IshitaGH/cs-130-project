@@ -10,7 +10,7 @@ from flask_jwt_extended import (
 
 
 from database import db
-from models.expense import Expense, Expense_Period
+from models.expense import Expense, Expense_Period, Roommate_Expense
 from models.roommate import Room, Roommate
 
 @jwt_required()
@@ -42,6 +42,29 @@ def create_expense():
     )
 
     db.session.add(new_expense)
+    
+    expenses = data.get("expenses", [])
+
+    roommate_expenses=[]
+    for expense in expenses:
+        roommate=Roommate.query.filter_by(room_fkey=room.id, username=expense.get("username").strip()).first()
+        if roommate:
+            new_roommate_expense = Roommate_Expense(
+                expense_fkey=new_expense.id,
+                roommate_fkey=roommate.id,
+                percentage=expense.get("percentage")
+            )
+            db.session.add(new_roommate_expense)
+            roommate_expenses.append(
+                {
+                    "expense_fkey": new_roommate_expense.expense_fkey,
+                    "roommate_fkey": new_roommate_expense.roommate_fkey,
+                    "percentage": new_roommate_expense.percentage
+                }
+            )
+        else:
+            return jsonify(message=f"Rooommate " + expense.get("username").strip() + " not found")
+
     db.session.commit()
 
     return (
@@ -55,7 +78,8 @@ def create_expense():
                 "description": new_expense.description,
                 "expense_period_fkey": new_expense.expense_period_fkey,
                 "room_fkey": new_expense.room_fkey,
-                "roommate_fkey": new_expense.roommate_fkey
+                "roommate_fkey": new_expense.roommate_fkey,
+                "roommate_expenses": roommate_expenses
             }
         ),
         201,
