@@ -25,7 +25,7 @@ export async function apiCreateAccount(firstName: string, lastName: string, user
   const response = await fetch(`${API_URL}/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ firstName, lastName, username, password }),
+    body: JSON.stringify({ first_name: firstName, last_name: lastName, username, password }),
   });
 
   if (!response.ok) {
@@ -35,67 +35,74 @@ export async function apiCreateAccount(firstName: string, lastName: string, user
 }
 
 export async function apiGetRoom(session: any) {
-  // const response = await fetch(`${API_URL}/room`, {
-  //   method: 'GET',
-  // });
+  const response = await fetch(`${API_URL}/room`, {
+    method: 'GET',
+    headers: { 'Authorization': `Bearer ${session}` },
+  });
 
-  // if (!response.ok) {
-  //   const errorData = await response.json();
-  //   throw new Error('Failed to fetch Room');
-  // }  
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.log(errorData);
+    throw new Error(errorData.message || 'Failed to fetch Room');
+  }
   
-  // const data = await response.json();
-  // return data;
-  return { room_id: null }
-}
-
-export async function apiJoinRoom(session: any, inviteCode: string) {
-  // const response = await fetch(`${API_URL}/rooms/join`, {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ 'invite_code' : inviteCode}),
-  // });
-
-  // if (!response.ok) {
-  //   const errorData = await response.json();
-  //   throw new Error('Failed to fetch Room');
-  // }  
-  
-  // const data = await response.json();
-  // return data;
-  return { room_id: 1 }
+  const data = await response.json();
+  return data;
 }
 
 export async function apiCreateRoom(session: any, roomName: string) {
-  // const response = await fetch(`${API_URL}/rooms`, {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ name: roomName}),
-  // });
+  const response = await fetch(`${API_URL}/rooms`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session}`
+    },
+    body: JSON.stringify({ room_name: roomName}),
+  });
 
-  // if (!response.ok) {
-  //   const errorData = await response.json();
-  //   throw new Error('Failed to fetch Room');
-  // }  
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to create Room');
+  }
+  const data = await response.json();
+  console.log(data);
+  return data;
+}
+
+export async function apiJoinRoom(session: any, inviteCode: string) {
+  const response = await fetch(`${API_URL}/rooms/join`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session}`
+    },
+    body: JSON.stringify({ 'invite_code' : inviteCode}),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to join Room');
+  }
   
-  // const data = await response.json();
-  // return data;
-  return { room_id: 1 }
+  const data = await response.json();
+  return data;
 }
 
 export async function apiLeaveRoom(session: any) {
-  // const response = await fetch(`${API_URL}/rooms/leave`, {
-  //   method: 'POST',
-  // });
+  const response = await fetch(`${API_URL}/rooms/leave`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${session}`
+    },
+  });
 
-  // if (!response.ok) {
-  //   const errorData = await response.json();
-  //   throw new Error('Failed to fetch Room');
-  // }  
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to leave Room');
+  }
   
-  // const data = await response.json();
-  // return data;
-  return { room_id: null }
+  const data = await response.json();
+  return data;
 }
 
 // returns the message from the backend or throws an error

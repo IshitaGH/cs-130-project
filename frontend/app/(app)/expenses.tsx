@@ -34,6 +34,8 @@ interface BalanceMap {
   [key: string]: number
 }
 
+const CURRENT_USER = "Caolinn"; //replace this with an API call when ready
+
 const initialMockExpenses = [
   {
     title: "Current period expenses",
@@ -55,13 +57,42 @@ const initialMockExpenses = [
 
 const roommates = ["Byron", "Claire", "Nira", "Nik", "Caolinn", "Ishita"];
 
+const calculatePersonalBalances = (expenses, setBalances) => {
+  let balanceSheet: BalanceMap = {};
+  roommates.forEach((roommate) => (balanceSheet[roommate] = 0));
+  let totalRoommates = roommates.length;
+
+  expenses.forEach(({ amount, payer }) => {
+    let splitAmount = amount / totalRoommates;
+    
+    roommates.forEach((roommate) => {
+      if (roommate !== CURRENT_USER) {
+        if (payer === CURRENT_USER) {
+          // You paid, so they owe you their share
+          balanceSheet[roommate] += splitAmount;
+        } else if (roommate === payer) {
+          // They paid, so you owe them your share
+          balanceSheet[roommate] -= splitAmount;
+        }
+      }
+    });
+  });
+
+  setBalances(balanceSheet); 
+};
+
 const ExpenseCard: React.FC<ExpenseCardProps> = ({ title, current, expenses, updateExpenses }) => {
   const [expanded, setExpanded] = useState<boolean>(current);
+  const [balances, setBalances] = useState<BalanceMap>({});
 
   const handleDeleteExpense = (expenseId: number) => {
     const updatedExpenses = expenses.filter((exp) => exp.id !== expenseId);
     updateExpenses(title, updatedExpenses);
   };
+
+  if (!current) {
+    useEffect(() => calculatePersonalBalances(expenses, setBalances), [expenses]);
+  }
 
   return (
     <View style={styles.card}>
@@ -80,13 +111,37 @@ const ExpenseCard: React.FC<ExpenseCardProps> = ({ title, current, expenses, upd
                   <Text style={styles.expenseDescription}>{item.description}: ${item.amount}</Text>
                   <Text style={styles.expensePayer}>Paid by {item.payer} on {item.date}</Text>
                 </View>
-                <TouchableOpacity onPress={() => handleDeleteExpense(item.id)}>
+                { current && <TouchableOpacity onPress={() => handleDeleteExpense(item.id)}>
                   <MaterialIcons name="delete" size={24} color="#E57373" />
-                </TouchableOpacity>
+                </TouchableOpacity> }
               </View>
             )}
             keyExtractor={(item) => item.id.toString()}
           />
+          
+          {!current && Object.keys(balances).length > 0 && (
+            <Text style={styles.balanceTitle}>Balances</Text>
+          )}
+
+          {!current && Object.keys(balances).length > 0 && (
+            <View style={styles.balancesContainer}>
+              {roommates
+                .filter((name) => name !== CURRENT_USER) // Exclude the current user
+                .map((name) => (
+                  <View key={name} style={styles.balanceRow}>
+                    <Text style={styles.roommateName}>{name}:</Text>
+                    <Text
+                      style={[
+                        styles.balanceAmount,
+                        { color: balances[name] > 0 ? "#00D09E" : balances[name] < 0 ? "#E57373" : "#333" },
+                      ]}
+                    >
+                      ${balances[name]?.toFixed(2) || "0.00"}
+                    </Text>
+                  </View>
+                ))}
+            </View>
+          )}
 
           {current && (
             <TouchableOpacity style={styles.expenseCloseButton} onPress={() => setExpanded(false)}>
@@ -100,7 +155,6 @@ const ExpenseCard: React.FC<ExpenseCardProps> = ({ title, current, expenses, upd
 };
 
 export default function ExpensesScreen() {
-  // const [expenses, setExpenses] = useState([...initialMockExpenses]);
   const [expenseCards, setExpenseCards] = useState<{ title: string; current: Boolean; expenses: Expense[] }[]>([...initialMockExpenses]);
   const [modalVisible, setModalVisible] = useState(false);
   const [description, setDescription] = useState("");
@@ -128,25 +182,7 @@ export default function ExpensesScreen() {
     }
   }, [modalVisible, slideAnim]);
 
-  const calculateBalances = () => {
-    let balanceSheet: BalanceMap = {};
-    roommates.forEach((roommate) => (balanceSheet[roommate] = 0));
-    let totalRoommates = roommates.length;
-
-    (expenseCards.find(card => card.current) ?? { expenses: [] }).expenses.forEach(({ amount, payer }) => {
-      let splitAmount = amount / totalRoommates;
-      roommates.forEach((roommate) => {
-        if (roommate === payer) {
-          balanceSheet[roommate] += amount - splitAmount;
-        } else {
-          balanceSheet[roommate] -= splitAmount;
-        }
-      });
-    });
-    setBalances(balanceSheet);
-  };
-
-  useEffect(calculateBalances, [expenseCards[0].expenses]);
+  useEffect(() => calculatePersonalBalances(expenseCards[0].expenses, setBalances), [expenseCards[0].expenses]);
 
   const addExpense = () => {
     if (!description || !amount || !payer) return;
@@ -170,66 +206,72 @@ export default function ExpensesScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Balances</Text>
-        {roommates.map((name) => (
-          <View key={name} style={styles.balanceRow}>
-            <Text style={styles.roommateName}>{name}:</Text>
-            <Text
-              style={[
-                styles.balanceAmount,
-                { color: balances[name] > 0 ? "#00D09E" : balances[name] < 0 ? "#E57373" : "#333" },
-              ]}
-            >
-              ${balances[name]?.toFixed(2) || "0.00"}
-            </Text>
-          </View>
+    <View style={{ flex: 1 }}>
+      <View style={styles.container}>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Current period balances</Text>
+          {roommates
+            .filter((name) => name !== CURRENT_USER) // Exclude the current user
+            .map((name) => (
+              <View key={name} style={styles.balanceRow}>
+                <Text style={styles.roommateName}>{name}:</Text>
+                <Text
+                  style={[
+                    styles.balanceAmount,
+                    { color: balances[name] > 0 ? "#00D09E" : balances[name] < 0 ? "#E57373" : "#333" },
+                  ]}
+                >
+                  ${balances[name]?.toFixed(2) || "0.00"}
+                </Text>
+              </View>
+            ))}
+        </View>
+
+        {expenseCards.map((card) => (
+          <ExpenseCard key={card.title} title={card.title} current={card.current} expenses={card.expenses} updateExpenses={updateExpenses} />
         ))}
+
+        <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalContainer}>
+            <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
+              <Text style={styles.modalTitle}>Add Expense</Text>
+              <TextInput style={styles.input} placeholder="Description" value={description} onChangeText={setDescription} />
+              <TextInput style={styles.input} placeholder="Amount" keyboardType="numeric" value={amount} onChangeText={setAmount} />
+              <Picker
+                selectedValue={payer}
+                onValueChange={(itemValue) => setPayer(itemValue)}
+                style={styles.input}
+              >
+                {roommates.map((roommate) => (
+                  <Picker.Item key={roommate} label={roommate} value={roommate} />
+                ))}
+              </Picker>
+              <TouchableOpacity style={styles.submitButton} onPress={addExpense}>
+                <Text style={styles.submitButtonText}>Save Expense</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+                <Text style={styles.closeButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </KeyboardAvoidingView>
+        </Modal>
       </View>
-
-      {expenseCards.map((card) => (
-        <ExpenseCard key={card.title} title={card.title} current={card.current} expenses={card.expenses} updateExpenses={updateExpenses} />
-      ))}
-
+      
       <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
         <MaterialIcons name="add" size={24} color="#FFFFFF" />
         <Text style={styles.fabText}>Add Expense</Text>
       </TouchableOpacity>
-
-      <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalContainer}>
-          <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
-            <Text style={styles.modalTitle}>Add Expense</Text>
-            <TextInput style={styles.input} placeholder="Description" value={description} onChangeText={setDescription} />
-            <TextInput style={styles.input} placeholder="Amount" keyboardType="numeric" value={amount} onChangeText={setAmount} />
-            <Picker
-              selectedValue={payer}
-              onValueChange={(itemValue) => setPayer(itemValue)}
-              style={styles.input}
-            >
-              {roommates.map((roommate) => (
-                <Picker.Item key={roommate} label={roommate} value={roommate} />
-              ))}
-            </Picker>
-            <TouchableOpacity style={styles.submitButton} onPress={addExpense}>
-              <Text style={styles.submitButtonText}>Save Expense</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-              <Text style={styles.closeButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </KeyboardAvoidingView>
-      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#FFFFFF" },
+  container: { flex: 1, overflow: 'scroll', padding: 20, backgroundColor: "#FFFFFF" },
   card: { backgroundColor: "#DFF7E280", borderRadius: 12, padding: 15, marginBottom: 20 },
   cardTitle: { fontSize: 18, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 10 },
+  balancesContainer: { margin: 15 },
+  balanceTitle: { fontSize: 18, fontWeight: "bold", color: "#007F5F", marginTop: 25 },
   balanceRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 5 },
   roommateName: { fontSize: 16, fontWeight: "bold", color: "#333" },
   balanceAmount: { fontSize: 16, fontWeight: "bold" },
@@ -245,7 +287,7 @@ const styles = StyleSheet.create({
   submitButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
   closeButton: { alignItems: "center", paddingVertical: 10 },
   closeButtonText: { fontSize: 16, color: "#007FFF", fontWeight: "bold" },
-  expenseCloseButton: { alignSelf: "center", marginTop: 10, paddingVertical: 10, paddingHorizontal: 20, backgroundColor: "#00D09E", padding: 10, borderRadius: 12 },
+  expenseCloseButton: { alignSelf: "center", marginTop: 30, paddingVertical: 10, paddingHorizontal: 20, backgroundColor: "#00D09E", padding: 10, borderRadius: 12 },
   expenseCloseButtonText: { color: "#FFFFFF", fontWeight: "bold" },
   fab: { position: "absolute", bottom: 20, right: 20, flexDirection: "row", backgroundColor: "#00D09E", padding: 10, borderRadius: 12 },
   fabText: { color: "#FFFFFF", fontWeight: "bold", marginLeft: 8, alignSelf: "center" },
