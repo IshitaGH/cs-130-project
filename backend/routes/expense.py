@@ -176,6 +176,9 @@ def remove_expense():
     ).first()
     
     if expense:
+        roommate_expenses=Roommate_Expense.query.filter_by(expense_fkey=expense.id).all()
+        for roommate_expense in roommate_expenses:
+            db.session.delete(roommate_expense)
         db.session.delete(expense)
         db.session.commit()
         return jsonify({"message": "Expense deleted successfully"})
