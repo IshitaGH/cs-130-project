@@ -9,11 +9,12 @@ from models.roommate import Roommate
 def create_roommate():
     data = request.json
 
-    if "name" not in data or not data["name"].strip():
+    name = data.get("name")
+    if not name:
         return jsonify({"error": "Roommate name is required"}), 400
 
     new_room = Roommate(
-        name=data["name"].strip(),
+        name=name,
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
     )

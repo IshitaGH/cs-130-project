@@ -14,9 +14,9 @@ from database import db, migrate
 from models.chore import Chore
 from models.expense import Expense, Roommate_Expense
 from models.roommate import Room, Roommate
+from routes.chore import create_chore
 from routes.room import create_room, get_current_room, join_room, leave_room
 from routes.roommate import create_roommate
-
 
 app = Flask(__name__)
 # The following environment variables are set in docker-compose.yml
@@ -60,6 +60,7 @@ def register():
     db.session.commit()
     return "", 201
 
+
 @app.route("/login", methods=["POST"])
 def login():
     data = request.get_json()
@@ -84,22 +85,32 @@ def protected():
         200,
     )
 
+
 # ROOM ROUTES
 @app.route("/room", methods=["GET"])
 def get_current_room_route():
     return get_current_room()
 
+
 @app.route("/rooms", methods=["POST"])
 def create_room_route():
     return create_room()
+
 
 @app.route("/rooms/join", methods=["POST"])
 def join_room_route():
     return join_room()
 
+
 @app.route("/rooms/leave", methods=["POST"])
 def leave_room_route():
     return leave_room()
+
+
+# CHORES ROUTES
+@app.route("/chores", methods=["POST"])
+def create_chore_route():
+    return create_chore()
 
 
 if __name__ == "__main__":
