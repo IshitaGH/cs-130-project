@@ -1,26 +1,19 @@
 import { useSession } from "@/contexts/AuthContext";
-import { View, Text, StyleSheet } from "react-native";
-import { useEffect, useState } from "react";
-import { apiGetMessage } from "@/utils/api/apiClient";
+import { View, Text, StyleSheet, FlatList } from "react-native";
+import { useState } from "react";
 
 export default function HomeScreen() {
-  const { session, sessionLoading } = useSession();
-  const [backendMessage, setBackendMessage] = useState<string | null>("loading");
+  const { sessionLoading } = useSession();
+  const roommates = [
+    { id: "1", name: "Byron" },
+    { id: "2", name: "Caolinn" },
+    { id: "3", name: "Claire" },
+    {id: "4", name: "Ishita" },
+    {id: "5", name: "Nik" },
+    {id: "6", name: "Nira" },
 
-  useEffect(() => {
-    const fetchMessage = async () => {
-      if (!session) return;
-
-      try {
-        const greeting = await apiGetMessage(session);
-        setBackendMessage(greeting);
-      } catch (error) {
-        console.error("Error fetching message:", error);
-      }
-    };
-
-    fetchMessage();
-  }, [session]);
+  ];
+  const joinCode = "8592";
 
   if (sessionLoading) {
     return (
@@ -32,21 +25,69 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{backendMessage}</Text>
+      <View style={styles.content}>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Room Code</Text>
+          <Text style={styles.joinCode}>{joinCode}</Text>
+        </View>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Roommates</Text>
+          <FlatList
+            data={roommates}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => <Text style={styles.roommate}>{item.name}</Text>}
+          />
+        </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
+  container: { 
+    flex: 1, 
+    padding: 20, 
+    backgroundColor: "#FFFFFF", 
+    justifyContent: "center", 
+    alignItems: "center" 
+  },
+  content: {
+    width: "100%",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#00D09E",
+  card: { 
+    backgroundColor: "#DFF7E280", 
+    borderRadius: 12, 
+    padding: 15, 
+    marginBottom: 20, 
+    alignItems: "center",
+    width: "90%",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
   },
+  cardTitle: { 
+    fontSize: 18, 
+    fontWeight: "bold", 
+    color: "#007F5F", 
+    marginBottom: 10 
+  },
+  joinCode: { 
+    fontSize: 22, 
+    fontWeight: "bold", 
+    color: "#333", 
+    backgroundColor: "#E0F7F5", 
+    padding: 10, 
+    borderRadius: 8, 
+    textAlign: "center", 
+    width: "100%"
+  },
+  roommate: { 
+    fontSize: 16, 
+    fontWeight: "bold", 
+    color: "#333", 
+    padding: 5, 
+    textAlign: "center" 
+  }
 });
