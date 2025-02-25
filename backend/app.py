@@ -26,7 +26,6 @@ app.config["JWT_SECRET_KEY"] = os.getenv(
 )  # Change this to a strong secret key. Used to sign all JWT's
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://myuser:securepassword@db:5432/mydatabase"
 
 jwt = JWTManager(app)  # Must take app as a parameter to use secret key
 bcrypt = Bcrypt(app)
