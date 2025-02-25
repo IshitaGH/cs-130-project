@@ -5,6 +5,11 @@ from sqlalchemy.orm import relationship
 
 from database import db
 
+from datetime import datetime, timedelta
+from sqlalchemy import Column, DateTime, Interval, Boolean, String, Integer, ForeignKey
+from sqlalchemy.orm import relationship
+from database import db
+from models.roommate import Roommate
 
 class Chore(db.Model):
     __tablename__ = "chores"
@@ -17,13 +22,16 @@ class Chore(db.Model):
         nullable=False,
         onupdate=datetime.now,
     )
-    start_date = Column(DateTime, default=datetime.utcnow, nullable=False)
-    duration = Column(Interval, default=timedelta(days=1), nullable=False)
-    title = Column(String, nullable=False)
+    start_date = Column(DateTime, default=datetime.utcnow, nullable=False)  # auto-set at creation (should be midnight)
+    end_date = Column(DateTime, nullable=False)
+    duration = Column(Interval, nullable=False)  # computed as end_date - start_date in the api
     autorotate = Column(Boolean, nullable=False)
     is_task = Column(Boolean, default=False, nullable=False)
     completed = Column(Boolean, nullable=True)
+    # use as title
     description = Column(String, nullable=True)
+    recurrence = Column(String, nullable=False)
+
 
     assignee_fkey = Column(Integer, ForeignKey("roommates.id"), nullable=False)
     assignor_fkey = Column(Integer, ForeignKey("roommates.id"), nullable=False)
