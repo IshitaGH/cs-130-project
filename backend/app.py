@@ -101,6 +101,10 @@ def join_room_route():
 def leave_room_route():
     return leave_room()
 
+@app.route("/roommates", methods=["GET"])
+def get_roommates_route():
+    return get_roommates_in_room()
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)

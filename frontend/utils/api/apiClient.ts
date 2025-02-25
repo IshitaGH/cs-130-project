@@ -134,3 +134,18 @@ export async function apiGetChores(session: any) {
   const data = await response.json();
   return data;
 }
+
+export async function apiGetRoommates(session: any) {
+  const response = await fetch(`${API_URL}/roommates`, {
+    headers: {
+      Authorization: `Bearer ${session}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to get roommates');
+  }
+  const data = await response.json();
+  return data; // returns an array of roommate objects
+}
