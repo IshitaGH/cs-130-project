@@ -1,26 +1,19 @@
 import { Stack } from 'expo-router';
-import { useSession } from '@/contexts/AuthContext';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 
 export default function RoomLayout() {
-  const { session, sessionLoading, signInLoading } = useSession();
+  const { session, sessionLoading } = useAuthContext();
   const router = useRouter();
 
   useEffect(() => {
-    if (!sessionLoading && !session && !signInLoading) {
+    if (!sessionLoading && !session) {
       router.replace("/");
     }
-  }, [session, sessionLoading, signInLoading]);
+  }, [session, sessionLoading]);
 
-  if (sessionLoading || signInLoading) {
-    return null;
-  }
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-      }}
-    />
+    <Stack screenOptions={{ headerShown: false }} />
   );
 }

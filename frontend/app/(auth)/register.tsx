@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { useSession } from "@/contexts/AuthContext";
+import { useAuthContext } from "@/contexts/AuthContext";
 import Toast from "react-native-toast-message";
 import {
   Text,
@@ -19,7 +19,7 @@ export default function LoginScreen() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
 
-  const { createAccount } = useSession();
+  const { createAccount } = useAuthContext();
   const router = useRouter();
 
   const passwordInputRef = useRef<TextInput>(null);
