@@ -24,7 +24,6 @@ class Chore(db.Model):
     )
     start_date = Column(DateTime, default=datetime.utcnow, nullable=False)  # auto-set at creation (should be midnight)
     end_date = Column(DateTime, nullable=False)
-    duration = Column(Interval, nullable=False)  # computed as end_date - start_date in the api
     autorotate = Column(Boolean, nullable=False)
     is_task = Column(Boolean, default=False, nullable=False)
     completed = Column(Boolean, nullable=True)
