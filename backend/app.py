@@ -68,7 +68,7 @@ def login():
 
     roommate = Roommate.query.filter_by(username=username).first()
     if not roommate or not bcrypt.check_password_hash(roommate.password_hash, password):
-        return jsonify({"message": "Invalid credentials"}), 401
+        return jsonify({"message": "Invalid username or password"}), 401
 
     access_token = create_access_token(identity=str(roommate.id))
     return jsonify({"access_token": access_token}), 200
