@@ -16,7 +16,7 @@ from models.expense import Expense, Roommate_Expense
 from models.roommate import Room, Roommate
 from routes.room import create_room, get_current_room, join_room, leave_room
 from routes.roommate import create_roommate
-
+from routes.chore import create_chore, get_chores, update_chore, delete_chore
 
 app = Flask(__name__)
 # The following environment variables are set in docker-compose.yml
@@ -25,6 +25,8 @@ app.config["JWT_SECRET_KEY"] = os.getenv(
     "JWT_SECRET_KEY"
 )  # Change this to a strong secret key. Used to sign all JWT's
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://myuser:securepassword@db:5432/mydatabase"
 
 jwt = JWTManager(app)  # Must take app as a parameter to use secret key
 bcrypt = Bcrypt(app)
@@ -101,6 +103,21 @@ def join_room_route():
 def leave_room_route():
     return leave_room()
 
+@app.route("/chores", methods=["POST"])
+def create_chore_route():
+    return create_chore()
+
+@app.route("/chores", methods=["GET"])
+def get_chore_route():
+    return get_chores()
+
+@app.route("/chores/<int:chore_id>", methods=["PUT"])
+def update_chore_route(chore_id):
+    return update_chore(chore_id)
+
+@app.route("/chores/<int:chore_id>", methods=["DELETE"])
+def delete_chore_route(chore_id):
+    return delete_chore(chore_id)
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
