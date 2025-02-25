@@ -27,13 +27,25 @@ def get_chores():
     roommates = Roommate.query.filter_by(room_fkey=current_roommate.room_fkey).all()
     roommate_ids = [rm.id for rm in roommates]
 
-    # Query chores that are not completed and whose active window is open
-    active_chores = Chore.query.filter(
+    # 1) Filter chores in the active window for the room
+    # active meaning start_date <= now() <= end_date
+    active_window_chores = Chore.query.filter(
         Chore.assignee_fkey.in_(roommate_ids),
-        Chore.completed != True,
         Chore.start_date <= func.now(),
         func.now() <= Chore.end_date
     ).all()
+
+    # 2) separate incomplete vs. completed
+    incomplete_chores = []
+    completed_chores = []
+    for chore in active_window_chores:
+        if chore.completed:
+            completed_chores.append(chore)
+        else:
+            incomplete_chores.append(chore)
+
+    # 3) Combine so incomplete come first, completed after
+    active_chores = incomplete_chores + completed_chores
 
     chores_list = []
     for chore in active_chores:
@@ -44,7 +56,6 @@ def get_chores():
             "description": chore.description,
             "start_date": chore.start_date.isoformat(),
             "end_date": chore.end_date.isoformat(),
-            "duration": str(chore.duration),
             "autorotate": chore.autorotate,
             "is_task": chore.is_task,
             "completed": chore.completed,
@@ -147,6 +158,7 @@ def update_chore(chore_id):
     autorotate = data.get("autorotate")
     is_task = data.get("is_task")
     recurrence = data.get("recurrence")
+    completed = data.get("completed")
 
     if description:
         chore.description = description
@@ -172,6 +184,8 @@ def update_chore(chore_id):
         chore.is_task = is_task
     if recurrence:
         chore.recurrence = recurrence
+    if completed:
+        chore.completed = completed
 
     db.session.commit()
 
