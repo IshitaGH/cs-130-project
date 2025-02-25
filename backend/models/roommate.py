@@ -4,7 +4,7 @@ from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 from database import db
-from models.chore import Chore
+#from models.chore import Chore
 
 
 class Room(db.Model):
@@ -42,6 +42,10 @@ class Roommate(db.Model):
     expense_list = relationship(
         "Expense", secondary="roommate_expenses", back_populates="roommate_list"
     )
+    # Explicitly define the relationship for chores assigned to this roommate.
     chores = relationship(
-        "Chore", foreign_keys=[Chore.assignee_fkey], back_populates="assignee"
+        "Chore",
+        primaryjoin="Roommate.id == Chore.assignee_fkey",
+        foreign_keys="[Chore.assignee_fkey]",
+        back_populates="assignee"
     )
