@@ -1,4 +1,5 @@
 Note: Store your device's current IP address in a .env.local file
+
 - It will be read by process.env in apiClient.ts
 
 # Welcome to your Expo app 👋

@@ -1,13 +1,18 @@
 import { useContext, createContext, type PropsWithChildren } from 'react';
 import { useStorageState } from '@/hooks/useStorageState';
-import { apiSignIn, apiCreateAccount } from '@/utils/api/apiClient'
+import { apiSignIn, apiCreateAccount } from '@/utils/api/apiClient';
 import { jwtDecode } from 'jwt-decode';
 import { useState, useEffect } from 'react';
 
 const AuthContext = createContext<{
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => void;
-  createAccount: (firstName: string, lastName: string, username: string, password: string) => Promise<void>;
+  createAccount: (
+    firstName: string,
+    lastName: string,
+    username: string,
+    password: string,
+  ) => Promise<void>;
   session?: string | null;
   userId?: number | null;
   sessionLoading: boolean;
@@ -59,9 +64,9 @@ export function SessionProvider({ children }: PropsWithChildren) {
   async function signIn(username: string, password: string) {
     try {
       setSignInLoading(true);
-      console.log("Calling apiSignIn...");
+      console.log('Calling apiSignIn...');
       const jwt = await apiSignIn(username, password);
-      console.log("Sign-in successful, setting session with JWT token.");
+      console.log('Sign-in successful, setting session with JWT token.');
       setSession(jwt);
     } catch (error: any) {
       // Pass the error message up so the UI can display it
@@ -76,11 +81,16 @@ export function SessionProvider({ children }: PropsWithChildren) {
     setSession(null);
   }
 
-  async function createAccount(firstName: string, lastName: string, username: string, password: string) {
+  async function createAccount(
+    firstName: string,
+    lastName: string,
+    username: string,
+    password: string,
+  ) {
     try {
-      console.log("Calling apiCreateAccount...");
+      console.log('Calling apiCreateAccount...');
       await apiCreateAccount(firstName, lastName, username, password);
-      console.log("User successfully created.");
+      console.log('User successfully created.');
     } catch (error: any) {
       console.error('Registration error:', error.message);
       throw error;
@@ -88,7 +98,17 @@ export function SessionProvider({ children }: PropsWithChildren) {
   }
 
   return (
-    <AuthContext.Provider value={{ signIn, signOut, createAccount, session, userId, sessionLoading, signInLoading }}>
+    <AuthContext.Provider
+      value={{
+        signIn,
+        signOut,
+        createAccount,
+        session,
+        userId,
+        sessionLoading,
+        signInLoading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

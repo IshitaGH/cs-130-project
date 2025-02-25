@@ -15,17 +15,27 @@ export async function apiSignIn(username: string, password: string) {
     const errorData = await response.json();
     throw new Error(errorData.message || 'Failed to sign in');
   }
-  
+
   const data = await response.json();
   return data.access_token;
 }
 
 // returns void or throws an error
-export async function apiCreateAccount(firstName: string, lastName: string, username: string, password: string) {
+export async function apiCreateAccount(
+  firstName: string,
+  lastName: string,
+  username: string,
+  password: string,
+) {
   const response = await fetch(`${API_URL}/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ first_name: firstName, last_name: lastName, username, password }),
+    body: JSON.stringify({
+      first_name: firstName,
+      last_name: lastName,
+      username,
+      password,
+    }),
   });
 
   if (!response.ok) {
@@ -37,7 +47,7 @@ export async function apiCreateAccount(firstName: string, lastName: string, user
 export async function apiGetRoom(session: any) {
   const response = await fetch(`${API_URL}/room`, {
     method: 'GET',
-    headers: { 'Authorization': `Bearer ${session}` },
+    headers: { Authorization: `Bearer ${session}` },
   });
 
   if (!response.ok) {
@@ -45,7 +55,7 @@ export async function apiGetRoom(session: any) {
     console.log(errorData);
     throw new Error(errorData.message || 'Failed to fetch Room');
   }
-  
+
   const data = await response.json();
   return data;
 }
@@ -55,9 +65,9 @@ export async function apiCreateRoom(session: any, roomName: string) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session}`
+      Authorization: `Bearer ${session}`,
     },
-    body: JSON.stringify({ room_name: roomName}),
+    body: JSON.stringify({ room_name: roomName }),
   });
 
   if (!response.ok) {
@@ -74,16 +84,16 @@ export async function apiJoinRoom(session: any, inviteCode: string) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session}`
+      Authorization: `Bearer ${session}`,
     },
-    body: JSON.stringify({ 'invite_code' : inviteCode}),
+    body: JSON.stringify({ invite_code: inviteCode }),
   });
 
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || 'Failed to join Room');
   }
-  
+
   const data = await response.json();
   return data;
 }
@@ -92,7 +102,7 @@ export async function apiLeaveRoom(session: any) {
   const response = await fetch(`${API_URL}/rooms/leave`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${session}`
+      Authorization: `Bearer ${session}`,
     },
   });
 
@@ -100,7 +110,7 @@ export async function apiLeaveRoom(session: any) {
     const errorData = await response.json();
     throw new Error(errorData.message || 'Failed to leave Room');
   }
-  
+
   const data = await response.json();
   return data;
 }
