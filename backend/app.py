@@ -16,7 +16,7 @@ from models.expense import Expense, Roommate_Expense
 from models.roommate import Room, Roommate
 from routes.chore import create_chore
 from routes.room import create_room, get_current_room, join_room, leave_room
-from routes.roommate import create_roommate
+# from routes.roommate import create_roommate
 
 app = Flask(__name__)
 # The following environment variables are set in docker-compose.yml
