@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useSession } from '@/contexts/AuthContext';
-import { apiGetRoom } from '@/utils/api/apiClient';
+import { useState, useEffect } from "react";
+import { useSession } from "@/contexts/AuthContext";
+import { apiGetRoom } from "@/utils/api/apiClient";
 import {
   Text,
   TextInput,
@@ -10,12 +10,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-} from 'react-native';
-import { useRouter } from 'expo-router';
+} from "react-native";
+import { useRouter } from "expo-router";
 
 export default function LoginScreen() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const { session, signIn, sessionLoading, signInLoading } = useSession();
   const router = useRouter();
@@ -34,9 +34,9 @@ export default function LoginScreen() {
       (async () => {
         const roomData = await apiGetRoom(session);
         if (roomData.room_id === null) {
-          router.replace('/room-landing');
+          router.replace("/room-landing");
         } else {
-          router.replace('/home');
+          router.replace("/home");
         }
       })();
     }
@@ -44,14 +44,14 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContainer}
         keyboardShouldPersistTaps="handled"
       >
-        <Image source={require('@/assets/images/icon.png')} style={styles.logo} />
+        <Image source={require("@/assets/images/icon.png")} style={styles.logo} />
 
         <Text style={styles.title}>Login</Text>
 
@@ -90,64 +90,64 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#DFF7E2',
+    backgroundColor: "#DFF7E2",
   },
   scrollContainer: {
     flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 20,
   },
   logo: {
     width: 150,
     height: 150,
     marginBottom: 20,
-    resizeMode: 'contain',
+    resizeMode: "contain",
   },
   title: {
     fontSize: 36,
-    fontWeight: 'bold',
-    color: '#00D09E',
+    fontWeight: "bold",
+    color: "#00D09E",
     marginBottom: 30,
   },
   input: {
-    width: '100%',
+    width: "100%",
     height: 50,
     borderWidth: 1,
-    borderColor: '#00D09E',
+    borderColor: "#00D09E",
     borderRadius: 25,
     paddingHorizontal: 15,
     marginBottom: 15,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     fontSize: 16,
-    color: '#333',
+    color: "#333",
   },
   button: {
     width: 200,
     paddingVertical: 12,
-    backgroundColor: '#00D09E',
+    backgroundColor: "#00D09E",
     borderRadius: 25,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 20,
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   backButton: {
     marginTop: 10,
   },
   backButtonText: {
-    color: '#00D09E',
+    color: "#00D09E",
     fontSize: 14,
-    textDecorationLine: 'underline',
+    textDecorationLine: "underline",
   },
   errorText: {
-    color: '#FF4C4C',
+    color: "#FF4C4C",
     fontSize: 14,
     marginBottom: 10,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });

@@ -9,7 +9,7 @@ export default function RoomLayout() {
 
   useEffect(() => {
     if (!sessionLoading && !session && !signInLoading) {
-      router.replace('/');
+      router.replace("/");
     }
   }, [session, sessionLoading, signInLoading]);
 

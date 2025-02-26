@@ -8,9 +8,10 @@ jest.mock('@expo/vector-icons', () => {
   };
 });
 
-import { render } from '@testing-library/react-native';
+import { render  } from '@testing-library/react-native';
 import { act, fireEvent } from '@testing-library/react-native';
 import ChoresScreen from '@/app/(app)/chores';
+
 
 describe('<ChoresScreen />', () => {
   test('Text renders correctly on ChoresScreen', () => {
@@ -30,12 +31,12 @@ describe('<ChoresScreen />', () => {
 
     const { getByText, getByPlaceholderText } = render(<ChoresScreen />);
     const assignButton = getByText('Assign');
-
+  
     await act(async () => {
       fireEvent.press(assignButton);
       jest.runAllTimers();
     });
-
+  
     // Now the modal should be visible; query after the state update.
     getByPlaceholderText('Chore Name');
     getByPlaceholderText('Roommate Responsible');
