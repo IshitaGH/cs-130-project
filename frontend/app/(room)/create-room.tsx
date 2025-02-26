@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
 import { apiCreateRoom } from "@/utils/api/apiClient";
 import { useAuthContext } from "@/contexts/AuthContext";
+import Toast from "react-native-toast-message";
 
 export default function CreateRoomScreen() {
   const [roomName, setRoomName] = useState("");
@@ -10,11 +11,14 @@ export default function CreateRoomScreen() {
   const { session } = useAuthContext();
 
   const handleCreateRoom = async () => {
-    let data;
     try {
-      data = await apiCreateRoom(session, roomName);
-    } catch (error) {
-      console.error(error);
+      await apiCreateRoom(session, roomName);
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error Creating Room',
+        text2: error.message,
+      });
       return;
     }
     router.replace("/home");
