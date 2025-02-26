@@ -49,6 +49,14 @@ def get_chores():
 
     chores_list = []
     for chore in active_chores:
+        assigned_roommate_data = None
+        if chore.assignee:
+            assigned_roommate_data = {
+                "id": chore.assignee.id,
+                "first_name": chore.assignee.first_name,
+                "last_name": chore.assignee.last_name,
+                # etc. add fields we want. can change in future
+            }
         chore_data = {
             "id": chore.id,
             "created_at": chore.created_at.isoformat(),
@@ -60,7 +68,7 @@ def get_chores():
             "is_task": chore.is_task,
             "completed": chore.completed,
             "room_id": current_roommate.room_fkey,
-            "roommate_assigned_id": chore.assignee_fkey,
+            "assigned_roommate": assigned_roommate_data,
             "roommate_assignor_id": chore.assignor_fkey
         }
         chores_list.append(chore_data)
@@ -120,6 +128,14 @@ def create_chore():
     # If we want to return a duration string for the frontend
     # duration_str = str(new_chore.end_date - new_chore.start_date)
 
+    assigned_roommate_data = None
+    if new_chore.assignee:
+        assigned_roommate_data = {
+            "id": new_chore.assignee.id,
+            "first_name": new_chore.assignee.first_name,
+            "last_name": new_chore.assignee.last_name
+        }
+
     chore_data = {
         "id": new_chore.id,
         "created_at": new_chore.created_at.isoformat(),
@@ -130,11 +146,10 @@ def create_chore():
         "autorotate": new_chore.autorotate,
         "is_task": new_chore.is_task,
         "completed": new_chore.completed,
-        "roommate_assigned_id": new_chore.assignee_fkey,
+        "assigned_roommate": assigned_roommate_data,
         "roommate_assignor_id": new_chore.assignor_fkey,
         "room_id": current_roommate.room_fkey,
         "recurrence": new_chore.recurrence
-        # "duration": duration_str,  # computed on the fly leaving this here in case we need
     }
 
     return jsonify({"chore": chore_data}), 201
@@ -189,7 +204,15 @@ def update_chore(chore_id):
 
     db.session.commit()
 
-    # duration_str = str(chore.end_date - chore.start_date)
+
+    assigned_roommate_data = None
+    if chore.assignee:  # chore.assignee is the relationship to Roommate
+        assigned_roommate_data = {
+            "id": chore.assignee.id,
+            "first_name": chore.assignee.first_name,
+            "last_name": chore.assignee.last_name,
+            # add any other fields you need
+        }
 
     chore_data = {
         "id": chore.id,
@@ -201,11 +224,10 @@ def update_chore(chore_id):
         "autorotate": chore.autorotate,
         "is_task": chore.is_task,
         "completed": chore.completed,
-        "roommate_assigned_id": chore.assignee_fkey,
+        "assigned_roommate": assigned_roommate_data,
         "roommate_assignor_id": chore.assignor_fkey,
         "room_id": current_roommate.room_fkey,
         "recurrence": chore.recurrence
-        # "duration": duration_str
     }
     return jsonify({"chore": chore_data}), 200
 
