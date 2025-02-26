@@ -14,9 +14,11 @@ from database import db, migrate
 from models.chore import Chore
 from models.expense import Expense, Roommate_Expense
 from models.roommate import Room, Roommate
+from routes.chore import create_chore
 from routes.room import create_room, get_current_room, join_room, leave_room
 from routes.roommate import create_roommate
 from routes.chore import create_chore, get_chores, update_chore, delete_chore
+
 
 app = Flask(__name__)
 # The following environment variables are set in docker-compose.yml
@@ -61,6 +63,7 @@ def register():
     db.session.commit()
     return "", 201
 
+
 @app.route("/login", methods=["POST"])
 def login():
     data = request.get_json()
@@ -69,7 +72,7 @@ def login():
 
     roommate = Roommate.query.filter_by(username=username).first()
     if not roommate or not bcrypt.check_password_hash(roommate.password_hash, password):
-        return jsonify({"message": "Invalid credentials"}), 401
+        return jsonify({"message": "Invalid username or password"}), 401
 
     access_token = create_access_token(identity=str(roommate.id))
     return jsonify({"access_token": access_token}), 200
@@ -85,23 +88,28 @@ def protected():
         200,
     )
 
+
 # ROOM ROUTES
 @app.route("/room", methods=["GET"])
 def get_current_room_route():
     return get_current_room()
 
+
 @app.route("/rooms", methods=["POST"])
 def create_room_route():
     return create_room()
+
 
 @app.route("/rooms/join", methods=["POST"])
 def join_room_route():
     return join_room()
 
+
 @app.route("/rooms/leave", methods=["POST"])
 def leave_room_route():
     return leave_room()
 
+# CHORES ROUTES
 @app.route("/chores", methods=["POST"])
 def create_chore_route():
     return create_chore()
@@ -117,6 +125,7 @@ def update_chore_route(chore_id):
 @app.route("/chores/<int:chore_id>", methods=["DELETE"])
 def delete_chore_route(chore_id):
     return delete_chore(chore_id)
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)

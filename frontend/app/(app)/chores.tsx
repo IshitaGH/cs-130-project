@@ -17,7 +17,7 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { useSession } from "@/contexts/AuthContext";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { apiGetChores } from "@/utils/api/apiClient";
 
 type Chore = {
@@ -54,7 +54,7 @@ export default function ChoresScreen() {
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const slideAnim = React.useRef(new Animated.Value(Dimensions.get("window").height)).current;
   const [refreshing, setRefreshing] = useState(false);
-  const { session, userId } = useSession();
+  const { session, userId } = useAuthContext();
 
   // New state for whether the chore is a task (completable)
   const [isTask, setIsTask] = useState(true);

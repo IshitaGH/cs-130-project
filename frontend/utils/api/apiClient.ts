@@ -3,7 +3,7 @@
 // Localhost might not work because Flask doesn't recognize it in its CORS policy
 import { API_URL } from '@/config';
 
-// returns jwt or throws an error
+// NOTE: should only be called via AuthContext
 export async function apiSignIn(username: string, password: string) {
   const response = await fetch(`${API_URL}/login`, {
     method: 'POST',
@@ -20,7 +20,7 @@ export async function apiSignIn(username: string, password: string) {
   return data.access_token;
 }
 
-// returns void or throws an error
+// Note: should only be called via AuthContext
 export async function apiCreateAccount(firstName: string, lastName: string, username: string, password: string) {
   const response = await fetch(`${API_URL}/register`, {
     method: 'POST',
@@ -42,7 +42,6 @@ export async function apiGetRoom(session: any) {
 
   if (!response.ok) {
     const errorData = await response.json();
-    console.log(errorData);
     throw new Error(errorData.message || 'Failed to fetch Room');
   }
   
@@ -65,7 +64,6 @@ export async function apiCreateRoom(session: any, roomName: string) {
     throw new Error(errorData.message || 'Failed to create Room');
   }
   const data = await response.json();
-  console.log(data);
   return data;
 }
 

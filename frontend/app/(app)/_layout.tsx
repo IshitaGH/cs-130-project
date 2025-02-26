@@ -1,22 +1,18 @@
-import { useSession } from "@/contexts/AuthContext";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useRouter, Tabs } from "expo-router";
 import { useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Text, TouchableOpacity } from "react-native";
 
 export default function AppLayout() {
-  const { session, sessionLoading, signInLoading } = useSession();
+  const { session, sessionLoading } = useAuthContext();
   const router = useRouter();
 
   useEffect(() => {
-    if (!sessionLoading && !session && !signInLoading) {
+    if (!sessionLoading && !session) {
       router.replace("/");
     }
-  }, [session, sessionLoading, signInLoading]);
-
-  if (sessionLoading) {
-    return <Text>Loading...</Text>;
-  }
+  }, [session, sessionLoading]);
 
   return (
     <Tabs
