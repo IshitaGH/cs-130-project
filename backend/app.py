@@ -16,7 +16,6 @@ from models.expense import Expense, Roommate_Expense
 from models.roommate import Room, Roommate
 from routes.chore import create_chore
 from routes.room import create_room, get_current_room, join_room, leave_room
-from routes.roommate import create_roommate
 from routes.chore import create_chore, get_chores, update_chore, delete_chore
 
 
