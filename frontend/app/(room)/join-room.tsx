@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
-import { useSession } from "@/contexts/AuthContext";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { apiJoinRoom } from "@/utils/api/apiClient";
 import Toast from "react-native-toast-message";
 
 export default function JoinRoomScreen() {
   const [inviteCode, setInviteCode] = useState("");
   const router = useRouter();
-  const { session } = useSession();
+  const { session } = useAuthContext();
 
   const handleJoinRoom = async () => {
     try {
@@ -21,7 +21,6 @@ export default function JoinRoomScreen() {
       });
       return;
     }
-    console.log("Room joined successfully");
     router.replace("/home");
   };
 

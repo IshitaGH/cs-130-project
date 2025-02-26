@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useSession } from "@/contexts/AuthContext";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { apiGetRoom } from "@/utils/api/apiClient";
 import Toast from "react-native-toast-message";
 import {
@@ -17,7 +17,7 @@ import { useRouter } from "expo-router";
 export default function LoginScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const { session, signIn, sessionLoading, signInLoading } = useSession();
+  const { session, signIn, sessionLoading } = useAuthContext();
   const router = useRouter();
   const passwordInputRef = useRef<TextInput | null>(null);
 
@@ -34,7 +34,7 @@ export default function LoginScreen() {
   };
 
   useEffect(() => {
-    if (!sessionLoading && !signInLoading && session) {
+    if (!sessionLoading && session) {
       (async () => {
         const roomData = await apiGetRoom(session);
         if (roomData.room_id === null) {
@@ -44,7 +44,7 @@ export default function LoginScreen() {
         }
       })();
     }
-  }, [session, sessionLoading, signInLoading]);
+  }, [session]);
 
   return (
     <KeyboardAvoidingView

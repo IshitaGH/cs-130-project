@@ -2,38 +2,42 @@ import { useContext, createContext, type PropsWithChildren } from 'react';
 import { useStorageState } from '@/hooks/useStorageState';
 import { apiSignIn, apiCreateAccount } from '@/utils/api/apiClient'
 import { jwtDecode } from 'jwt-decode';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
-const AuthContext = createContext<{
+interface AuthContextType {
+  session: string | null;
+  sessionLoading: boolean;
+  userId: number | null;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => void;
-  createAccount: (firstName: string, lastName: string, username: string, password: string) => Promise<void>;
-  session?: string | null;
-  userId?: number | null;
-  sessionLoading: boolean;
-  signInLoading: boolean;
-}>({
+  createAccount: (
+    firstName: string,
+    lastName: string,
+    username: string,
+    password: string
+  ) => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType>({
+  session: null,
+  sessionLoading: false,
+  userId: null,
   signIn: async () => {},
   signOut: () => {},
   createAccount: async () => {},
-  session: null,
-  userId: null,
-  sessionLoading: false,
-  signInLoading: false,
 });
 
-// useSession must be wrapped in a <SessionProvider />
-export function useSession() {
-  const value = useContext(AuthContext);
-  return value;
+// useAuthContext must be wrapped in a <SessionProvider />
+export function useAuthContext() {
+  return useContext(AuthContext);
 }
 
 // Helper function to decode JWT and extract user information
 function getUserIdFromToken(token: string): number | null {
   try {
-    // const decoded: { sub: string } = jwtDecode(token);
-    // return Number(decoded.sub); // the userId from the backend gets stored as a string in the JWT
-    return 100;
+    const decoded: { sub: string } = jwtDecode(token);
+    // userId from backend gets stored as a string in JWT
+    return Number(decoded.sub);
   } catch (error) {
     console.error('Error decoding JWT:', error);
     return null;
@@ -41,9 +45,7 @@ function getUserIdFromToken(token: string): number | null {
 }
 
 export function SessionProvider({ children }: PropsWithChildren) {
-  // session is the JWT and will be passed into the AuthContext
   const [[sessionLoading, session], setSession] = useStorageState('session');
-  const [signInLoading, setSignInLoading] = useState<boolean>(false);
   const [userId, setUserId] = useState<number | null>(null);
 
   // Update userId whenever session changes
@@ -56,35 +58,30 @@ export function SessionProvider({ children }: PropsWithChildren) {
     }
   }, [session]);
 
-  async function signIn(username: string, password: string) {
+  const signIn = useCallback(async (username: string, password: string) => {
     try {
-      setSignInLoading(true);
       const jwt = await apiSignIn(username, password);
-      console.log("Sign-in successful, setting session with JWT token.");
       setSession(jwt);
     } catch (error: any) {
-      // Pass the error message up so the UI can display it
       throw error;
     } finally {
-      setSignInLoading(false);
     }
-  }
+  }, [setSession]);
 
-  function signOut() {
+  const signOut = useCallback(() => {
     setSession(null);
-  }
+  }, [setSession]);
 
-  async function createAccount(firstName: string, lastName: string, username: string, password: string) {
+  const createAccount = useCallback(async (firstName: string, lastName: string, username: string, password: string) => {
     try {
       await apiCreateAccount(firstName, lastName, username, password);
-      console.log("User successfully created.");
     } catch (error: any) {
       throw error;
     }
-  }
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ signIn, signOut, createAccount, session, userId, sessionLoading, signInLoading }}>
+    <AuthContext.Provider value={{ session, sessionLoading, userId, signIn, signOut, createAccount }}>
       {children}
     </AuthContext.Provider>
   );
