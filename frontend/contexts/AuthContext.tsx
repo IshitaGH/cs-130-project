@@ -59,13 +59,11 @@ export function SessionProvider({ children }: PropsWithChildren) {
   async function signIn(username: string, password: string) {
     try {
       setSignInLoading(true);
-      console.log("Calling apiSignIn...");
       const jwt = await apiSignIn(username, password);
       console.log("Sign-in successful, setting session with JWT token.");
       setSession(jwt);
     } catch (error: any) {
       // Pass the error message up so the UI can display it
-      console.error('Login error:', error.message);
       throw error;
     } finally {
       setSignInLoading(false);
@@ -78,11 +76,9 @@ export function SessionProvider({ children }: PropsWithChildren) {
 
   async function createAccount(firstName: string, lastName: string, username: string, password: string) {
     try {
-      console.log("Calling apiCreateAccount...");
       await apiCreateAccount(firstName, lastName, username, password);
       console.log("User successfully created.");
     } catch (error: any) {
-      console.error('Registration error:', error.message);
       throw error;
     }
   }

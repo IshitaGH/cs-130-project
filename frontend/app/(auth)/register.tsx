@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useSession } from "@/contexts/AuthContext";
+import Toast from "react-native-toast-message";
 import {
   Text,
   TextInput,
@@ -18,17 +19,23 @@ export default function LoginScreen() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
 
-  const [error, setError] = useState<string | null>(null);
   const { createAccount } = useSession();
   const router = useRouter();
 
+  const passwordInputRef = useRef<TextInput>(null);
+  const lastNameInputRef = useRef<TextInput>(null);
+  const usernameInputRef = useRef<TextInput>(null);
+
   const handleRegister = async () => {
-    setError(null);
     try {
       await createAccount(firstName, lastName, username, password);
       router.replace("/login");
     } catch (err: any) {
-      setError(err.message);
+      Toast.show({
+        type: 'error',
+        text1: 'Error Creating Account',
+        text2: err.message,
+      });
     }
   };
 
@@ -51,35 +58,39 @@ export default function LoginScreen() {
           value={firstName}
           style={styles.input}
           placeholderTextColor="#aaa"
+          onSubmitEditing={() => lastNameInputRef.current?.focus()}
         />
 
         <TextInput
+          ref={lastNameInputRef}
           placeholder="Last Name"
           onChangeText={setLastName}
           value={lastName}
           style={styles.input}
           placeholderTextColor="#aaa"
+          onSubmitEditing={() => usernameInputRef.current?.focus()}
         />
 
         <TextInput
+          ref={usernameInputRef}
           placeholder="Username"
           onChangeText={setUsername}
           value={username}
           style={styles.input}
           placeholderTextColor="#aaa"
+          onSubmitEditing={() => passwordInputRef.current?.focus()}
         />
 
         <TextInput
+          ref={passwordInputRef}
           placeholder="Password"
           secureTextEntry
           onChangeText={setPassword}
           value={password}
           style={styles.input}
           placeholderTextColor="#aaa"
+          onSubmitEditing={() => {}}
         />
-
-        {/* Display the error message */}
-        {error && <Text style={styles.errorText}>{error}</Text>}
 
         <TouchableOpacity style={styles.button} onPress={handleRegister}>
           <Text style={styles.buttonText}>Register</Text>
