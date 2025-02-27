@@ -174,7 +174,14 @@ def update_expense():
                     roommate_expense = Roommate_Expense.query.filter_by(
                         roommate_fkey=roommate.id, expense_fkey=expense.id
                     ).first()
-                    roommate_expense.percentage = ex.get("percentage")
+                    if roommate_expense:
+                        roommate_expense.percentage = (
+                            ex.get("percentage")
+                            if "percentage" in ex
+                            else roommate_expense.percentage
+                        )
+                    else:
+                        return jsonify({"message": "roommate_expense not found"}), 404
                 else:
                     return (
                         jsonify(
