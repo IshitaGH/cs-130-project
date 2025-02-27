@@ -112,10 +112,10 @@ export async function apiGetChores(session: any) {
     throw new Error('Failed to get chores');
   }
   const data = await response.json();
-  return data;
+  return data.chores;
 }
 
-export async function apiCreateChore(session: any, description: string, endDate: string, autorotate: boolean, isTask: boolean, recurrence: string) {
+export async function apiCreateChore(session: any, description: string, endDate: string, autorotate: boolean, isTask: boolean, recurrence: string, assignedRoommateId: number) {
   const response = await fetch(`${API_URL}/chores`, {
     method: 'POST',
     headers: {
@@ -127,7 +127,8 @@ export async function apiCreateChore(session: any, description: string, endDate:
       end_date: endDate,
       autorotate,
       is_task: isTask,
-      recurrence
+      recurrence,
+      assigned_roommate_id: assignedRoommateId
     }),
   });
 
@@ -147,6 +148,7 @@ export async function apiUpdateChore(session: any, choreId: number, updates: {
   is_task?: boolean;
   recurrence?: string;
   completed?: boolean;
+  assigned_roommate_id?: number;
 }) {
   const response = await fetch(`${API_URL}/chores/${choreId}`, {
     method: 'PUT',
@@ -181,7 +183,7 @@ export async function apiDeleteChore(session: any, choreId: number) {
 }
 
 export async function apiGetRoommates(session: any) {
-  const response = await fetch(`${API_URL}/rooms/roommates`, {
+  const response = await fetch(`${API_URL}/roommates`, {
     headers: {
       Authorization: `Bearer ${session}`,
     },

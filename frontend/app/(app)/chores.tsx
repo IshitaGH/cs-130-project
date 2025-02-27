@@ -18,7 +18,7 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { apiGetChores, apiUpdateChore, apiCreateChore, apiDeleteChore } from "@/utils/api/apiClient";
+import { apiGetChores, apiUpdateChore, apiCreateChore, apiDeleteChore, apiGetRoommates } from "@/utils/api/apiClient";
 import Toast from "react-native-toast-message";
 
 // This type mimics the response structure from the backend
@@ -40,9 +40,19 @@ type Chore = {
   room_id: number;
 };
 
+// Add after the Chore type definition
+type Roommate = {
+  id: number;
+  first_name: string;
+  last_name: string;
+  username: string;
+};
+
 export default function ChoresScreen() {
   // Auth State
   const { session, userId } = useAuthContext();
+  // Roommates State
+  const [roommates, setRoommates] = useState<Roommate[]>([]);
   // Chores State
   const [chores, setChores] = useState<Chore[]>([]);
   const [yourChores, setYourChores] = useState<Chore[]>([]);
@@ -53,6 +63,7 @@ export default function ChoresScreen() {
   const [choreIsTask, setChoreIsTask] = useState(true);
   const [choreRecurrence, setChoreRecurrence] = useState("none");
   const [choreEndDate, setChoreEndDate] = useState<string | null>(null);
+  const [selectedRoommateId, setSelectedRoommateId] = useState<number | null>(null);
   // Modal State
   const [modalVisible, setModalVisible] = useState(false);
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
@@ -62,22 +73,44 @@ export default function ChoresScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
 
-  useEffect(() => {
+  const fetchChores = async () => {
     if (!session) return;
-    const fetchInitialChores = async () => {
-      try {
-        const response = await apiGetChores(session);
-        setChores(response.chores);
-      } catch (error: any) {
-        Toast.show({
-          type: 'error',
-          text1: 'Error Fetching Chores',
-          text2: error.message || 'Failed to fetch chores'
-        });
-      }
-    };
-    fetchInitialChores();
+    try {
+      const choresData = await apiGetChores(session);
+      setChores(choresData);
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error Fetching Chores',
+        text2: error.message || 'Failed to fetch chores'
+      });
+    }
+  };
+
+  const fetchRoommates = async () => {
+    if (!session) return;
+    try {
+      const roommatesData = await apiGetRoommates(session);
+      setRoommates(roommatesData);
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error Fetching Roommates',
+        text2: error.message || 'Failed to fetch roommates'
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchChores();
+    fetchRoommates();
   }, [session]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([fetchChores(), fetchRoommates()]);
+    setRefreshing(false);
+  };
 
   useEffect(() => {
     const users = chores.filter(chore => 
@@ -87,30 +120,11 @@ export default function ChoresScreen() {
       chore.assigned_roommate?.id !== userId
     );
   
-    setYourChores(sortChores(users));
-    setRoommatesChores(sortChores(roommates));
+    // Sort chores so completed ones come last
+    setYourChores([...users].sort((a, b) => Number(a.completed) - Number(b.completed)));
+    setRoommatesChores([...roommates].sort((a, b) => Number(a.completed) - Number(b.completed)));
   }, [chores]);
   
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    const fetchChores = async () => {
-      try {
-        const fetchedChores = await apiGetChores(session);
-        setChores(fetchedChores.chores);
-      } catch (error: any) {
-        Toast.show({
-          type: 'error',
-          text1: 'Error Refreshing Chores',
-          text2: error.message || 'Failed to refresh chores'
-        });
-      } finally {
-        setRefreshing(false);
-      }
-    };
-    fetchChores();
-  };
-
   useEffect(() => {
     if (modalVisible) {
       Animated.timing(slideAnim, {
@@ -126,7 +140,7 @@ export default function ChoresScreen() {
   useEffect(() => {
     if (selectedChore) {
       setChoreName(selectedChore.description);
-      setChoreRoommate(selectedChore.assigned_roommate.first_name);
+      setSelectedRoommateId(selectedChore.assigned_roommate.id);
       setChoreEndDate(selectedChore.end_date);
       setChoreIsTask(selectedChore.is_task);
       setChoreRecurrence(selectedChore.recurrence || "none");
@@ -135,24 +149,12 @@ export default function ChoresScreen() {
     }
   }, [selectedChore]);
 
-  // Sort chores so completed ones come last
-  const sortChores = (choreList: Chore[]) => {
-    return choreList.sort((a, b) => {
-      if (a.completed === b.completed) {
-        return 0;
-      }
-      else {
-        return a.completed ? 1 : -1;
-      }
-    });
-  };
-
   const addOrUpdateChore = async () => {
-    if (!choreName.trim() || !choreEndDate) {
+    if (!choreName.trim() || !choreEndDate || !selectedRoommateId) {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Must fill in name and due date'
+        text2: 'Must fill in name, due date, and select a roommate'
       });
       return;
     }
@@ -164,7 +166,8 @@ export default function ChoresScreen() {
           end_date: choreEndDate,
           autorotate: choreRecurrence !== "none",
           is_task: choreIsTask,
-          recurrence: choreRecurrence
+          recurrence: choreRecurrence,
+          assigned_roommate_id: selectedRoommateId
         });
         setChores(prevChores =>
           prevChores.map(chore =>
@@ -178,7 +181,8 @@ export default function ChoresScreen() {
           choreEndDate,
           (choreRecurrence !== "none"),
           choreIsTask,
-          choreRecurrence
+          choreRecurrence,
+          selectedRoommateId
         );
         setChores(prevChores => [...prevChores, newChore]);
       }
@@ -194,6 +198,7 @@ export default function ChoresScreen() {
 
   const resetModal = () => {
     setChoreName("");
+    setSelectedRoommateId(null);
     setChoreRoommate("");
     setChoreEndDate(null);
     setChoreIsTask(true);
@@ -367,13 +372,24 @@ export default function ChoresScreen() {
               onChangeText={setChoreName}
             />
 
-            <TextInput
-              style={styles.input}
-              placeholder="Roommate Responsible"
-              placeholderTextColor="#AAA"
-              value={choreRoommate}
-              onChangeText={setChoreRoommate}
-            />
+            <Text style={styles.label}>Roommate Responsible</Text>
+            <View style={styles.dropdown}>
+              {roommates.map((roommate) => (
+                <TouchableOpacity
+                  key={roommate.id}
+                  onPress={() => setSelectedRoommateId(roommate.id)}
+                >
+                  <Text
+                    style={[
+                      styles.option,
+                      selectedRoommateId === roommate.id && styles.selectedOption
+                    ]}
+                  >
+                    {`${roommate.first_name} ${roommate.last_name}`}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
             {/* Is Task Switch */}
             <View style={styles.switchContainer}>

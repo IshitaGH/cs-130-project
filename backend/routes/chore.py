@@ -90,6 +90,7 @@ def create_chore():
     autorotate = data.get("autorotate")
     is_task = data.get("is_task")
     recurrence = data.get("recurrence")
+    assigned_roommate_id = data.get("assigned_roommate_id")
 
     if not all([description, end_date_str, autorotate is not None, recurrence]):
         return jsonify({"message": "Missing required fields"}), 400
@@ -116,8 +117,7 @@ def create_chore():
         is_task=is_task,
         completed=False,
         assignor_fkey=current_roommate_id,  # using the current user as assignor
-        # TODO: Right now this is initially assigned self because we do not have a way to extract the roommate ID from the assigned roommate due to our free form text method
-        assignee_fkey=current_roommate_id, 
+        assignee_fkey=assigned_roommate_id,
         recurrence=recurrence
     )
     
