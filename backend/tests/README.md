@@ -1,3 +1,3 @@
 To run the tests, first, navigate to the backend directory and create a virtual environment using python3 -m venv venv. Activate it with source venv/bin/activate (on macOS/Linux) or venv\Scripts\activate (on Windows). 
 
-Set up a test database by running export DATABASE_URL=sqlite:///:memory: (its set in the test file but sometimes is not recognized properly). Finally, execute python -m unittest discover -s tests to run all tests.
+Set up a test database by running export DATABASE_URL=sqlite:///:memory: (its set in the test file but sometimes is not recognized by child processes properly). Finally, execute python -m unittest discover -s tests to run all tests in the /backend directory.
