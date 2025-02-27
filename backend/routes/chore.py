@@ -15,7 +15,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
 
 # GET /chores
-# Returns all active (not completed) chores in the current user's room.
+# Returns all active chores in the current user's room.
 @jwt_required()
 def get_chores():
     current_roommate_id = get_jwt_identity()
