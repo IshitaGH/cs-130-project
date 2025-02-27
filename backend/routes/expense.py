@@ -205,7 +205,7 @@ def remove_expense():
     expense = Expense.query.filter_by(
         roommate_fkey=roommate_id, 
         room_fkey=room.id,
-        title=data["title"].strip()
+        id=data["id"]
     ).first()
     
     if expense:
