@@ -101,21 +101,6 @@ export async function apiLeaveRoom(session: any) {
 }
 
 // returns the message from the backend or throws an error
-export async function apiGetMessage(session: any) {
-  const response = await fetch(`${API_URL}/protected`, {
-    headers: {
-      Authorization: `Bearer ${session}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to get message');
-  }
-  const data = await response.json();
-  return data.message;
-}
-
-// returns the message from the backend or throws an error
 export async function apiGetChores(session: any) {
   const response = await fetch(`${API_URL}/chores`, {
     headers: {
@@ -193,4 +178,19 @@ export async function apiDeleteChore(session: any, choreId: number) {
     const errorData = await response.json();
     throw new Error(errorData.message || 'Failed to delete chore');
   }
+}
+
+export async function apiGetRoommates(session: any) {
+  const response = await fetch(`${API_URL}/rooms/roommates`, {
+    headers: {
+      Authorization: `Bearer ${session}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to get roommates');
+  }
+  const data = await response.json();
+  return data.roommates;
 }

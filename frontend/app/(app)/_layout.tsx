@@ -1,3 +1,4 @@
+import React from 'react';
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useRouter, Tabs } from "expo-router";
 import { useEffect } from "react";
