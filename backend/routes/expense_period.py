@@ -105,7 +105,7 @@ def close_expense_period():
         db.session.commit()
         return create_expense_period()
     else:
-        return jsonify({"message": "Open expense period not found"})
+        return jsonify({"message": "Open expense period not found"}), 404
 
 @jwt_required()
 def delete_expense_period():
@@ -120,6 +120,6 @@ def delete_expense_period():
         for expense in expenses:
             db.session.delete(expense)
         db.session.commit()
-        return jsonify({"message": "Expense period deleted successfully"})
+        return jsonify({"message": "Expense period deleted successfully"}), 200
     else:
-        return jsonify({"message": "Expense period not found"}), 4404
+        return jsonify({"message": "Expense period not found"}), 404

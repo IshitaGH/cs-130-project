@@ -26,7 +26,7 @@ def create_expense():
     expense_period = Expense_Period.query.filter_by(room_fkey=room.id, open=True).first()
 
     if not expense_period:
-        return jsonify({"message": "Open expense period not found"})
+        return jsonify({"message": "Open expense period not found"}), 404
 
     data = request.get_json()
     
@@ -63,7 +63,7 @@ def create_expense():
                 }
             )
         else:
-            return jsonify(message=f"Rooommate " + expense.get("username").strip() + " not found")
+            return jsonify(message=f"Rooommate " + expense.get("username").strip() + " not found"), 404
 
     db.session.commit()
 
@@ -156,9 +156,9 @@ def update_expense():
                     roommate_expense=Roommate_Expense.query.filter_by(roommate_fkey=roommate.id, expense_fkey=expense.id).first()
                     roommate_expense.percentage=ex.get("percentage")
                 else:
-                    return jsonify(message=f"Rooommate " + ex.get("username").strip() + " not found")
+                    return jsonify(message=f"Rooommate " + ex.get("username").strip() + " not found"), 404
     else:
-        return jsonify({"message": "Expense not found"}), 4404
+        return jsonify({"message": "Expense not found"}), 404
     
     db.session.commit()
     
@@ -188,7 +188,7 @@ def update_expense():
                 "roommate_expenses": roommate_expenses_result
             }
         ),
-        201,
+        200,
     )
 
 @jwt_required()
@@ -215,6 +215,6 @@ def remove_expense():
             db.session.delete(roommate_expense)
         db.session.delete(expense)
         db.session.commit()
-        return jsonify({"message": "Expense deleted successfully"})
+        return jsonify({"message": "Expense deleted successfully"}), 200
     else:
-        return jsonify({"message": "Expense not found"}), 4404
+        return jsonify({"message": "Expense not found"}), 404
