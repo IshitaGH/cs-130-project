@@ -1,6 +1,6 @@
 import random
 import string
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import jsonify, request
 from flask_jwt_extended import (
@@ -21,10 +21,10 @@ def generate_invite_code(length=8):
 @jwt_required()
 def get_current_room():
     roommate_id = get_jwt_identity()
-    roommate = Roommate.query.get(roommate_id)
+    roommate = db.session.get(Roommate, roommate_id)
     if not roommate or not roommate.room_fkey:
         return jsonify({"room_id": None}), 200
-    room = Room.query.get(roommate.room_fkey)
+    room = db.session.get(Room, roommate.room_fkey)
     if not room:
         return jsonify({"message": "Room not found"}), 404
     return (
@@ -56,13 +56,13 @@ def create_room():
     new_room = Room(
         name=room_name,
         invite_code=invite_code,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     db.session.add(new_room)
     db.session.flush()  # Ensures new_room.id is generated
 
-    roommate = Roommate.query.get(roommate_id)
+    roommate = db.session.get(Roommate, roommate_id)
     roommate.room_fkey = new_room.id
     db.session.commit()
 
@@ -92,7 +92,7 @@ def join_room():
     if not room:
         return jsonify({"message": "Room not found"}), 404
 
-    roommate = Roommate.query.get(roommate_id)
+    roommate = db.session.get(Roommate, roommate_id)
     roommate.room_fkey = room.id
     db.session.commit()
 
@@ -113,7 +113,7 @@ def join_room():
 @jwt_required()
 def leave_room():
     roommate_id = get_jwt_identity()
-    roommate = Roommate.query.get(roommate_id)
+    roommate = db.session.get(Roommate, roommate_id)
     if not roommate:
         return jsonify({"message": "Roommate record not found"}), 404
 
@@ -125,7 +125,7 @@ def leave_room():
 @jwt_required()
 def get_roommates_in_room():
     roommate_id = get_jwt_identity()
-    current_roommate = Roommate.query.get(roommate_id)
+    current_roommate = db.session.get(Roommate, roommate_id)
     if not current_roommate or not current_roommate.room_fkey:
         return jsonify({"message": "User is not assigned to any room"}), 404
     roommates = Roommate.query.filter_by(room_fkey=current_roommate.room_fkey).all()
