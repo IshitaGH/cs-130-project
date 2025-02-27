@@ -14,6 +14,7 @@ import {
   ActionSheetIOS,
   RefreshControl,
   Switch,
+  ScrollView,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
@@ -60,7 +61,7 @@ export default function ChoresScreen() {
   // New/Selected Chore State
   const [choreName, setChoreName] = useState("");
   const [choreRoommate, setChoreRoommate] = useState("");
-  const [choreIsTask, setChoreIsTask] = useState(true);
+  const [choreIsTask, setChoreIsTask] = useState(false);
   const [choreRecurrence, setChoreRecurrence] = useState("none");
   const [choreEndDate, setChoreEndDate] = useState<string | null>(null);
   const [selectedRoommateId, setSelectedRoommateId] = useState<number | null>(null);
@@ -201,7 +202,7 @@ export default function ChoresScreen() {
     setSelectedRoommateId(null);
     setChoreRoommate("");
     setChoreEndDate(null);
-    setChoreIsTask(true);
+    setChoreIsTask(false);
     setChoreRecurrence("none");
     setSelectedChore(null);
     setModalVisible(false);
@@ -373,23 +374,42 @@ export default function ChoresScreen() {
             />
 
             <Text style={styles.label}>Roommate Responsible</Text>
-            <View style={styles.dropdown}>
-              {roommates.map((roommate) => (
+            <ScrollView
+              horizontal={true}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.roommateScrollContainer}
+            >
+              {roommates
+                .sort((a, b) => {
+                  if (a.id === userId) return -1;
+                  if (b.id === userId) return 1;
+                  return 0;
+                })
+                .map((roommate) => (
                 <TouchableOpacity
                   key={roommate.id}
                   onPress={() => setSelectedRoommateId(roommate.id)}
+                  style={[
+                    styles.roommateOption,
+                    selectedRoommateId === roommate.id && styles.selectedRoommateOption
+                  ]}
                 >
+                  <View style={styles.roommateAvatar}>
+                    <Text style={styles.roommateAvatarText}>
+                      {`${roommate.first_name.charAt(0)}${roommate.last_name.charAt(0)}`}
+                    </Text>
+                  </View>
                   <Text
                     style={[
-                      styles.option,
-                      selectedRoommateId === roommate.id && styles.selectedOption
+                      styles.roommateName,
+                      selectedRoommateId === roommate.id && styles.selectedRoommateName
                     ]}
                   >
-                    {`${roommate.first_name} ${roommate.last_name}`}
+                    {roommate.id === userId ? "You" : roommate.first_name}
                   </Text>
                 </TouchableOpacity>
               ))}
-            </View>
+            </ScrollView>
 
             {/* Is Task Switch */}
             <View style={styles.switchContainer}>
@@ -488,5 +508,43 @@ const styles = StyleSheet.create({
     color: '#999',
     fontSize: 14,
     paddingVertical: 10,
+  },
+  roommateScrollContainer: {
+    paddingBottom: 10,
+  },
+  roommateOption: {
+    alignItems: 'center',
+    marginRight: 15,
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#EEE',
+    minWidth: 100,
+  },
+  selectedRoommateOption: {
+    backgroundColor: '#00D09E',
+    borderColor: '#00D09E',
+  },
+  roommateAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#CDEEEE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  roommateAvatarText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#007F5F',
+  },
+  roommateName: {
+    fontSize: 14,
+    color: '#333',
+    textAlign: 'center',
+  },
+  selectedRoommateName: {
+    color: '#FFFFFF',
   },
 });
