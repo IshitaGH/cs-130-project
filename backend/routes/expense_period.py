@@ -116,9 +116,9 @@ def delete_expense_period():
     expenses = Expense.query.filter_by(expense_period_fkey=expense_period.id).all()
     
     if expense_period:
-        db.session.delete(expense_period)
         for expense in expenses:
             db.session.delete(expense)
+        db.session.delete(expense_period)
         db.session.commit()
         return jsonify({"message": "Expense period deleted successfully"}), 200
     else:
