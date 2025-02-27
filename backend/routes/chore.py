@@ -199,7 +199,7 @@ def update_chore(chore_id):
         chore.is_task = is_task
     if recurrence:
         chore.recurrence = recurrence
-    if completed:
+    if completed is not None:
         chore.completed = completed
 
     db.session.commit()

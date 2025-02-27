@@ -124,8 +124,73 @@ export async function apiGetChores(session: any) {
   });
 
   if (!response.ok) {
-    throw new Error('Failed to get message');
+    throw new Error('Failed to get chores');
   }
   const data = await response.json();
   return data;
+}
+
+export async function apiCreateChore(session: any, description: string, endDate: string, autorotate: boolean, isTask: boolean, recurrence: string) {
+  const response = await fetch(`${API_URL}/chores`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session}`
+    },
+    body: JSON.stringify({
+      description,
+      end_date: endDate,
+      autorotate,
+      is_task: isTask,
+      recurrence
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to create chore');
+  }
+
+  const data = await response.json();
+  return data.chore;
+}
+
+export async function apiUpdateChore(session: any, choreId: number, updates: {
+  description?: string;
+  end_date?: string;
+  autorotate?: boolean;
+  is_task?: boolean;
+  recurrence?: string;
+  completed?: boolean;
+}) {
+  const response = await fetch(`${API_URL}/chores/${choreId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session}`
+    },
+    body: JSON.stringify(updates),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to update chore');
+  }
+
+  const data = await response.json();
+  return data.chore;
+}
+
+export async function apiDeleteChore(session: any, choreId: number) {
+  const response = await fetch(`${API_URL}/chores/${choreId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${session}`
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to delete chore');
+  }
 }
