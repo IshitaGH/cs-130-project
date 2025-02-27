@@ -139,11 +139,12 @@ def update_expense():
     
     expense = Expense.query.filter_by(
         roommate_fkey=roommate_id,
-        title=data["title"].strip()
+        id=data["id"]
     ).first()
     
     if expense:
         expense.updated_at=datetime.utcnow()
+        expense.title=data["title"] if "title" in data else expense.title
         expense.cost=data["cost"] if "cost" in data else expense.cost
         expense.description=data["description"].strip() if "description" in data else expense.description
         
