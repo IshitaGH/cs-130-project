@@ -115,47 +115,48 @@ def leave_room_route():
     return leave_room()
 
 
-@app.route("/rooms/expense", methods=["POST"])
+# EXPENSE ROUTES
+@app.route("/expense", methods=["POST"])
 def create_expense_route():
     return create_expense()
 
 
-@app.route("/rooms/expense", methods=["GET"])
+@app.route("/expense", methods=["GET"])
 def get_expense_route():
     return get_expense()
 
 
-@app.route("/rooms/expense", methods=["PUT"])
+@app.route("/expense", methods=["PUT"])
 def update_expense_route():
     return update_expense()
 
 
-@app.route("/rooms/expense", methods=["DELETE"])
+@app.route("/expense", methods=["DELETE"])
 def remove_exense_route():
     return remove_expense()
 
 
-@app.route("/rooms/expense_period", methods=["POST"])
+@app.route("/expense_period", methods=["POST"])
 def create_expense_period_route():
     return create_expense_period()
 
 
-@app.route("/rooms/expense_period", methods=["GET"])
+@app.route("/expense_period", methods=["GET"])
 def get_expense_period_route():
     return get_expense_period()
 
 
-@app.route("/rooms/expense_period", methods=["PUT"])
+@app.route("/expense_period", methods=["PUT"])
 def close_expense_period_route():
     return close_expense_period()
 
 
-@app.route("/rooms/expense_period", methods=["DELETE"])
+@app.route("/expense_period", methods=["DELETE"])
 def delete_expense_period_route():
     return delete_expense_period()
 
 
-@app.route("/rooms/roommate_expense", methods=["GET"])
+@app.route("/roommate_expense", methods=["GET"])
 def get_roommate_expense_route():
     return get_roommate_expense()
 
