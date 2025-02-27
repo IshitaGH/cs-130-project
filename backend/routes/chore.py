@@ -19,7 +19,7 @@ from sqlalchemy import func
 @jwt_required()
 def get_chores():
     current_roommate_id = get_jwt_identity()
-    current_roommate = Roommate.query.get(current_roommate_id)
+    current_roommate = db.session.get(Roommate, current_roommate_id)
     if not current_roommate or not current_roommate.room_fkey:
         return jsonify({"chores": []}), 200  # No room, so no chores
 
@@ -80,7 +80,7 @@ def get_chores():
 @jwt_required()
 def create_chore():
     current_roommate_id = get_jwt_identity()
-    current_roommate = Roommate.query.get(current_roommate_id)
+    current_roommate = db.session.get(Roommate, current_roommate_id)
     if not current_roommate or not current_roommate.room_fkey:
         return jsonify({"message": "User is not in a room"}), 400
 
@@ -159,11 +159,11 @@ def create_chore():
 @jwt_required()
 def update_chore(chore_id):
     current_roommate_id = get_jwt_identity()
-    current_roommate = Roommate.query.get(current_roommate_id)
+    current_roommate = db.session.get(Roommate, current_roommate_id)
     if not current_roommate or not current_roommate.room_fkey:
         return jsonify({"message": "User is not in a room"}), 400
 
-    chore = Chore.query.get(chore_id)
+    chore = db.session.get(Chore, chore_id)
     if not chore:
         return jsonify({"message": "Chore not found"}), 404
 
@@ -236,7 +236,7 @@ def update_chore(chore_id):
 # Deletes a chore.
 @jwt_required()
 def delete_chore(chore_id):
-    chore = Chore.query.get(chore_id)
+    chore = db.session.get(Chore, chore_id)
     if not chore:
         return jsonify({"message": "Chore not found"}), 404
 
