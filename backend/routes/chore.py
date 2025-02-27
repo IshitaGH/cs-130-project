@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from flask import jsonify, request
 from flask_jwt_extended import (
@@ -7,12 +7,11 @@ from flask_jwt_extended import (
     get_jwt_identity,
     jwt_required,
 )
+from sqlalchemy import func
 
 from database import db
-from models.chore import Chore
-from models.chore import Roommate
-from datetime import datetime, timedelta, timezone
-from sqlalchemy import func
+from models.chore import Chore, Roommate
+
 
 # GET /chores
 # Returns all active (not completed) chores in the current user's room.
@@ -32,7 +31,7 @@ def get_chores():
     active_window_chores = Chore.query.filter(
         Chore.assignee_fkey.in_(roommate_ids),
         Chore.start_date <= func.now(),
-        func.now() <= Chore.end_date
+        func.now() <= Chore.end_date,
     ).all()
 
     # 2) separate incomplete vs. completed
@@ -69,11 +68,12 @@ def get_chores():
             "completed": chore.completed,
             "room_id": current_roommate.room_fkey,
             "assigned_roommate": assigned_roommate_data,
-            "roommate_assignor_id": chore.assignor_fkey
+            "roommate_assignor_id": chore.assignor_fkey,
         }
         chores_list.append(chore_data)
-    
+
     return jsonify({"chores": chores_list}), 200
+
 
 # POST /chores
 # Creates a new chore.
@@ -107,7 +107,6 @@ def create_chore():
     if end_date.tzinfo is not None:
         end_date = end_date.astimezone(timezone.utc).replace(tzinfo=None)
 
-
     new_chore = Chore(
         description=description,
         start_date=start_date,
@@ -117,10 +116,9 @@ def create_chore():
         completed=False,
         assignor_fkey=current_roommate_id,  # using the current user as assignor
         # TODO: Right now this is initially assigned self because we do not have a way to extract the roommate ID from the assigned roommate due to our free form text method
-        assignee_fkey=current_roommate_id, 
-        recurrence=recurrence
+        assignee_fkey=current_roommate_id,
+        recurrence=recurrence,
     )
-    
 
     db.session.add(new_chore)
     db.session.commit()
@@ -133,7 +131,7 @@ def create_chore():
         assigned_roommate_data = {
             "id": new_chore.assignee.id,
             "first_name": new_chore.assignee.first_name,
-            "last_name": new_chore.assignee.last_name
+            "last_name": new_chore.assignee.last_name,
         }
 
     chore_data = {
@@ -149,10 +147,11 @@ def create_chore():
         "assigned_roommate": assigned_roommate_data,
         "roommate_assignor_id": new_chore.assignor_fkey,
         "room_id": current_roommate.room_fkey,
-        "recurrence": new_chore.recurrence
+        "recurrence": new_chore.recurrence,
     }
 
     return jsonify({"chore": chore_data}), 201
+
 
 # PUT /chores/<int:chore_id>
 # Updates an existing chore.
@@ -186,7 +185,9 @@ def update_chore(chore_id):
 
             # Convert offset-aware to naive UTC if needed
             if new_end_date.tzinfo is not None:
-                new_end_date = new_end_date.astimezone(timezone.utc).replace(tzinfo=None)
+                new_end_date = new_end_date.astimezone(timezone.utc).replace(
+                    tzinfo=None
+                )
 
             chore.end_date = new_end_date
             chore.duration = new_end_date - chore.start_date
@@ -203,7 +204,6 @@ def update_chore(chore_id):
         chore.completed = completed
 
     db.session.commit()
-
 
     assigned_roommate_data = None
     if chore.assignee:  # chore.assignee is the relationship to Roommate
@@ -227,7 +227,7 @@ def update_chore(chore_id):
         "assigned_roommate": assigned_roommate_data,
         "roommate_assignor_id": chore.assignor_fkey,
         "room_id": current_roommate.room_fkey,
-        "recurrence": chore.recurrence
+        "recurrence": chore.recurrence,
     }
     return jsonify({"chore": chore_data}), 200
 

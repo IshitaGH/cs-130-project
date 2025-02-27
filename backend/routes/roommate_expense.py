@@ -8,10 +8,10 @@ from flask_jwt_extended import (
     jwt_required,
 )
 
-
 from database import db
-from models.expense import Roommate_Expense, Expense
+from models.expense import Expense, Roommate_Expense
 from models.roommate import Room, Roommate
+
 
 @jwt_required()
 def get_roommate_expense():
@@ -23,7 +23,9 @@ def get_roommate_expense():
     if not room:
         return jsonify({"message": "Room not found"}), 404
 
-    roommate_expenses = Roommate_Expense.query.filter_by(roommate_fkey=roommate.id).all()
+    roommate_expenses = Roommate_Expense.query.filter_by(
+        roommate_fkey=roommate.id
+    ).all()
 
     result = []
     for roommate_expense in roommate_expenses:
@@ -31,7 +33,7 @@ def get_roommate_expense():
             {
                 "expense_fkey": roommate_expense.expense_fkey,
                 "roommate_fkey": roommate_expense.roommate_fkey,
-                "percentage": roommate_expense.percentage
+                "percentage": roommate_expense.percentage,
             }
         )
     return jsonify(result), 200

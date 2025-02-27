@@ -14,12 +14,16 @@ from database import db, migrate
 from models.chore import Chore
 from models.expense import Expense, Roommate_Expense
 from models.roommate import Room, Roommate
-from routes.chore import create_chore
+from routes.chore import create_chore, delete_chore, get_chores, update_chore
+from routes.expense import create_expense, get_expense, remove_expense, update_expense
+from routes.expense_period import (
+    close_expense_period,
+    create_expense_period,
+    delete_expense_period,
+    get_expense_period,
+)
 from routes.room import create_room, get_current_room, join_room, leave_room
-from routes.expense import create_expense, get_expense, update_expense, remove_expense
-from routes.expense_period import create_expense_period, get_expense_period, close_expense_period, delete_expense_period
 from routes.roommate_expense import get_roommate_expense
-from routes.chore import create_chore, get_chores, update_chore, delete_chore
 
 app = Flask(__name__)
 # The following environment variables are set in docker-compose.yml
@@ -110,54 +114,67 @@ def join_room_route():
 def leave_room_route():
     return leave_room()
 
+
 @app.route("/rooms/expense", methods=["POST"])
 def create_expense_route():
     return create_expense()
+
 
 @app.route("/rooms/expense", methods=["GET"])
 def get_expense_route():
     return get_expense()
 
+
 @app.route("/rooms/expense", methods=["PUT"])
 def update_expense_route():
     return update_expense()
+
 
 @app.route("/rooms/expense", methods=["DELETE"])
 def remove_exense_route():
     return remove_expense()
 
+
 @app.route("/rooms/expense_period", methods=["POST"])
 def create_expense_period_route():
     return create_expense_period()
+
 
 @app.route("/rooms/expense_period", methods=["GET"])
 def get_expense_period_route():
     return get_expense_period()
 
+
 @app.route("/rooms/expense_period", methods=["PUT"])
 def close_expense_period_route():
     return close_expense_period()
+
 
 @app.route("/rooms/expense_period", methods=["DELETE"])
 def delete_expense_period_route():
     return delete_expense_period()
 
+
 @app.route("/rooms/roommate_expense", methods=["GET"])
 def get_roommate_expense_route():
     return get_roommate_expense()
+
 
 # CHORES ROUTES
 @app.route("/chores", methods=["POST"])
 def create_chore_route():
     return create_chore()
 
+
 @app.route("/chores", methods=["GET"])
 def get_chore_route():
     return get_chores()
 
+
 @app.route("/chores/<int:chore_id>", methods=["PUT"])
 def update_chore_route(chore_id):
     return update_chore(chore_id)
+
 
 @app.route("/chores/<int:chore_id>", methods=["DELETE"])
 def delete_chore_route(chore_id):
