@@ -112,7 +112,10 @@ def get_expense():
     result = []
     for expense in expenses:
         roommate_expenses_result = []
-        for roommate_expense in expense.roommate_list:
+        roommate_expenses = Roommate_Expense.query.filter_by(
+            expense_fkey=expense.id
+        ).all()
+        for roommate_expense in roommate_expenses:
             roommate_expenses_result.append(
                 {
                     "expense_fkey": roommate_expense.expense_fkey,
