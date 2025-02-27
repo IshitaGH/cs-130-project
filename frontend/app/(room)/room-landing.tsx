@@ -1,8 +1,10 @@
 import { useRouter } from "expo-router";
 import { View, Text, TouchableOpacity, StyleSheet, Image } from "react-native";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 export default function RoomLandingScreen() {
   const router = useRouter();
+  const { signOut } = useAuthContext();
 
   return (
     <View style={styles.container}>
@@ -20,6 +22,10 @@ export default function RoomLandingScreen() {
       >
         <Text style={styles.buttonText}>Create Room</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => signOut()} style={styles.backButton}>
+          <Text style={styles.backButtonText}>Sign Out</Text>
+        </TouchableOpacity>
 
     </View>
   );
@@ -57,5 +63,13 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "600",
+  },
+  backButton: {
+    marginTop: 10,
+  },
+  backButtonText: {
+    color: "#00D09E",
+    fontSize: 14,
+    textDecorationLine: "underline",
   },
 });

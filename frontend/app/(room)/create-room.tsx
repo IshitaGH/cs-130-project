@@ -2,22 +2,25 @@ import { useState } from "react";
 import { useRouter } from "expo-router";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
 import { apiCreateRoom } from "@/utils/api/apiClient";
-import { useSession } from "@/contexts/AuthContext";
+import { useAuthContext } from "@/contexts/AuthContext";
+import Toast from "react-native-toast-message";
 
 export default function CreateRoomScreen() {
   const [roomName, setRoomName] = useState("");
   const router = useRouter();
-  const { session } = useSession();
+  const { session } = useAuthContext();
 
   const handleCreateRoom = async () => {
-    let data;
     try {
-      data = await apiCreateRoom(session, roomName);
-    } catch (error) {
-      console.error(error);
+      await apiCreateRoom(session, roomName);
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error Creating Room',
+        text2: error.message,
+      });
       return;
     }
-    console.log("Room created successfully");
     router.replace("/home");
   };
 

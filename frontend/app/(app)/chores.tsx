@@ -17,7 +17,7 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { useSession } from "@/contexts/AuthContext";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { apiGetChores } from "@/utils/api/apiClient";
 
 type Chore = {
@@ -54,7 +54,7 @@ export default function ChoresScreen() {
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const slideAnim = React.useRef(new Animated.Value(Dimensions.get("window").height)).current;
   const [refreshing, setRefreshing] = useState(false);
-  const { session, userId } = useSession();
+  const { session, userId } = useAuthContext();
 
   // New state for whether the chore is a task (completable)
   const [isTask, setIsTask] = useState(true);
@@ -388,8 +388,6 @@ const styles = StyleSheet.create({
   choreDate: { fontSize: 14, color: "#666" },
   strikethrough: { textDecorationLine: "line-through", color: "#999" },
   completedRow: { backgroundColor: "#E0FFE6" },
-  fab: { position: "absolute", bottom: 20, right: 20, flexDirection: "row", backgroundColor: "#00D09E", padding: 10, borderRadius: 12 },
-  fabText: { color: "#FFFFFF", fontWeight: "bold", marginLeft: 8 },
   modalContainer: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0, 0, 0, 0.5)" },
   modalContent: { backgroundColor: "#FFFFFF", padding: 20, borderTopLeftRadius: 16, borderTopRightRadius: 16, minHeight: Dimensions.get("window").height * 0.4 },
   modalTitle: { fontSize: 20, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
