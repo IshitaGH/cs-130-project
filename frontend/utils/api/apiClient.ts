@@ -1,6 +1,3 @@
-// Create a file at frontend/config.ts that exports constant API_URL with your device's IP address
-// Example: `export const API_URL = "http://YOUR_LOCAL_IP_ADDRESS:5000";`
-// Localhost might not work because Flask doesn't recognize it in its CORS policy
 import { API_URL } from '@/config';
 
 // NOTE: should only be called via AuthContext
