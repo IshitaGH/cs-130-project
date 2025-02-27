@@ -18,7 +18,7 @@ def create_expense_period():
     roommate_id = get_jwt_identity()
     roommate = Roommate.query.get(roommate_id)
     if not roommate or not roommate.room_fkey:
-        return jsonify({"room_id": None}), 200
+        return jsonify({"room_id": None}), 404
     room = Room.query.get(roommate.room_fkey)
     if not room:
         return jsonify({"message": "Room not found"}), 404
@@ -51,7 +51,7 @@ def get_expense_period():
     roommate_id = get_jwt_identity()
     roommate = Roommate.query.get(roommate_id)
     if not roommate or not roommate.room_fkey:
-        return jsonify({"room_id": None}), 200
+        return jsonify({"room_id": None}), 404
     room = Room.query.get(roommate.room_fkey)
     if not room:
         return jsonify({"message": "Room not found"}), 404
@@ -92,7 +92,7 @@ def close_expense_period():
     roommate_id = get_jwt_identity()
     roommate = Roommate.query.get(roommate_id)
     if not roommate or not roommate.room_fkey:
-        return jsonify({"room_id": None}), 200
+        return jsonify({"room_id": None}), 404
     room = Room.query.get(roommate.room_fkey)
     if not room:
         return jsonify({"message": "Room not found"}), 404
