@@ -10,7 +10,7 @@ from app import Room, Roommate, app, db
 class FlaskAppTestCase(unittest.TestCase):
     def setUp(self):
         # Configure the app for testing.
-        # if this does not work (the SQLALCHEMY_DATABSE_URI is not recognized), then
+        # if this does not work (the SQLALCHEMY_DATABSE_URI is not recognized), then see README to export it in shell
         app.config["TESTING"] = True
         app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"  # in-memory DB
         app.config["JWT_SECRET_KEY"] = "test-secret-key"
@@ -30,8 +30,8 @@ class FlaskAppTestCase(unittest.TestCase):
         return self.app.post(
             "/register",
             json={
-                "firstName": first_name,
-                "lastName": last_name,
+                "first_name": first_name,
+                "last_name": last_name,
                 "username": username,
                 "password": password,
             },
