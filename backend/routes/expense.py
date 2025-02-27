@@ -138,8 +138,7 @@ def update_expense():
     data = request.get_json()
     
     expense = Expense.query.filter_by(
-        roommate_fkey=roommate_id, 
-        room_fkey=room.id,
+        roommate_fkey=roommate_id,
         title=data["title"].strip()
     ).first()
     
