@@ -11,8 +11,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Animated,
-  Picker,
 } from "react-native";
+import { Picker } from '@react-native-picker/picker'
 import { MaterialIcons } from "@expo/vector-icons";
 
 interface Expense {
