@@ -29,10 +29,14 @@ def get_chores():
 
     # 1) Filter chores in the active window for the room
     # active meaning start_date <= now() <= end_date
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    # Filter chores in the active window for the room
+    # active meaning start_date <= now_utc <= end_date
     active_window_chores = Chore.query.filter(
         Chore.assignee_fkey.in_(roommate_ids),
-        Chore.start_date <= func.now(),
-        func.now() <= Chore.end_date
+        Chore.start_date <= now_utc,
+        now_utc <= Chore.end_date
     ).all()
 
     # 2) separate incomplete vs. completed
