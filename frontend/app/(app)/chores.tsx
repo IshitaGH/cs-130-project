@@ -445,11 +445,8 @@ export default function ChoresScreen() {
               minimumDate={new Date()}
               onConfirm={(date) => {
                 const localDate = new Date(date);
-                const timezoneOffset = localDate.getTimezoneOffset() * 60000;
                 localDate.setHours(23, 59, 59, 999);
-                // Adjust for timezone offset before converting to ISO string
-                const adjustedDate = new Date(localDate.getTime() - timezoneOffset);
-                setChoreEndDate(adjustedDate.toISOString());
+                setChoreEndDate(localDate.toISOString());
                 setDatePickerVisible(false);
               }}
               onCancel={() => setDatePickerVisible(false)}

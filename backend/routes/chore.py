@@ -63,11 +63,12 @@ def get_chores():
             }
         chore_data = {
             "id": chore.id,
-            "created_at": chore.created_at.isoformat(),
-            "updated_at": chore.updated_at.isoformat(),
+            # times in DB do not have timezone info, so we need to add it back before sending to FE
+            "created_at": chore.created_at.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
+            "updated_at": chore.updated_at.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
             "description": chore.description,
-            "start_date": chore.start_date.isoformat(),
-            "end_date": chore.end_date.isoformat(),
+            "start_date": chore.start_date.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
+            "end_date": chore.end_date.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
             "autorotate": chore.autorotate,
             "is_task": chore.is_task,
             "completed": chore.completed,
@@ -76,7 +77,7 @@ def get_chores():
             "roommate_assignor_id": chore.assignor_fkey
         }
         chores_list.append(chore_data)
-    
+
     return jsonify({"chores": chores_list}), 200
 
 # POST /chores
@@ -99,8 +100,9 @@ def create_chore():
     if not all([description, end_date_str, autorotate is not None, recurrence]):
         return jsonify({"message": "Missing required fields"}), 400
 
-    # Set start_date to today's date at midnight (naive, in UTC)
-    start_date = datetime.combine(datetime.utcnow().date(), datetime.min.time())
+    # TODO: FE should send start_date to BE as well in UTC format
+    # Right now, BE is using PST midnight (stored as UTC in DB)
+    start_date = datetime.now().replace(hour=8, minute=0, second=0, microsecond=0).replace(tzinfo=None)
 
     # Parse end_date from the provided string
     try:
@@ -110,7 +112,7 @@ def create_chore():
 
     # Convert end_date to UTC naive if it is offset-aware
     if end_date.tzinfo is not None:
-        end_date = end_date.astimezone(timezone.utc).replace(tzinfo=None)
+        end_date = end_date.replace(tzinfo=None)
 
 
     new_chore = Chore(
@@ -142,11 +144,11 @@ def create_chore():
 
     chore_data = {
         "id": new_chore.id,
-        "created_at": new_chore.created_at.isoformat(),
-        "updated_at": new_chore.updated_at.isoformat(),
+        "created_at": new_chore.created_at.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
+        "updated_at": new_chore.updated_at.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
         "description": new_chore.description,
-        "start_date": new_chore.start_date.isoformat(),
-        "end_date": new_chore.end_date.isoformat(),
+        "start_date": new_chore.start_date.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
+        "end_date": new_chore.end_date.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
         "autorotate": new_chore.autorotate,
         "is_task": new_chore.is_task,
         "completed": new_chore.completed,
@@ -220,11 +222,11 @@ def update_chore(chore_id):
 
     chore_data = {
         "id": chore.id,
-        "created_at": chore.created_at.isoformat(),
-        "updated_at": chore.updated_at.isoformat(),
+        "created_at": chore.created_at.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
+        "updated_at": chore.updated_at.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
         "description": chore.description,
-        "start_date": chore.start_date.isoformat(),
-        "end_date": chore.end_date.isoformat(),
+        "start_date": chore.start_date.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
+        "end_date": chore.end_date.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
         "autorotate": chore.autorotate,
         "is_task": chore.is_task,
         "completed": chore.completed,
