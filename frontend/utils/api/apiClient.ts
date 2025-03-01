@@ -37,6 +37,12 @@ export async function apiGetRoom(session: any) {
     headers: { 'Authorization': `Bearer ${session}` },
   });
 
+  if (response.status === 404) {
+    return {
+      room_id: null
+    }
+  }
+
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || 'Failed to fetch Room');
