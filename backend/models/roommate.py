@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, LargeBinary, String
 from sqlalchemy.orm import relationship
 
 from database import db
@@ -31,6 +31,7 @@ class Roommate(db.Model):
     last_name = Column(String, nullable=False)  # new field for last name
     username = Column(String, unique=True, nullable=False)  # unique username for login
     password_hash = Column(String, nullable=False)  # hashed password
+    profile_picture = Column(LargeBinary, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(
         DateTime(timezone=True),
