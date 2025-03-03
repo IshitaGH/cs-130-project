@@ -49,6 +49,12 @@ type Roommate = {
   username: string;
 };
 
+function getCurrentDate() {
+  const localDate = new Date();
+  localDate.setHours(0, 0, 0, 0);
+  return localDate.toISOString();
+}
+
 export default function ChoresScreen() {
   // Auth State
   const { session, userId } = useAuthContext();
@@ -164,6 +170,7 @@ export default function ChoresScreen() {
       if (selectedChore) {
         const updatedChore = await apiUpdateChore(session, selectedChore.id, {
           description: choreName,
+          start_date: getCurrentDate(),
           end_date: choreEndDate,
           autorotate: choreRecurrence !== "none",
           is_task: choreIsTask,
@@ -179,6 +186,7 @@ export default function ChoresScreen() {
         const newChore = await apiCreateChore(
           session,
           choreName,
+          getCurrentDate(),
           choreEndDate,
           (choreRecurrence !== "none"),
           choreIsTask,

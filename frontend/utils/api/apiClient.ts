@@ -115,7 +115,7 @@ export async function apiGetChores(session: any) {
   return data.chores;
 }
 
-export async function apiCreateChore(session: any, description: string, endDate: string, autorotate: boolean, isTask: boolean, recurrence: string, assignedRoommateId: number) {
+export async function apiCreateChore(session: any, description: string, startDate: string, endDate: string, autorotate: boolean, isTask: boolean, recurrence: string, assignedRoommateId: number) {
   const response = await fetch(`${API_URL}/chores`, {
     method: 'POST',
     headers: {
@@ -124,6 +124,7 @@ export async function apiCreateChore(session: any, description: string, endDate:
     },
     body: JSON.stringify({
       description,
+      start_date: startDate,
       end_date: endDate,
       autorotate,
       is_task: isTask,
@@ -143,6 +144,7 @@ export async function apiCreateChore(session: any, description: string, endDate:
 
 export async function apiUpdateChore(session: any, choreId: number, updates: {
   description?: string;
+  start_date?: string;
   end_date?: string;
   autorotate?: boolean;
   is_task?: boolean;

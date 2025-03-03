@@ -91,6 +91,7 @@ def create_chore():
 
     data = request.get_json()
     description = data.get("description")
+    start_date_str = data.get("start_date")
     end_date_str = data.get("end_date")
     autorotate = data.get("autorotate")
     is_task = data.get("is_task")
@@ -100,15 +101,12 @@ def create_chore():
     if not all([description, end_date_str, autorotate is not None, recurrence]):
         return jsonify({"message": "Missing required fields"}), 400
 
-    # TODO: FE should send start_date to BE as well in UTC format
-    # Right now, BE is using PST midnight (stored as UTC in DB)
-    start_date = datetime.now().replace(hour=8, minute=0, second=0, microsecond=0).replace(tzinfo=None)
-
-    # Parse end_date from the provided string
+    # Parse start and end dates from the provided string
     try:
+        start_date = datetime.fromisoformat(start_date_str).replace(tzinfo=None)
         end_date = datetime.fromisoformat(end_date_str).replace(tzinfo=None)
     except Exception:
-        return jsonify({"message": "Invalid end_date format"}), 400
+        return jsonify({"message": "Invalid start_date or end_date format"}), 400
 
     new_chore = Chore(
         description=description,
@@ -170,6 +168,7 @@ def update_chore(chore_id):
 
     data = request.get_json()
     description = data.get("description")
+    start_date_str = data.get("start_date")
     end_date_str = data.get("end_date")
     autorotate = data.get("autorotate")
     is_task = data.get("is_task")
@@ -178,6 +177,12 @@ def update_chore(chore_id):
 
     if description:
         chore.description = description
+    if start_date_str:
+        try:
+            start_date = datetime.fromisoformat(start_date_str).replace(tzinfo=None)
+            chore.start_date = start_date
+        except Exception:
+            return jsonify({"message": "Invalid start_date format"}), 400
     if end_date_str:
         try:
             end_date = datetime.fromisoformat(end_date_str).replace(tzinfo=None)
