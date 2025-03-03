@@ -22,7 +22,7 @@ from routes.expense_period import (
     delete_expense_period,
     get_expense_period,
 )
-from routes.room import create_room, get_current_room, join_room, leave_room
+from routes.room import create_room, get_current_room, join_room, leave_room, get_roommates_in_room
 from routes.roommate_expense import get_roommate_expense
 
 app = Flask(__name__)
@@ -113,6 +113,10 @@ def join_room_route():
 @app.route("/rooms/leave", methods=["POST"])
 def leave_room_route():
     return leave_room()
+
+@app.route("/roommates", methods=["GET"])
+def get_roommates_route():
+    return get_roommates_in_room()
 
 
 # EXPENSE ROUTES

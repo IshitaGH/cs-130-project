@@ -14,6 +14,9 @@ import {
 } from "react-native";
 import { Picker } from '@react-native-picker/picker'
 import { MaterialIcons } from "@expo/vector-icons";
+import Toast from "react-native-toast-message";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { apiGetRoommates } from "@/utils/api/apiClient";
 
 interface Expense {
   id: number;
@@ -33,6 +36,13 @@ interface ExpenseCardProps {
 interface BalanceMap {
   [key: string]: number
 }
+
+type Roommate = {
+  id: number;
+  first_name: string;
+  last_name: string;
+  username: string;
+};
 
 const CURRENT_USER = "Caolinn"; //replace this with an API call when ready
 
@@ -55,17 +65,17 @@ const initialMockExpenses = [
   }
 ];
 
-const roommates = ["Byron", "Claire", "Nira", "Nik", "Caolinn", "Ishita"];
+const roommates_mock = ["Byron", "Claire", "Nira", "Nik", "Caolinn", "Ishita"];
 
-const calculatePersonalBalances = (expenses, setBalances) => {
+const calculatePersonalBalances = (expenses: Expense[], setBalances: any) => {
   let balanceSheet: BalanceMap = {};
-  roommates.forEach((roommate) => (balanceSheet[roommate] = 0));
-  let totalRoommates = roommates.length;
+  roommates_mock.forEach((roommate) => (balanceSheet[roommate] = 0));
+  let totalRoommates = roommates_mock.length;
 
   expenses.forEach(({ amount, payer }) => {
     let splitAmount = amount / totalRoommates;
     
-    roommates.forEach((roommate) => {
+    roommates_mock.forEach((roommate) => {
       if (roommate !== CURRENT_USER) {
         if (payer === CURRENT_USER) {
           // You paid, so they owe you their share
@@ -125,7 +135,7 @@ const ExpenseCard: React.FC<ExpenseCardProps> = ({ title, current, expenses, upd
 
           {!current && Object.keys(balances).length > 0 && (
             <View style={styles.balancesContainer}>
-              {roommates
+              {roommates_mock
                 .filter((name) => name !== CURRENT_USER) // Exclude the current user
                 .map((name) => (
                   <View key={name} style={styles.balanceRow}>
@@ -155,13 +165,39 @@ const ExpenseCard: React.FC<ExpenseCardProps> = ({ title, current, expenses, upd
 };
 
 export default function ExpensesScreen() {
+  // auth
+  const { session, userId } = useAuthContext();
+  // expenses data
+  const [roommates, setRoommates] = useState<Roommate[]>([]);
   const [expenseCards, setExpenseCards] = useState<{ title: string; current: Boolean; expenses: Expense[] }[]>([...initialMockExpenses]);
   const [modalVisible, setModalVisible] = useState(false);
+  // modal data
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
-  const [payer, setPayer] = useState(roommates[0]);
+  const [payer, setPayer] = useState(roommates_mock[0]);
+  // main view data
   const [balances, setBalances] = useState<BalanceMap>({});
   const slideAnim = React.useRef(new Animated.Value(Dimensions.get("window").height)).current;
+
+  const fetchRoommates = async () => {
+    if (!session) return;
+    try {
+      const roommatesData = await apiGetRoommates(session);
+      setRoommates(roommatesData);
+      console.log(roommates);
+      console.log(userId);
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error Fetching Roommates',
+        text2: error.message || 'Failed to fetch roommates'
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchRoommates();
+  }, [session]);
 
   // Function to update expenses for a specific card
   const updateExpenses = (title: string, updatedExpenses: Expense[]) => {
@@ -201,7 +237,7 @@ export default function ExpensesScreen() {
     // setExpenses([...expenses, newExpense]);
     setDescription("");
     setAmount("");
-    setPayer(roommates[0]);
+    setPayer(roommates_mock[0]);
     setModalVisible(false);
   };
 
@@ -210,7 +246,7 @@ export default function ExpensesScreen() {
       <View style={styles.container}>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Current period balances</Text>
-          {roommates
+          {roommates_mock
             .filter((name) => name !== CURRENT_USER) // Exclude the current user
             .map((name) => (
               <View key={name} style={styles.balanceRow}>
@@ -242,7 +278,7 @@ export default function ExpensesScreen() {
                 onValueChange={(itemValue) => setPayer(itemValue)}
                 style={styles.input}
               >
-                {roommates.map((roommate) => (
+                {roommates_mock.map((roommate) => (
                   <Picker.Item key={roommate} label={roommate} value={roommate} />
                 ))}
               </Picker>
