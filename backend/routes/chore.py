@@ -13,6 +13,25 @@ from models.chore import Chore
 from models.chore import Roommate
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
+from dateutil.relativedelta import relativedelta
+
+
+def get_next_assignee(chore):
+    # Use the room_fkey from the chore's assignee
+    if not chore.assignee:
+        return None
+    room_id = chore.assignee.room_fkey
+    roommates = Roommate.query.filter_by(room_fkey=room_id).order_by(Roommate.id).all()
+    if not roommates:
+        return None
+    # Find the current assignee's index
+    current_index = next((i for i, rm in enumerate(roommates) if rm.id == chore.assignee.id), None)
+    if current_index is None:
+        return roommates[0]
+    # Get the next roommate, wrapping around if necessary
+    next_index = (current_index + 1) % len(roommates)
+    return roommates[next_index]
+
 
 # GET /chores
 # Returns all active (not completed) chores in the current user's room.
@@ -102,7 +121,7 @@ def create_chore():
 
     # TODO: FE should send start_date to BE as well in UTC format
     # Right now, BE is using PST midnight (stored as UTC in DB)
-    start_date = datetime.now().replace(hour=8, minute=0, second=0, microsecond=0).replace(tzinfo=None)
+    start_date = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
 
     # Parse end_date from the provided string
     try:
@@ -180,6 +199,8 @@ def update_chore(chore_id):
     is_task = data.get("is_task")
     recurrence = data.get("recurrence")
     completed = data.get("completed")
+    # update the assigned roommate when changed manually
+    assigned_roommate_id = data.get("assigned_roommate_id")
 
     if description:
         chore.description = description
@@ -205,8 +226,36 @@ def update_chore(chore_id):
         chore.is_task = is_task
     if recurrence:
         chore.recurrence = recurrence
+    if assigned_roommate_id is not None:
+        chore.assignee_fkey = assigned_roommate_id
     if completed is not None:
         chore.completed = completed
+        # Check if we should perform autorotation
+        if completed and chore.autorotate and chore.recurrence.lower() != "none":
+            # Save the current duration of the chore
+            duration = chore.end_date - chore.start_date
+
+            # Calculate new start date relative to now (tomorrow at midnight)
+            if chore.recurrence.lower() == "daily":
+                new_start_date = (datetime.utcnow() + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            elif chore.recurrence.lower() == "weekly":
+                new_start_date = (datetime.utcnow() + timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)
+            elif chore.recurrence.lower() == "monthly":
+                new_start_date = (datetime.utcnow() + relativedelta(months=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            else:
+                new_start_date = chore.start_date  # Fallback: do nothing
+
+            # Set the new dates
+            chore.start_date = new_start_date
+            chore.end_date = new_start_date + duration
+
+            # Rotate the assignee to the next roommate
+            next_roommate = get_next_assignee(chore)
+            if next_roommate:
+                chore.assignee_fkey = next_roommate.id
+
+            # Reset the completed flag for the new cycle
+            chore.completed = False
 
     db.session.commit()
 
