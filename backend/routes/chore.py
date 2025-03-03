@@ -106,14 +106,9 @@ def create_chore():
 
     # Parse end_date from the provided string
     try:
-        end_date = datetime.fromisoformat(end_date_str)
-    except Exception as e:
+        end_date = datetime.fromisoformat(end_date_str).replace(tzinfo=None)
+    except Exception:
         return jsonify({"message": "Invalid end_date format"}), 400
-
-    # Convert end_date to UTC naive if it is offset-aware
-    if end_date.tzinfo is not None:
-        end_date = end_date.replace(tzinfo=None)
-
 
     new_chore = Chore(
         description=description,
@@ -185,18 +180,9 @@ def update_chore(chore_id):
         chore.description = description
     if end_date_str:
         try:
-            # Convert "Z" to "+00:00"
-            new_end_date_str = end_date_str.replace("Z", "+00:00")
-
-            new_end_date = datetime.fromisoformat(new_end_date_str)
-
-            # Convert offset-aware to naive UTC if needed
-            if new_end_date.tzinfo is not None:
-                new_end_date = new_end_date.astimezone(timezone.utc).replace(tzinfo=None)
-
-            chore.end_date = new_end_date
-            chore.duration = new_end_date - chore.start_date
-        except Exception as e:
+            end_date = datetime.fromisoformat(end_date_str).replace(tzinfo=None)
+            chore.end_date = end_date
+        except Exception:
             return jsonify({"message": "Invalid end_date format"}), 400
 
     if autorotate is not None:
