@@ -27,6 +27,33 @@ export default function LoginScreen() {
   const usernameInputRef = useRef<TextInput>(null);
 
   const handleRegister = async () => {
+    if (!firstName.trim() || !lastName.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Input',
+        text2: 'First name and last name are required',
+      });
+      return;
+    }
+
+    if (username.length < 3) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Username',
+        text2: 'Username must be at least 3 characters long',
+      });
+      return;
+    }
+
+    if (password.length < 3) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Password',
+        text2: 'Password must be at least 3 characters long',
+      });
+      return;
+    }
+
     try {
       await createAccount(firstName, lastName, username, password);
       router.replace("/login");
