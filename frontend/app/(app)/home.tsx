@@ -1,9 +1,12 @@
-import { useSession } from "@/contexts/AuthContext";
+
 import { View, Text, StyleSheet, FlatList, Image } from "react-native";
 import { useState } from "react";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { apiGetMessage } from "@/utils/api/apiClient";
 
 export default function HomeScreen() {
-  const { sessionLoading } = useSession();
+  const { session, sessionLoading } = useAuthContext();
+  const [backendMessage, setBackendMessage] = useState<string | null>("loading");
   const defaultAvatar = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
   const roommates = [
     { id: "1", name: "Byron", avatar: defaultAvatar },
@@ -14,6 +17,22 @@ export default function HomeScreen() {
     { id: "6", name: "Nira", avatar: defaultAvatar },
   ];
   const joinCode = "78474";
+
+
+  useEffect(() => {
+    const fetchMessage = async () => {
+      if (!session) return;
+
+      try {
+        const greeting = await apiGetMessage(session);
+        setBackendMessage(greeting);
+      } catch (error) {
+        console.error("Error fetching message:", error);
+      }
+    };
+
+    fetchMessage();
+  }, [session]);
 
   if (sessionLoading) {
     return (

@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { useSession } from "@/contexts/AuthContext";
+import { useState, useEffect, useRef } from "react";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { apiGetRoom } from "@/utils/api/apiClient";
+import Toast from "react-native-toast-message";
 import {
   Text,
   TextInput,
@@ -16,26 +17,34 @@ import { useRouter } from "expo-router";
 export default function LoginScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const { signIn } = useSession();
+  const { session, signIn, sessionLoading } = useAuthContext();
   const router = useRouter();
+  const passwordInputRef = useRef<TextInput | null>(null);
 
   const handleLogin = async () => {
-    setError(null);
     try {
       await signIn(username, password);
-      const roomData = await apiGetRoom();
-      if (roomData.room_id === null) {
-        router.replace("/room-landing")
-      }
-      else {
-        console.log(roomData.room_id)
-        router.replace("/home");
-      }
     } catch (err: any) {
-      setError(err.message);
+      Toast.show({
+        type: 'error',
+        text1: 'Error Logging-In',
+        text2: err.message,
+      });
     }
   };
+
+  useEffect(() => {
+    if (!sessionLoading && session) {
+      (async () => {
+        const roomData = await apiGetRoom(session);
+        if (roomData.room_id === null) {
+          router.replace("/room-landing");
+        } else {
+          router.replace("/home");
+        }
+      })();
+    }
+  }, [session]);
 
   return (
     <KeyboardAvoidingView
@@ -56,19 +65,19 @@ export default function LoginScreen() {
           value={username}
           style={styles.input}
           placeholderTextColor="#aaa"
+          onSubmitEditing={() => passwordInputRef.current?.focus()}
         />
 
         <TextInput
+          ref={passwordInputRef}
           placeholder="Password"
           secureTextEntry
           onChangeText={setPassword}
           value={password}
           style={styles.input}
           placeholderTextColor="#aaa"
+          onSubmitEditing={() => {}}
         />
-
-        {/* Display the error message */}
-        {error && <Text style={styles.errorText}>{error}</Text>}
 
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
           <Text style={styles.buttonText}>Sign In</Text>
