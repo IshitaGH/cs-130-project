@@ -44,14 +44,6 @@ export default function AppLayout() {
             <Ionicons name="list" color={color} size={size} />
           ),
           title: "Chores",
-          headerRight: () => (
-            <TouchableOpacity
-              onPress={() => { /* router.push(/some-chore-manager-page) */ }}
-              style={{ marginRight: 15 }}
-            >
-              <Ionicons name="ellipsis-horizontal" size={24} color="#555" />
-            </TouchableOpacity>
-          ),
         }}
       />
       <Tabs.Screen

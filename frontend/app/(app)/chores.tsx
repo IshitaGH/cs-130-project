@@ -375,7 +375,7 @@ export default function ChoresScreen() {
 
             <TextInput
               style={styles.input}
-              placeholder="Chore Name"
+              placeholder="Description"
               placeholderTextColor="#AAA"
               value={choreName}
               onChangeText={setChoreName}
