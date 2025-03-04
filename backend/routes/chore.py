@@ -28,10 +28,14 @@ def get_chores():
 
     # 1) Filter chores in the active window for the room
     # active meaning start_date <= now() <= end_date
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    # Filter chores in the active window for the room
+    # active meaning start_date <= now_utc <= end_date
     active_window_chores = Chore.query.filter(
         Chore.assignee_fkey.in_(roommate_ids),
-        Chore.start_date <= func.now(),
-        func.now() <= Chore.end_date,
+        Chore.start_date <= now_utc,
+        now_utc <= Chore.end_date
     ).all()
 
     # 2) separate incomplete vs. completed
@@ -58,11 +62,12 @@ def get_chores():
             }
         chore_data = {
             "id": chore.id,
-            "created_at": chore.created_at.isoformat(),
-            "updated_at": chore.updated_at.isoformat(),
+            # times in DB do not have timezone info, so we need to add it back before sending to FE
+            "created_at": chore.created_at.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
+            "updated_at": chore.updated_at.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
             "description": chore.description,
-            "start_date": chore.start_date.isoformat(),
-            "end_date": chore.end_date.isoformat(),
+            "start_date": chore.start_date.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
+            "end_date": chore.end_date.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
             "autorotate": chore.autorotate,
             "is_task": chore.is_task,
             "completed": chore.completed,
@@ -86,26 +91,22 @@ def create_chore():
 
     data = request.get_json()
     description = data.get("description")
+    start_date_str = data.get("start_date")
     end_date_str = data.get("end_date")
     autorotate = data.get("autorotate")
     is_task = data.get("is_task")
     recurrence = data.get("recurrence")
+    assigned_roommate_id = data.get("assigned_roommate_id")
 
     if not all([description, end_date_str, autorotate is not None, recurrence]):
         return jsonify({"message": "Missing required fields"}), 400
 
-    # Set start_date to today's date at midnight (naive, in UTC)
-    start_date = datetime.combine(datetime.utcnow().date(), datetime.min.time())
-
-    # Parse end_date from the provided string
+    # Parse start and end dates from the provided string
     try:
-        end_date = datetime.fromisoformat(end_date_str)
-    except Exception as e:
-        return jsonify({"message": "Invalid end_date format"}), 400
-
-    # Convert end_date to UTC naive if it is offset-aware
-    if end_date.tzinfo is not None:
-        end_date = end_date.astimezone(timezone.utc).replace(tzinfo=None)
+        start_date = datetime.fromisoformat(start_date_str).replace(tzinfo=None)
+        end_date = datetime.fromisoformat(end_date_str).replace(tzinfo=None)
+    except Exception:
+        return jsonify({"message": "Invalid start_date or end_date format"}), 400
 
     new_chore = Chore(
         description=description,
@@ -115,9 +116,8 @@ def create_chore():
         is_task=is_task,
         completed=False,
         assignor_fkey=current_roommate_id,  # using the current user as assignor
-        # TODO: Right now this is initially assigned self because we do not have a way to extract the roommate ID from the assigned roommate due to our free form text method
-        assignee_fkey=current_roommate_id,
-        recurrence=recurrence,
+        assignee_fkey=assigned_roommate_id,
+        recurrence=recurrence
     )
 
     db.session.add(new_chore)
@@ -136,11 +136,11 @@ def create_chore():
 
     chore_data = {
         "id": new_chore.id,
-        "created_at": new_chore.created_at.isoformat(),
-        "updated_at": new_chore.updated_at.isoformat(),
+        "created_at": new_chore.created_at.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
+        "updated_at": new_chore.updated_at.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
         "description": new_chore.description,
-        "start_date": new_chore.start_date.isoformat(),
-        "end_date": new_chore.end_date.isoformat(),
+        "start_date": new_chore.start_date.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
+        "end_date": new_chore.end_date.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
         "autorotate": new_chore.autorotate,
         "is_task": new_chore.is_task,
         "completed": new_chore.completed,
@@ -168,6 +168,7 @@ def update_chore(chore_id):
 
     data = request.get_json()
     description = data.get("description")
+    start_date_str = data.get("start_date")
     end_date_str = data.get("end_date")
     autorotate = data.get("autorotate")
     is_task = data.get("is_task")
@@ -176,22 +177,17 @@ def update_chore(chore_id):
 
     if description:
         chore.description = description
+    if start_date_str:
+        try:
+            start_date = datetime.fromisoformat(start_date_str).replace(tzinfo=None)
+            chore.start_date = start_date
+        except Exception:
+            return jsonify({"message": "Invalid start_date format"}), 400
     if end_date_str:
         try:
-            # Convert "Z" to "+00:00"
-            new_end_date_str = end_date_str.replace("Z", "+00:00")
-
-            new_end_date = datetime.fromisoformat(new_end_date_str)
-
-            # Convert offset-aware to naive UTC if needed
-            if new_end_date.tzinfo is not None:
-                new_end_date = new_end_date.astimezone(timezone.utc).replace(
-                    tzinfo=None
-                )
-
-            chore.end_date = new_end_date
-            chore.duration = new_end_date - chore.start_date
-        except Exception as e:
+            end_date = datetime.fromisoformat(end_date_str).replace(tzinfo=None)
+            chore.end_date = end_date
+        except Exception:
             return jsonify({"message": "Invalid end_date format"}), 400
 
     if autorotate is not None:
@@ -200,7 +196,7 @@ def update_chore(chore_id):
         chore.is_task = is_task
     if recurrence:
         chore.recurrence = recurrence
-    if completed:
+    if completed is not None:
         chore.completed = completed
 
     db.session.commit()
@@ -216,11 +212,11 @@ def update_chore(chore_id):
 
     chore_data = {
         "id": chore.id,
-        "created_at": chore.created_at.isoformat(),
-        "updated_at": chore.updated_at.isoformat(),
+        "created_at": chore.created_at.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
+        "updated_at": chore.updated_at.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
         "description": chore.description,
-        "start_date": chore.start_date.isoformat(),
-        "end_date": chore.end_date.isoformat(),
+        "start_date": chore.start_date.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
+        "end_date": chore.end_date.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
         "autorotate": chore.autorotate,
         "is_task": chore.is_task,
         "completed": chore.completed,

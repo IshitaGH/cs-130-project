@@ -101,21 +101,6 @@ export async function apiLeaveRoom(session: any) {
 }
 
 // returns the message from the backend or throws an error
-export async function apiGetMessage(session: any) {
-  const response = await fetch(`${API_URL}/protected`, {
-    headers: {
-      Authorization: `Bearer ${session}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to get message');
-  }
-  const data = await response.json();
-  return data.message;
-}
-
-// returns the message from the backend or throws an error
 export async function apiGetChores(session: any) {
   const response = await fetch(`${API_URL}/chores`, {
     headers: {
@@ -124,8 +109,92 @@ export async function apiGetChores(session: any) {
   });
 
   if (!response.ok) {
-    throw new Error('Failed to get message');
+    throw new Error('Failed to get chores');
   }
   const data = await response.json();
-  return data;
+  return data.chores;
+}
+
+export async function apiCreateChore(session: any, description: string, startDate: string, endDate: string, autorotate: boolean, isTask: boolean, recurrence: string, assignedRoommateId: number) {
+  const response = await fetch(`${API_URL}/chores`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session}`
+    },
+    body: JSON.stringify({
+      description,
+      start_date: startDate,
+      end_date: endDate,
+      autorotate,
+      is_task: isTask,
+      recurrence,
+      assigned_roommate_id: assignedRoommateId
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to create chore');
+  }
+
+  const data = await response.json();
+  return data.chore;
+}
+
+export async function apiUpdateChore(session: any, choreId: number, updates: {
+  description?: string;
+  start_date?: string;
+  end_date?: string;
+  autorotate?: boolean;
+  is_task?: boolean;
+  recurrence?: string;
+  completed?: boolean;
+  assigned_roommate_id?: number;
+}) {
+  const response = await fetch(`${API_URL}/chores/${choreId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session}`
+    },
+    body: JSON.stringify(updates),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to update chore');
+  }
+
+  const data = await response.json();
+  return data.chore;
+}
+
+export async function apiDeleteChore(session: any, choreId: number) {
+  const response = await fetch(`${API_URL}/chores/${choreId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${session}`
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to delete chore');
+  }
+}
+
+export async function apiGetRoommates(session: any) {
+  const response = await fetch(`${API_URL}/roommates`, {
+    headers: {
+      Authorization: `Bearer ${session}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to get roommates');
+  }
+  const data = await response.json();
+  return data.roommates;
 }

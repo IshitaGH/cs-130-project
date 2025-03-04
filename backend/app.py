@@ -23,6 +23,8 @@ from routes.expense_period import (
     get_expense_period,
 )
 from routes.room import create_room, get_current_room, join_room, leave_room
+from routes.chore import create_chore, get_chores, update_chore, delete_chore
+from routes.roommate import get_roommates_in_room
 from routes.roommate_expense import get_roommate_expense
 
 app = Flask(__name__)
@@ -83,17 +85,6 @@ def login():
     return jsonify({"access_token": access_token}), 200
 
 
-# Temporary: for current home screen to demonstrate protected endpoints with JWT
-@app.route("/protected", methods=["GET"])
-@jwt_required()
-def protected():
-    current_user = get_jwt_identity()  # gets the username of the current user
-    return (
-        jsonify({"message": f"Hello, {current_user}! Welcome to the protected page."}),
-        200,
-    )
-
-
 # ROOM ROUTES
 @app.route("/room", methods=["GET"])
 def get_current_room_route():
@@ -113,6 +104,12 @@ def join_room_route():
 @app.route("/rooms/leave", methods=["POST"])
 def leave_room_route():
     return leave_room()
+
+
+# ROOMMATES ROUTES
+@app.route("/roommates", methods=["GET"])
+def get_roommates_route():
+    return get_roommates_in_room()
 
 
 # EXPENSE ROUTES
