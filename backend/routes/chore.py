@@ -175,6 +175,17 @@ def update_chore(chore_id):
     recurrence = data.get("recurrence")
     completed = data.get("completed")
     rotation_order = data.get("rotation_order")
+    assigned_roommate_id = data.get("assigned_roommate_id")
+
+    # Update rotation_order and assignee_fkey together if rotation_order is provided
+    if rotation_order is not None:
+        chore.rotation_order = rotation_order
+        # If rotation_order is not empty, set assignee_fkey to the first person in the list
+        if rotation_order:
+            chore.assignee_fkey = rotation_order[0]
+    # If this is not a recurring chore (no rotation_order) and assigned_roommate_id is provided
+    elif assigned_roommate_id is not None:
+        chore.assignee_fkey = assigned_roommate_id
 
     if description:
         chore.description = description
@@ -197,8 +208,6 @@ def update_chore(chore_id):
         chore.recurrence = recurrence
     if completed is not None:
         chore.completed = completed
-    if rotation_order is not None:
-        chore.rotation_order = rotation_order
 
     db.session.commit()
 
@@ -208,7 +217,6 @@ def update_chore(chore_id):
             "id": chore.assignee.id,
             "first_name": chore.assignee.first_name,
             "last_name": chore.assignee.last_name,
-            # add any other fields you need
         }
 
     chore_data = {
