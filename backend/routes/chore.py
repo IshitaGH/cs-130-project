@@ -13,6 +13,18 @@ from database import db
 from models.chore import Chore, Roommate
 
 
+def rotate_chore(chore):
+    """Moves the chore to the next roommate in the rotation if end_date has passed"""
+    if chore.end_date < datetime.now() and chore.rotation_order:
+        current_index = chore.rotation_order.index(chore.assignee_fkey)
+        next_index = (current_index + 1) % len(chore.rotation_order)
+        chore.assignee_fkey = chore.rotation_order[next_index]
+
+        duration = (chore.end_date - chore.start_date).days
+        chore.start_date = datetime.now()
+        chore.end_date = chore.start_date + timedelta(days=duration)
+
+
 # GET /chores
 # Returns all active (not completed) chores in the current user's room.
 @jwt_required()
@@ -77,6 +89,11 @@ def get_chores():
             "recurrence": chore.recurrence,
         }
         chores_list.append(chore_data)
+
+    # rotate chores that have ended
+    for chore in chores_list:
+        rotate_chore(chore)
+    db.session.commit()
 
     return jsonify({"chores": chores_list}), 200
 
