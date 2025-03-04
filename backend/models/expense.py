@@ -29,6 +29,9 @@ class Expense(db.Model):
     title = Column(String, nullable=False)
     cost = Column(Double, nullable=False)
     description = Column(String)
+    expense_period_fkey = Column(
+        Integer, ForeignKey("expense_periods.id"), nullable=False
+    )
     room_fkey = Column(Integer, ForeignKey("rooms.id"), nullable=False)
     roommate_fkey = Column(Integer, ForeignKey("roommates.id"), nullable=False)
 

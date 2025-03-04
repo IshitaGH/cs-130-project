@@ -1,10 +1,10 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { useSession } from '@/contexts/AuthContext';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { apiLeaveRoom } from "@/utils/api/apiClient";
 import { useRouter } from "expo-router";
 
 export default function SettingsScreen() {
-  const { session, signOut } = useSession();
+  const { session, signOut } = useAuthContext();
   const router = useRouter();
 
   const handleLeaveRoom = async () => {
@@ -15,7 +15,6 @@ export default function SettingsScreen() {
       console.error(error);
       throw error;
     }
-    console.log("Room left");
     router.replace("/room-landing");
   };
 

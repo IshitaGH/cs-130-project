@@ -1,22 +1,19 @@
-import { useSession } from "@/contexts/AuthContext";
+import React from 'react';
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useRouter, Tabs } from "expo-router";
 import { useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Text, TouchableOpacity } from "react-native";
 
 export default function AppLayout() {
-  const { session, sessionLoading, signInLoading } = useSession();
+  const { session, sessionLoading } = useAuthContext();
   const router = useRouter();
 
   useEffect(() => {
-    if (!sessionLoading && !session && !signInLoading) {
+    if (!sessionLoading && !session) {
       router.replace("/");
     }
-  }, [session, sessionLoading, signInLoading]);
-
-  if (sessionLoading) {
-    return <Text>Loading...</Text>;
-  }
+  }, [session, sessionLoading]);
 
   return (
     <Tabs
@@ -47,14 +44,6 @@ export default function AppLayout() {
             <Ionicons name="list" color={color} size={size} />
           ),
           title: "Chores",
-          headerRight: () => (
-            <TouchableOpacity
-              onPress={() => { /* router.push(/some-chore-manager-page) */ }}
-              style={{ marginRight: 15 }}
-            >
-              <Ionicons name="ellipsis-horizontal" size={24} color="#555" />
-            </TouchableOpacity>
-          ),
         }}
       />
       <Tabs.Screen

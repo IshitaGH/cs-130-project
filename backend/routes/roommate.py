@@ -1,34 +1,26 @@
-from datetime import datetime
-
-from flask import jsonify, request
+from flask import jsonify
+from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from database import db
-from models.roommate import Roommate
+from models.roommate import Room, Roommate
 
-
-def create_roommate():
-    data = request.json
-
-    if "name" not in data or not data["name"].strip():
-        return jsonify({"error": "Roommate name is required"}), 400
-
-    new_room = Roommate(
-        name=data["name"].strip(),
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
-    )
-
-    db.session.add(new_room)
-    db.session.commit()
-
-    return (
-        jsonify(
+@jwt_required()
+def get_roommates_in_room():
+    roommate_id = get_jwt_identity()
+    current_roommate = Roommate.query.get(roommate_id)
+    if not current_roommate or not current_roommate.room_fkey:
+        return jsonify({"message": "User is not assigned to any room"}), 404
+    roommates = Roommate.query.filter_by(room_fkey=current_roommate.room_fkey).all()
+    result = []
+    for rm in roommates:
+        result.append(
             {
-                "id": new_room.id,
-                "name": new_room.name,
-                "created_at": new_room.created_at.isoformat(),
-                "updated_at": new_room.updated_at.isoformat(),
+                "id": rm.id,
+                "first_name": rm.first_name,
+                "last_name": rm.last_name,
+                "username": rm.username,
+                "created_at": rm.created_at.isoformat(),
+                "updated_at": rm.updated_at.isoformat(),
             }
-        ),
-        201,
-    )
+        )
+    return jsonify({"roommates": result}), 200

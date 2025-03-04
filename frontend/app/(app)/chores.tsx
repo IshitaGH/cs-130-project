@@ -14,94 +14,124 @@ import {
   ActionSheetIOS,
   RefreshControl,
   Switch,
+  ScrollView,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { useSession } from "@/contexts/AuthContext";
-import { apiGetChores } from "@/utils/api/apiClient";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { apiGetChores, apiUpdateChore, apiCreateChore, apiDeleteChore, apiGetRoommates } from "@/utils/api/apiClient";
+import Toast from "react-native-toast-message";
 
+// This type mimics the response structure from the backend
 type Chore = {
-  id: string;
-  name: string;
-  roommate_responsible: string;
-  ends: string;
+  id: number;
+  description: string;
+  start_date: string;
+  end_date: string;
   autorotate: boolean;
   is_task: boolean;
   completed: boolean;
-  recurrence?: string; // new field for recurrence frequency
+  recurrence: string;
+  assigned_roommate: {
+    id: number;
+    first_name: string;
+    last_name: string;
+  };
+  roommate_assignor_id: number;
+  room_id: number;
 };
 
-const currentUser = "Byron";
+// Add after the Chore type definition
+type Roommate = {
+  id: number;
+  first_name: string;
+  last_name: string;
+  username: string;
+};
 
-const initialMockChores: Chore[] = [
-  { id: "1", name: "Dishes", roommate_responsible: "Byron", ends: "2025-03-01T23:59:59Z", autorotate: true, is_task: true, completed: false, recurrence: "none" },
-  { id: "2", name: "Clean Kitchen", roommate_responsible: "Byron", ends: "2025-04-01T23:59:59Z", autorotate: false, is_task: false, completed: false, recurrence: "weekly" },
-  { id: "3", name: "Vacuum Living Room", roommate_responsible: "David", ends: "2025-05-01T23:59:59Z", autorotate: true, is_task: true, completed: false, recurrence: "daily" },
-  { id: "4", name: "Take Out Trash", roommate_responsible: "David", ends: "2025-06-01T23:59:59Z", autorotate: false, is_task: false, completed: false, recurrence: "monthly" },
-  { id: "5", name: "Mop Bathroom", roommate_responsible: "Byron", ends: "2025-07-01T23:59:59Z", autorotate: true, is_task: true, completed: false, recurrence: "none" },
-  { id: "6", name: "Wash Car", roommate_responsible: "Byron", ends: "2025-08-01T23:59:59Z", autorotate: false, is_task: false, completed: false, recurrence: "none" },
-  { id: "7", name: "Water Plants", roommate_responsible: "Byron", ends: "2025-09-01T23:59:59Z", autorotate: true, is_task: true, completed: false, recurrence: "daily" },
-  { id: "8", name: "Feed Pets", roommate_responsible: "Byron", ends: "2025-10-01T23:59:59Z", autorotate: false, is_task: false, completed: false, recurrence: "none" },
-];
+function getCurrentDate() {
+  const localDate = new Date();
+  localDate.setHours(0, 0, 0, 0);
+  return localDate.toISOString();
+}
 
 export default function ChoresScreen() {
-  const [chores, setChores] = useState<Chore[]>(() => JSON.parse(JSON.stringify(initialMockChores)));
-  const [modalVisible, setModalVisible] = useState(false);
-  const [newChoreName, setNewChoreName] = useState("");
-  const [roommate, setRoommate] = useState("");
-  const [dueDate, setDueDate] = useState<string | null>(null);
-  const [selectedChore, setSelectedChore] = useState<Chore | null>(null);
-  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
-  const slideAnim = React.useRef(new Animated.Value(Dimensions.get("window").height)).current;
-  const [refreshing, setRefreshing] = useState(false);
-  const { session, userId } = useSession();
-
-  // New state for whether the chore is a task (completable)
-  const [isTask, setIsTask] = useState(true);
-  // New state for recurrence frequency ("none", "daily", "weekly", "monthly")
-  const [recurrence, setRecurrence] = useState("none");
-
-  // Derived state for display (your chores vs. roommates' chores)
+  // Auth State
+  const { session, userId } = useAuthContext();
+  // Roommates State
+  const [roommates, setRoommates] = useState<Roommate[]>([]);
+  // Chores State
+  const [chores, setChores] = useState<Chore[]>([]);
   const [yourChores, setYourChores] = useState<Chore[]>([]);
   const [roommatesChores, setRoommatesChores] = useState<Chore[]>([]);
+  // New/Selected Chore State
+  const [choreName, setChoreName] = useState("");
+  const [choreRoommate, setChoreRoommate] = useState("");
+  const [choreIsTask, setChoreIsTask] = useState(false);
+  const [choreRecurrence, setChoreRecurrence] = useState("none");
+  const [choreEndDate, setChoreEndDate] = useState<string | null>(null);
+  const [selectedRoommateId, setSelectedRoommateId] = useState<number | null>(null);
+  // Modal State
+  const [modalVisible, setModalVisible] = useState(false);
+  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+  // Additional State
+  const [selectedChore, setSelectedChore] = useState<Chore | null>(null);
+  const slideAnim = React.useRef(new Animated.Value(Dimensions.get("window").height)).current;
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    const your = chores.filter(chore => chore.roommate_responsible === currentUser);
-    const roommates = chores.filter(chore => chore.roommate_responsible !== currentUser);
-  
-    setYourChores(sortChores(your));
-    setRoommatesChores(sortChores(roommates));
-  }, [chores]);
-  
 
-  // TODO: once backend is setup, the chores should be fetched when the screen is opened
-  // useEffect(() => {
-  //   const fetchInitialChores = async () => {
-  //     try {
-  //       const fetchedChores = await apiGetChores(session);
-  //       setChores(fetchedChores);
-  //     } catch (error) {
-  //       console.error('Error fetching initial chores:', error);
-  //     }
-  //   };
-  //   fetchInitialChores();
-  // }, [session]);
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    const fetchChores = async () => {
-      try {
-        const fetchedChores = await apiGetChores(session);
-        setChores(fetchedChores);
-      } catch (error) {
-        console.error('Error fetching chores:', error);
-      } finally {
-        setRefreshing(false);
-      }
-    };
-    fetchChores();
+  const fetchChores = async () => {
+    if (!session) return;
+    try {
+      const choresData = await apiGetChores(session);
+      setChores(choresData);
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error Fetching Chores',
+        text2: error.message || 'Failed to fetch chores'
+      });
+    }
   };
 
+  const fetchRoommates = async () => {
+    if (!session) return;
+    try {
+      const roommatesData = await apiGetRoommates(session);
+      setRoommates(roommatesData);
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error Fetching Roommates',
+        text2: error.message || 'Failed to fetch roommates'
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchChores();
+    fetchRoommates();
+  }, [session]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([fetchChores(), fetchRoommates()]);
+    setRefreshing(false);
+  };
+
+  useEffect(() => {
+    const users = chores.filter(chore => 
+      chore.assigned_roommate?.id === userId
+    );
+    const roommates = chores.filter(chore => 
+      chore.assigned_roommate?.id !== userId
+    );
+  
+    // Sort chores so completed ones come last
+    setYourChores([...users].sort((a, b) => Number(a.completed) - Number(b.completed)));
+    setRoommatesChores([...roommates].sort((a, b) => Number(a.completed) - Number(b.completed)));
+  }, [chores]);
+  
   useEffect(() => {
     if (modalVisible) {
       Animated.timing(slideAnim, {
@@ -116,97 +146,125 @@ export default function ChoresScreen() {
 
   useEffect(() => {
     if (selectedChore) {
-      setNewChoreName(selectedChore.name);
-      setRoommate(selectedChore.roommate_responsible);
-      setDueDate(selectedChore.ends);
-      setIsTask(selectedChore.is_task);
-      setRecurrence(selectedChore.recurrence || "none");
+      setChoreName(selectedChore.description);
+      setSelectedRoommateId(selectedChore.assigned_roommate.id);
+      setChoreEndDate(selectedChore.end_date);
+      setChoreIsTask(selectedChore.is_task);
+      setChoreRecurrence(selectedChore.recurrence || "none");
     } else {
       resetModal();
     }
   }, [selectedChore]);
 
-  const sortChores = (choreList: Chore[]) => {
-    return choreList.sort((a, b) => {
-      if (a.completed === b.completed) return 0;
-      // Return -1 if a is not completed and b is completed (so a comes first)
-      return a.completed ? 1 : -1;
-    });
-  };
-
-  const addOrUpdateChore = () => {
-    if (!newChoreName.trim() || !roommate.trim() || !dueDate) {
-      alert("Must fill in all fields");
+  const addOrUpdateChore = async () => {
+    if (!choreName.trim() || !choreEndDate || !selectedRoommateId) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Must fill in name, due date, and select a roommate'
+      });
       return;
     }
 
-    if (selectedChore) {
-      setChores(prevChores =>
-        prevChores.map(chore =>
-          chore.id === selectedChore.id
-            ? {
-                ...chore,
-                name: newChoreName,
-                roommate_responsible: roommate,
-                ends: dueDate,
-                is_task: isTask,
-                recurrence: recurrence,
-                autorotate: isTask, // if something is a task, it should autorotate (logic here can be changed)
-              }
-            : chore
-        )
-      );
-    } else {
-      const newChore: Chore = {
-        id: (chores.length + 1).toString(),
-        name: newChoreName,
-        roommate_responsible: roommate,
-        ends: dueDate,
-        is_task: isTask,
-        autorotate: isTask,
-        completed: false,
-        recurrence: recurrence,
-      };
-      setChores([...chores, newChore]);
+    try {
+      if (selectedChore) {
+        const updatedChore = await apiUpdateChore(session, selectedChore.id, {
+          description: choreName,
+          start_date: getCurrentDate(),
+          end_date: choreEndDate,
+          autorotate: choreRecurrence !== "none",
+          is_task: choreIsTask,
+          recurrence: choreRecurrence,
+          assigned_roommate_id: selectedRoommateId
+        });
+        setChores(prevChores =>
+          prevChores.map(chore =>
+            chore.id === selectedChore.id ? updatedChore : chore
+          )
+        );
+      } else {
+        const newChore = await apiCreateChore(
+          session,
+          choreName,
+          getCurrentDate(),
+          choreEndDate,
+          (choreRecurrence !== "none"),
+          choreIsTask,
+          choreRecurrence,
+          selectedRoommateId
+        );
+        setChores(prevChores => [...prevChores, newChore]);
+      }
+      resetModal();
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error Saving Chore',
+        text2: error.message || 'Failed to save chore'
+      });
     }
-
-    resetModal();
   };
 
   const resetModal = () => {
-    setNewChoreName("");
-    setRoommate("");
-    setDueDate(null);
-    setIsTask(true);
-    setRecurrence("none");
+    setChoreName("");
+    setSelectedRoommateId(null);
+    setChoreRoommate("");
+    setChoreEndDate(null);
+    setChoreIsTask(false);
+    setChoreRecurrence("none");
     setSelectedChore(null);
     setModalVisible(false);
   };
 
-  const toggleComplete = (id: string) => {
-    setChores(prevChores =>
-      prevChores.map(chore => {
-        if (chore.id === id) {
-          // If it's not a task, do not allow marking as complete.
-          if (!chore.is_task) {
-            alert("This chore is an ongoing responsibility and cannot be marked as complete.");
-            return chore;
-          }
-          // Otherwise, toggle the completed flag.
-          return { ...chore, completed: !chore.completed };
-        }
-        return chore;
-      })
-    );
+  const toggleComplete = async (id: number) => {
+    const chore = chores.find(c => c.id === id);
+    if (!chore) return;
+
+    if (!chore.is_task) {
+      Toast.show({
+        type: 'error',
+        text1: 'Cannot Complete',
+        text2: "This chore is an ongoing responsibility and cannot be marked as complete."
+      });
+      return;
+    }
+
+    try {
+      const updatedChore = await apiUpdateChore(session, id, {
+        completed: !chore.completed
+      });
+      setChores(prevChores =>
+        prevChores.map(c => c.id === id ? updatedChore : c)
+      );
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error Updating Chore',
+        text2: error.message || 'Failed to update chore status'
+      });
+    }
   };
   
 
-  const deleteChore = (id: string) => {
-    setChores(prevChores => prevChores.filter(chore => chore.id !== id));
+  const deleteChore = async (id: number) => {
+    try {
+      await apiDeleteChore(session, id);
+      setChores(prevChores => prevChores.filter(chore => chore.id !== id));
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error Deleting Chore',
+        text2: error.message || 'Failed to delete chore'
+      });
+    }
   };
 
   const remindChore = (chore: Chore) => {
-    alert(`Reminder sent for ${chore.name}!`);
+    Toast.show({
+      type: 'success',
+      text1: 'Reminder Sent',
+      text2: `Reminder sent for ${chore.description}!`
+    });
   };
 
   const openActionMenu = (chore: Chore) => {
@@ -236,14 +294,20 @@ export default function ChoresScreen() {
   const renderChoreRow = ({ item }: { item: Chore }) => (
     <View style={[styles.choreRow, item.completed && styles.completedRow]}>
       <View style={styles.avatar}>
-        <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
+        <Text style={styles.avatarText}>
+          {`${item.assigned_roommate.first_name.charAt(0)}${item.assigned_roommate.last_name.charAt(0)}`}
+        </Text>
       </View>
       <View style={styles.choreInfo}>
         <Text style={[styles.choreName, item.completed && styles.strikethrough]}>
-          {item.roommate_responsible}: {item.name}
+          {item.description}
         </Text>
-        <Text style={styles.choreDate}>Ends: {new Date(item.ends).toLocaleDateString()}</Text>
-        <Text style={styles.choreDate}>Recurrence: {item.recurrence || "None"}</Text>
+        <Text style={styles.choreDate}>
+          Ends: {new Date(item.end_date).toLocaleDateString()}
+        </Text>
+        <Text style={styles.choreDate}>
+          Recurrence: {item.recurrence || "None"}
+        </Text>
       </View>
       <TouchableOpacity onPress={() => openActionMenu(item)}>
         <MaterialIcons name="more-vert" size={24} color="#666" />
@@ -252,8 +316,16 @@ export default function ChoresScreen() {
   );
 
   const sections = [
-    { title: "Your Chores", data: yourChores },
-    { title: "Roommates' Chores", data: roommatesChores },
+    { 
+      title: "Your Chores", 
+      data: yourChores,
+      emptyText: "You have no chores" 
+    },
+    { 
+      title: "Roommates Chores", 
+      data: roommatesChores,
+      emptyText: "Your roommates have no chores" 
+    },
   ];
 
   return (
@@ -261,11 +333,16 @@ export default function ChoresScreen() {
       <SectionList
         sections={sections}
         showsVerticalScrollIndicator={false}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => renderChoreRow({ item })}
-        renderSectionHeader={({ section: { title } }) => (
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionHeaderText}>{title}</Text>
+        renderSectionHeader={({ section: { title, data, emptyText } }) => (
+          <View>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionHeaderText}>{title}</Text>
+            </View>
+            {data.length === 0 && (
+              <Text style={styles.emptyText}>{emptyText}</Text>
+            )}
           </View>
         )}
         contentContainerStyle={styles.listContent}
@@ -298,26 +375,56 @@ export default function ChoresScreen() {
 
             <TextInput
               style={styles.input}
-              placeholder="Chore Name"
+              placeholder="Description"
               placeholderTextColor="#AAA"
-              value={newChoreName}
-              onChangeText={setNewChoreName}
+              value={choreName}
+              onChangeText={setChoreName}
             />
 
-            <TextInput
-              style={styles.input}
-              placeholder="Roommate Responsible"
-              placeholderTextColor="#AAA"
-              value={roommate}
-              onChangeText={setRoommate}
-            />
+            <Text style={styles.label}>Roommate Responsible</Text>
+            <ScrollView
+              horizontal={true}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.roommateScrollContainer}
+            >
+              {roommates
+                .sort((a, b) => {
+                  if (a.id === userId) return -1;
+                  if (b.id === userId) return 1;
+                  return 0;
+                })
+                .map((roommate) => (
+                <TouchableOpacity
+                  key={roommate.id}
+                  onPress={() => setSelectedRoommateId(roommate.id)}
+                  style={[
+                    styles.roommateOption,
+                    selectedRoommateId === roommate.id && styles.selectedRoommateOption
+                  ]}
+                >
+                  <View style={styles.roommateAvatar}>
+                    <Text style={styles.roommateAvatarText}>
+                      {`${roommate.first_name.charAt(0)}${roommate.last_name.charAt(0)}`}
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.roommateName,
+                      selectedRoommateId === roommate.id && styles.selectedRoommateName
+                    ]}
+                  >
+                    {roommate.id === userId ? "You" : roommate.first_name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
 
             {/* Is Task Switch */}
             <View style={styles.switchContainer}>
               <Text style={styles.switchLabel}>Is this a task?</Text>
               <Switch
-                value={isTask}
-                onValueChange={(newValue) => setIsTask(newValue)}
+                value={choreIsTask}
+                onValueChange={(newValue) => setChoreIsTask(newValue)}
               />
             </View>
 
@@ -325,8 +432,8 @@ export default function ChoresScreen() {
             <Text style={styles.label}>Recurrence</Text>
             <View style={styles.dropdown}>
               {["none", "daily", "weekly", "monthly"].map((option) => (
-                <TouchableOpacity key={option} onPress={() => setRecurrence(option)}>
-                  <Text style={[styles.option, recurrence === option && styles.selectedOption]}>
+                <TouchableOpacity key={option} onPress={() => setChoreRecurrence(option)}>
+                  <Text style={[styles.option, choreRecurrence === option && styles.selectedOption]}>
                     {option}
                   </Text>
                 </TouchableOpacity>
@@ -336,7 +443,7 @@ export default function ChoresScreen() {
             <TouchableOpacity style={styles.datePicker} onPress={() => setDatePickerVisible(true)}>
               <MaterialIcons name="calendar-today" size={20} color="#007FFF" />
               <Text style={styles.dateText}>
-                {dueDate ? new Date(dueDate).toLocaleDateString() : "Select Due Date"}
+                {choreEndDate ? new Date(choreEndDate).toLocaleDateString() : "Select Due Date"}
               </Text>
             </TouchableOpacity>
 
@@ -345,7 +452,9 @@ export default function ChoresScreen() {
               mode="date"
               minimumDate={new Date()}
               onConfirm={(date) => {
-                setDueDate(date.toISOString());
+                const localDate = new Date(date);
+                localDate.setHours(23, 59, 59, 999);
+                setChoreEndDate(localDate.toISOString());
                 setDatePickerVisible(false);
               }}
               onCancel={() => setDatePickerVisible(false)}
@@ -388,8 +497,6 @@ const styles = StyleSheet.create({
   choreDate: { fontSize: 14, color: "#666" },
   strikethrough: { textDecorationLine: "line-through", color: "#999" },
   completedRow: { backgroundColor: "#E0FFE6" },
-  fab: { position: "absolute", bottom: 20, right: 20, flexDirection: "row", backgroundColor: "#00D09E", padding: 10, borderRadius: 12 },
-  fabText: { color: "#FFFFFF", fontWeight: "bold", marginLeft: 8 },
   modalContainer: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0, 0, 0, 0.5)" },
   modalContent: { backgroundColor: "#FFFFFF", padding: 20, borderTopLeftRadius: 16, borderTopRightRadius: 16, minHeight: Dimensions.get("window").height * 0.4 },
   modalTitle: { fontSize: 20, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
@@ -401,4 +508,48 @@ const styles = StyleSheet.create({
   selectedOption: { backgroundColor: "#00D09E", color: "#FFFFFF" },
   pickerLabel: { fontSize: 16, color: "#333", marginBottom: 5 },
   picker: { height: 50, marginBottom: 15 },
+  emptyText: {
+    textAlign: 'center',
+    color: '#999',
+    fontSize: 14,
+    paddingVertical: 10,
+  },
+  roommateScrollContainer: {
+    paddingBottom: 10,
+  },
+  roommateOption: {
+    alignItems: 'center',
+    marginRight: 15,
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#EEE',
+    minWidth: 100,
+  },
+  selectedRoommateOption: {
+    backgroundColor: '#00D09E',
+    borderColor: '#00D09E',
+  },
+  roommateAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#CDEEEE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  roommateAvatarText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#007F5F',
+  },
+  roommateName: {
+    fontSize: 14,
+    color: '#333',
+    textAlign: 'center',
+  },
+  selectedRoommateName: {
+    color: '#FFFFFF',
+  },
 });
