@@ -311,7 +311,7 @@ export default function ExpensesScreen() {
       return;
     }
 
-    apiCreateExpense(session, parseFloat(amount), description, roommates.map(roommate => {
+    apiCreateExpense(session, parseFloat(amount), description, payerId, roommates.map(roommate => {
       return {
         username: roommate.username,
         percentage: 1 / roommates.length

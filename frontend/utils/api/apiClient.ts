@@ -244,12 +244,12 @@ export async function apiGetExpenses(session: any) {
   return data;
 }
 
-export async function apiCreateExpense(session: any, cost: number, desc: string, expenses: any[]) {
+export async function apiCreateExpense(session: any, cost: number, desc: string, payerId: number, expenses: any[]) {
   const body = {
-    title: "a",
     cost,
     description: desc,
-    expenses
+    expenses,
+    roommate_spendor_id: payerId
   };
 
   const response = await fetch(`${API_URL}/expense`, {
