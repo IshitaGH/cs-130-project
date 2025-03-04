@@ -16,25 +16,32 @@ import { Picker } from '@react-native-picker/picker'
 import { MaterialIcons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { apiCreateExpense, apiGetExpenses, apiGetRoommates } from "@/utils/api/apiClient";
+import { apiCreateExpense, apiGetExpenses, apiGetRoom, apiGetRoommates } from "@/utils/api/apiClient";
 
 interface Expense {
   id: number;
   description: string;
-  amount: number;
-  payer: string;
-  date: string;
+  cost: number;
+  roommate_fkey: number;
+  created_at: string;
 }
 
-interface ExpenseCardProps {
-  title: string;
-  current: boolean;
+interface ExpensePeriod {
+  start_date: string;
+  end_date: string;
+  id: number;
+  open: boolean;
   expenses: Expense[];
-  updateExpenses: (title: string, updatedExpenses: Expense[]) => void;
+}
+
+interface ExpensePeriodCard extends ExpensePeriod {
+  updateExpenses: (id: number, updatedExpenses: Expense[]) => void;
+  roommates: Roommate[];
+  currentUser: number;
 }
 
 interface BalanceMap {
-  [key: string]: number
+  [key: number]: number
 }
 
 type Roommate = {
@@ -44,45 +51,50 @@ type Roommate = {
   username: string;
 };
 
+const dateFormat = new Intl.DateTimeFormat('en-US').format;
+
 const CURRENT_USER = "Caolinn"; //replace this with an API call when ready
 
 const initialMockExpenses = [
   {
     title: "Current period expenses",
-    current: true,
+    open: true,
     expenses: [
-      { id: 4, description: "Groceries", amount: 50, payer: "Byron", date: new Date().toLocaleDateString() },
-      { id: 3, description: "Electric Bill", amount: 30, payer: "Claire", date: new Date().toLocaleDateString() },
+      { id: 4, description: "Groceries", cost: 50, payer: "Byron", date: new Date().toLocaleDateString() },
+      { id: 3, description: "Electric Bill", cost: 30, payer: "Claire", date: new Date().toLocaleDateString() },
     ]
   },
   {
     title: "Jan 10 to Feb 10 expenses",
-    current: false,
+    open: false,
     expenses: [
-      { id: 2, description: "Rent", amount: 4000, payer: "Nik", date: new Date(2025, 0, 29).toLocaleDateString() },
-      { id: 1, description: "Internet", amount: 30, payer: "Ishita", date: new Date(2025, 0, 23).toLocaleDateString() },
+      { id: 2, description: "Rent", cost: 4000, payer: "Nik", date: new Date(2025, 0, 29).toLocaleDateString() },
+      { id: 1, description: "Internet", cost: 30, payer: "Ishita", date: new Date(2025, 0, 23).toLocaleDateString() },
     ]
   }
 ];
 
 const roommates_mock = ["Byron", "Claire", "Nira", "Nik", "Caolinn", "Ishita"];
 
-const calculatePersonalBalances = (expenses: Expense[], setBalances: any) => {
+const calculatePersonalBalances = (expenses: Expense[], setBalances: any, roommates: Roommate[], currentUser: number) => {
   let balanceSheet: BalanceMap = {};
-  roommates_mock.forEach((roommate) => (balanceSheet[roommate] = 0));
-  let totalRoommates = roommates_mock.length;
+  // roommates_mock.forEach((roommate) => (balanceSheet[roommate] = 0));
+  roommates.forEach(roommate => { balanceSheet[roommate.id] = 0 });
+  // let totalRoommates = roommates_mock.length;
+  let totalRoommates = roommates.length;
 
-  expenses.forEach(({ amount, payer }) => {
-    let splitAmount = amount / totalRoommates;
+  expenses.forEach(({ cost, roommate_fkey: payer }) => {
+    let splitAmount = cost / totalRoommates;
     
-    roommates_mock.forEach((roommate) => {
-      if (roommate !== CURRENT_USER) {
-        if (payer === CURRENT_USER) {
+    // roommates_mock.forEach((roommate) => {
+    roommates.forEach((roommate) => {
+      if (roommate.id !== currentUser) {
+        if (payer === currentUser) {
           // You paid, so they owe you their share
-          balanceSheet[roommate] += splitAmount;
-        } else if (roommate === payer) {
+          balanceSheet[roommate.id] += splitAmount;
+        } else if (roommate.id === payer) {
           // They paid, so you owe them your share
-          balanceSheet[roommate] -= splitAmount;
+          balanceSheet[roommate.id] -= splitAmount;
         }
       }
     });
@@ -91,17 +103,21 @@ const calculatePersonalBalances = (expenses: Expense[], setBalances: any) => {
   setBalances(balanceSheet); 
 };
 
-const ExpenseCard: React.FC<ExpenseCardProps> = ({ title, current, expenses, updateExpenses }) => {
+const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_date, end_date, expenses, updateExpenses, roommates, currentUser }) => {
+  const title = current
+    ? "Current period expenses"
+    : `${dateFormat(new Date(start_date))} to ${dateFormat(new Date(end_date))}`;
+
   const [expanded, setExpanded] = useState<boolean>(current);
   const [balances, setBalances] = useState<BalanceMap>({});
 
   const handleDeleteExpense = (expenseId: number) => {
     const updatedExpenses = expenses.filter((exp) => exp.id !== expenseId);
-    updateExpenses(title, updatedExpenses);
+    updateExpenses(id, updatedExpenses);
   };
 
   if (!current) {
-    useEffect(() => calculatePersonalBalances(expenses, setBalances), [expenses]);
+    useEffect(() => calculatePersonalBalances(expenses, setBalances, roommates, currentUser), [expenses]);
   }
 
   return (
@@ -118,8 +134,11 @@ const ExpenseCard: React.FC<ExpenseCardProps> = ({ title, current, expenses, upd
             renderItem={({ item }) => (
               <View style={styles.expenseRow}>
                 <View style={styles.expenseInfo}>
-                  <Text style={styles.expenseDescription}>{item.description}: ${item.amount}</Text>
-                  <Text style={styles.expensePayer}>Paid by {item.payer} on {item.date}</Text>
+                  <Text style={styles.expenseDescription}>{item.description}: ${item.cost.toFixed(2)}</Text>
+                  <Text style={styles.expensePayer}>Paid by {(() => {
+                      let roommate = roommates.find(roommate => roommate.id === item.roommate_fkey);
+                      return roommate ? `${roommate.first_name} ${roommate.last_name}` : 'Unknown'
+                    })()} on {dateFormat(new Date(item.created_at))}</Text>
                 </View>
                 { current && <TouchableOpacity onPress={() => handleDeleteExpense(item.id)}>
                   <MaterialIcons name="delete" size={24} color="#E57373" />
@@ -135,18 +154,18 @@ const ExpenseCard: React.FC<ExpenseCardProps> = ({ title, current, expenses, upd
 
           {!current && Object.keys(balances).length > 0 && (
             <View style={styles.balancesContainer}>
-              {roommates_mock
-                .filter((name) => name !== CURRENT_USER) // Exclude the current user
-                .map((name) => (
-                  <View key={name} style={styles.balanceRow}>
-                    <Text style={styles.roommateName}>{name}:</Text>
+              {roommates
+                .filter((roommate) => roommate.id !== currentUser) // Exclude the current user
+                .map((roommate) => (
+                  <View key={roommate.id} style={styles.balanceRow}>
+                    <Text style={styles.roommateName}>{roommate.first_name} {roommate.last_name}:</Text>
                     <Text
                       style={[
                         styles.balanceAmount,
-                        { color: balances[name] > 0 ? "#00D09E" : balances[name] < 0 ? "#E57373" : "#333" },
+                        { color: balances[roommate.id] > 0 ? "#00D09E" : balances[roommate.id] < 0 ? "#E57373" : "#333" },
                       ]}
                     >
-                      ${balances[name]?.toFixed(2) || "0.00"}
+                      ${balances[roommate.id]?.toFixed(2) || "0.00"}
                     </Text>
                   </View>
                 ))}
@@ -169,7 +188,7 @@ export default function ExpensesScreen() {
   const { session, userId } = useAuthContext();
   // expenses data
   const [roommates, setRoommates] = useState<Roommate[]>([]);
-  const [expenseCards, setExpenseCards] = useState<{ title: string; current: Boolean; expenses: Expense[] }[]>([...initialMockExpenses]);
+  const [expensePeriods, setExpensePeriods] = useState<ExpensePeriod[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   // modal data
   const [description, setDescription] = useState("");
@@ -197,8 +216,8 @@ export default function ExpensesScreen() {
     if (!session) return;
 
     try {
-      const choresData = await apiGetExpenses(session);
-      console.log(choresData);
+      const expensesData = await apiGetExpenses(session);
+      setExpensePeriods(expensesData);
     } catch (error: any) {
       Toast.show({
         type: 'error',
@@ -212,13 +231,12 @@ export default function ExpensesScreen() {
   useEffect(() => {
     fetchRoommates();
     fetchExpenses();
-    console.log(roommates);
   }, [session]);
 
   // Function to update expenses for a specific card
-  const updateExpenses = (title: string, updatedExpenses: Expense[]) => {
-    setExpenseCards((prevCards) =>
-      prevCards.map((card) => (card.title === title ? { ...card, expenses: updatedExpenses } : card))
+  const updateExpenses = (id: number, updatedExpenses: Expense[]) => {
+    setExpensePeriods((prevCards) =>
+      prevCards.map((card) => (card.id === id ? { ...card, expenses: updatedExpenses } : card))
     );
   };
 
@@ -234,35 +252,34 @@ export default function ExpensesScreen() {
     }
   }, [modalVisible, slideAnim]);
 
-  useEffect(() => calculatePersonalBalances(expenseCards[0].expenses, setBalances), [expenseCards[0].expenses]);
+  useEffect(() => calculatePersonalBalances(expensePeriods.find(period => period.open)?.expenses || [], setBalances, roommates, userId || 0), [expensePeriods]);
 
   const addExpense = () => {
-    if (!description || !amount || !payer) return;
-
-    const newExpense = {
-      id: Math.random(),
-      description,
-      amount: parseFloat(amount),
-      payer,
-      date: new Date().toLocaleDateString(),
-    };
-
-    setExpenseCards((prevCards) =>
-      prevCards.map((card) => (card.current ? { ...card, expenses: [newExpense, ...card.expenses] } : card))
-    );
-
-    // setExpenses([...expenses, newExpense]);
-    setDescription("");
-    setAmount("");
-    setPayer(roommates_mock[0]);
-    setModalVisible(false);
+    if (!description || !amount /* || !payer */) return; // TODO: add validation
 
     apiCreateExpense(session, parseFloat(amount), description, roommates.map(roommate => {
       return {
         username: roommate.username,
         percentage: 1 / roommates.length
       }
-    })).then(console.log);
+    })).then(newExpense => {
+      setExpensePeriods((prevPeriods) =>
+        prevPeriods.map((period) => (period.open ? { ...period, expenses: [...period.expenses, newExpense] } : period))
+      );
+
+      setDescription("");
+      setAmount("");
+      setPayer(""); // TODO: update to be current user
+      setModalVisible(false);
+    }).catch(error => {
+      Toast.show({
+        type: 'error',
+        text1: 'Error Adding Expense',
+        text2: error.message || 'Failed to add expense'
+      });
+
+      console.error(error);
+    });
   };
 
   return (
@@ -270,25 +287,27 @@ export default function ExpensesScreen() {
       <View style={styles.container}>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Current period balances</Text>
-          {roommates_mock
-            .filter((name) => name !== CURRENT_USER) // Exclude the current user
-            .map((name) => (
-              <View key={name} style={styles.balanceRow}>
-                <Text style={styles.roommateName}>{name}:</Text>
+          {roommates
+            .filter((roommate) => roommate.id !== userId) // Exclude the current user
+            .map((roommate) => (
+              <View key={roommate.id} style={styles.balanceRow}>
+                <Text style={styles.roommateName}>{roommate.first_name} {roommate.last_name}:</Text>
                 <Text
                   style={[
                     styles.balanceAmount,
-                    { color: balances[name] > 0 ? "#00D09E" : balances[name] < 0 ? "#E57373" : "#333" },
+                    { color: balances[roommate.id] > 0 ? "#00D09E" : balances[roommate.id] < 0 ? "#E57373" : "#333" },
                   ]}
                 >
-                  ${balances[name]?.toFixed(2) || "0.00"}
+                  ${balances[roommate.id]?.toFixed(2) || "0.00"}
                 </Text>
               </View>
             ))}
         </View>
 
-        {expenseCards.map((card) => (
-          <ExpenseCard key={card.title} title={card.title} current={card.current} expenses={card.expenses} updateExpenses={updateExpenses} />
+        {expensePeriods.map((period) => (
+          <ExpenseCard key={period.id} id={period.id} open={period.open} start_date={period.start_date}
+            end_date={period.end_date} expenses={period.expenses} updateExpenses={updateExpenses} roommates={roommates}
+            currentUser={userId || 0} />
         ))}
 
         <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
