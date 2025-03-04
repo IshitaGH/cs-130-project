@@ -41,6 +41,7 @@ interface ExpensePeriodCard extends ExpensePeriod {
     session: any;
     roommates: Roommate[];
     currentUser: number;
+    refresh: any;
   }
 }
 
@@ -82,7 +83,7 @@ const calculatePersonalBalances = (expenses: Expense[], setBalances: any, roomma
 };
 
 const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_date, end_date, expenses, updateExpenses, sessionState }) => {
-  const { roommates, currentUser, session } = sessionState;
+  const { roommates, currentUser, session, refresh } = sessionState;
 
   const title = current
     ? "Current period expenses"
@@ -106,13 +107,11 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
     });
   };
 
-  if (!current) {
-    useEffect(() => calculatePersonalBalances(expenses, setBalances, roommates, currentUser), [expenses]);
-  }
+  useEffect(() => calculatePersonalBalances(expenses, setBalances, roommates, currentUser), [expenses]);
 
   const closeCurrentPeriod = () => {
     apiCloseExpensePeriod(session).then(() => {
-      window.location.reload();
+      refresh();
     }).catch(error => {
       Toast.show({
         type: 'error',
@@ -190,6 +189,7 @@ export default function ExpensesScreen() {
   const [roommates, setRoommates] = useState<Roommate[]>([]);
   const [expensePeriods, setExpensePeriods] = useState<ExpensePeriod[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [refreshCount, setRefreshCount] = useState(0);
   // modal data
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
@@ -231,7 +231,7 @@ export default function ExpensesScreen() {
   useEffect(() => {
     fetchRoommates();
     fetchExpenses();
-  }, [session]);
+  }, [session, refreshCount]);
 
   // Function to update expenses for a specific card
   const updateExpenses = (id: number, updatedExpenses: Expense[]) => {
@@ -282,6 +282,10 @@ export default function ExpensesScreen() {
     });
   };
 
+  const refresh = () => {
+    setRefreshCount(refreshCount => (refreshCount + 1));
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <ScrollView style={styles.container}>
@@ -307,7 +311,7 @@ export default function ExpensesScreen() {
         {expensePeriods.map((period) => (
           <ExpenseCard key={period.id} id={period.id} open={period.open} start_date={period.start_date}
             end_date={period.end_date} expenses={period.expenses} updateExpenses={updateExpenses}
-            sessionState={{ roommates, currentUser: userId || 0, session }} />
+            sessionState={{ roommates, currentUser: userId || 0, session, refresh }} />
         ))}
 
         <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
