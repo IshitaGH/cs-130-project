@@ -38,6 +38,7 @@ type Chore = {
   };
   roommate_assignor_id: number;
   room_id: number;
+  rotation_order: number[] | null;
 };
 
 // Add after the Chore type definition
@@ -414,7 +415,7 @@ export default function ChoresScreen() {
             {expandedChoreId === item.id && (
               <View style={[styles.expandedDetails, { marginBottom: 0 }]}>
                 <Text style={styles.detailText}>
-                  Recurrence: {item.recurrence || "None"}
+                  Recurrence: {item.recurrence}
                 </Text>
               </View>
             )}
