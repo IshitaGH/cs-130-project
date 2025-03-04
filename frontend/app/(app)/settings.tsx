@@ -1,6 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import { useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useAuthContext } from '@/contexts/AuthContext';
 import { apiLeaveRoom } from "@/utils/api/apiClient";
 import { useRouter } from "expo-router";
@@ -8,42 +6,28 @@ import { useRouter } from "expo-router";
 export default function SettingsScreen() {
   const { session, signOut } = useAuthContext();
   const router = useRouter();
-  const [profileImage, setProfileImage] = useState(null);
 
   const handleLeaveRoom = async () => {
+    let data;
     try {
-      await apiLeaveRoom(session);
-      router.replace("/room-landing");
+      data = await apiLeaveRoom(session);
     } catch (error) {
       console.error(error);
+      throw error;
     }
-  };
-
-  const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      setProfileImage(result.assets[0].uri);
-    }
+    router.replace("/room-landing");
   };
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={pickImage} style={styles.profileButton}>
-        <Image 
-          source={profileImage ? { uri: profileImage } : require("@/assets/images/default_profile.png")} 
-          style={styles.profileImage} 
-        />
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.button} onPress={handleLeaveRoom}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={handleLeaveRoom}>
         <Text style={styles.buttonText}>Leave Room</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.button} onPress={() => signOut()}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => { signOut() }}>
         <Text style={styles.buttonText}>Sign Out</Text>
       </TouchableOpacity>
     </View>
@@ -57,17 +41,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#FFFFFF",
   },
-  profileButton: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    overflow: "hidden",
-    marginBottom: 15,
-  },
-  profileImage: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 50,
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#00D09E",
   },
   button: {
     width: 200,

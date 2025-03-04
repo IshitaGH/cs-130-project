@@ -1,36 +1,31 @@
-import React, { useEffect, useState, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Image } from "react-native";
+import React, { useEffect, useState } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { apiGetMessage } from "@/utils/api/apiClient";
+import { View, Text, StyleSheet } from "react-native";
+import { apiGetRoom } from "@/utils/api/apiClient";
+
+interface RoomData {
+  room_id: number | null;
+  name: string | null;
+  invite_code: string | null;
+}
 
 export default function HomeScreen() {
   const { session, sessionLoading } = useAuthContext();
-  const [backendMessage, setBackendMessage] = useState<string | null>("loading");
-  const defaultAvatar = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
-  const roommates = [
-    { id: "1", name: "Byron", avatar: defaultAvatar },
-    { id: "2", name: "Caolinn", avatar: defaultAvatar },
-    { id: "3", name: "Claire", avatar: defaultAvatar },
-    { id: "4", name: "Ishita", avatar: defaultAvatar },
-    { id: "5", name: "Nik", avatar: defaultAvatar },
-    { id: "6", name: "Nira", avatar: defaultAvatar },
-  ];
-  const joinCode = "78474";
-
+  const [roomData, setRoomData] = useState<RoomData | null>(null);
 
   useEffect(() => {
-    const fetchMessage = async () => {
+    const fetchData = async () => {
       if (!session) return;
 
       try {
-        const greeting = await apiGetMessage(session);
-        setBackendMessage(greeting);
+        const room = await apiGetRoom(session);
+        setRoomData(room);
       } catch (error) {
-        console.error("Error fetching message:", error);
+        console.error("Error fetching room data:", error);
       }
     };
 
-    fetchMessage();
+    fetchData();
   }, [session]);
 
   if (sessionLoading) {
@@ -43,97 +38,39 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Room Code</Text>
-          <Text style={styles.joinCode}>{joinCode}</Text>
-        </View>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Roommates</Text>
-          <FlatList
-            data={roommates}
-            keyExtractor={(item) => item.id}
-            numColumns={2}
-            contentContainerStyle={styles.roommateList}
-            renderItem={({ item }) => (
-              <View style={styles.roommateContainer}>
-                <Text style={styles.roommate}>{item.name}</Text>
-                <Image source={{ uri: item.avatar }} style={styles.avatar} />
-              </View>
-            )}
-          />
-        </View>
-      </View>
+      {roomData && roomData.room_id ? (
+        <>
+          <Text style={styles.title}>Welcome to Room {roomData.name}</Text>
+          <Text style={styles.inviteCode}>Invite Code: {roomData.invite_code}</Text>
+        </>
+      ) : (
+        <Text style={styles.noRoom}>You are not in a room yet</Text>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    padding: 20, 
-    backgroundColor: "#FFFFFF", 
-    justifyContent: "center", 
-    alignItems: "center" 
-  },
-  content: {
-    width: "100%",
-    alignItems: "center",
-  },
-  card: { 
-    backgroundColor: "#DFF7E280", 
-    borderRadius: 12, 
-    padding: 15, 
-    marginBottom: 20, 
-    alignItems: "center",
-    width: "90%",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  cardTitle: { 
-    fontSize: 18, 
-    fontWeight: "bold", 
-    color: "#007F5F", 
-    marginBottom: 10 
-  },
-  joinCode: { 
-    fontSize: 22, 
-    fontWeight: "bold", 
-    color: "#333", 
-    backgroundColor: "#E0F7F5", 
-    padding: 10, 
-    borderRadius: 8, 
-    textAlign: "center", 
-    width: "100%"
-  },
-  roommateList: {
+  container: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-  },
-  roommateContainer: {
-    alignItems: "center",
-    margin: 10,
     backgroundColor: "#FFFFFF",
-    padding: 15,
-    borderRadius: 10,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-    width: 100,
+    padding: 20,
   },
-  avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 10,
-    marginTop: 5,
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#00D09E",
+    marginBottom: 20,
   },
-  roommate: { 
-    fontSize: 16, 
-    fontWeight: "bold", 
-    color: "#333", 
-    textAlign: "center" 
-  }
+  inviteCode: {
+    fontSize: 16,
+    color: "#666",
+  },
+  noRoom: {
+    fontSize: 16,
+    color: "#666",
+    fontStyle: "italic",
+  },
 });
