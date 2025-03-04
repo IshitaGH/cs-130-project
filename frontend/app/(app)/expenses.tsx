@@ -12,6 +12,7 @@ import {
   Platform,
   Animated,
   ScrollView,
+  Alert,
 } from "react-native";
 import { Picker } from '@react-native-picker/picker'
 import { MaterialIcons } from "@expo/vector-icons";
@@ -55,6 +56,21 @@ type Roommate = {
   last_name: string;
   username: string;
 };
+
+// credit to https://stackoverflow.com/a/72554509
+const alertPolyfill = (title: string, description: string, options: any[], extra?: any) => {
+  const result = window.confirm([title, description].filter(Boolean).join('\n'))
+
+  if (result) {
+      const confirmOption = options.find(({ style }) => style !== 'cancel')
+      confirmOption && confirmOption.onPress()
+  } else {
+      const cancelOption = options.find(({ style }) => style === 'cancel')
+      cancelOption && cancelOption.onPress()
+  }
+};
+
+const alert = Platform.OS === 'web' ? alertPolyfill : Alert.alert;
 
 const dateFormat = new Intl.DateTimeFormat('en-US').format;
 
@@ -110,17 +126,30 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
   useEffect(() => calculatePersonalBalances(expenses, setBalances, roommates, currentUser), [expenses]);
 
   const closeCurrentPeriod = () => {
-    apiCloseExpensePeriod(session).then(() => {
-      refresh();
-    }).catch(error => {
-      Toast.show({
-        type: 'error',
-        text1: 'Error Closing Period',
-        text2: error.message || 'Failed to close expense period'
-      });
-
-      console.error(error);
-    });
+    alert('Close expense period',
+      'Are you sure you would like to close the current expense period? This cannot be undone.', [
+      {
+        text: 'Cancel',
+        style: 'cancel',
+        onPress: () => {}
+      },
+      {
+        text: 'Close period',
+        onPress: () => {
+          apiCloseExpensePeriod(session).then(() => {
+            refresh();
+          }).catch(error => {
+            Toast.show({
+              type: 'error',
+              text1: 'Error Closing Period',
+              text2: error.message || 'Failed to close expense period'
+            });
+      
+            console.error(error);
+          });
+        }
+      }
+    ]);
   }
 
   return (
@@ -288,7 +317,7 @@ export default function ExpensesScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView style={styles.container}>
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 80 }}>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Current period balances</Text>
           {roommates
