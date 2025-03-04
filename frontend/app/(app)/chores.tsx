@@ -8,8 +8,6 @@ import {
   TextInput,
   Modal,
   Dimensions,
-  KeyboardAvoidingView,
-  Platform,
   Animated,
   RefreshControl,
   Switch,
@@ -68,7 +66,6 @@ export default function ChoresScreen() {
   const [roommatesChores, setRoommatesChores] = useState<Chore[]>([]);
   // New/Selected Chore State
   const [choreName, setChoreName] = useState("");
-  const [choreRoommate, setChoreRoommate] = useState("");
   const [choreIsTask, setChoreIsTask] = useState(false);
   const [choreRecurrence, setChoreRecurrence] = useState("none");
   const [choreEndDate, setChoreEndDate] = useState<string | null>(null);
@@ -211,7 +208,6 @@ export default function ChoresScreen() {
   const resetModal = () => {
     setChoreName("");
     setSelectedRoommateId(null);
-    setChoreRoommate("");
     setChoreEndDate(null);
     setChoreIsTask(false);
     setChoreRecurrence("none");
