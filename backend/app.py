@@ -106,10 +106,6 @@ def join_room_route():
 def leave_room_route():
     return leave_room()
 
-@app.route("/roommates", methods=["GET"])
-def get_roommates_route():
-    return get_roommates_in_room()
-
 
 # ROOMMATES ROUTES
 @app.route("/roommates", methods=["GET"])
