@@ -176,12 +176,11 @@ export async function apiGetExpenses(session: any) {
     }
   });
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to get expenses');
-  }
-
   const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to get expenses');
+  }
 
   if (data.length === 0) { // new room; need to create first expense period
     await apiCreateFirstExpensePeriod(session);
@@ -208,11 +207,27 @@ export async function apiCreateExpense(session: any, cost: number, desc: string,
     body: JSON.stringify(body)
   });
 
+  const data = await response.json();
+
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to create expense');
+    throw new Error(data.message || 'Failed to create expense');
   }
 
-  const data = await response.json();
   return data;
+}
+
+export async function apiDeleteExpense(session: any, id: number) {
+  const response = await fetch(`${API_URL}/expense`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session}`
+    },
+    body: JSON.stringify({ id })
+  });
+
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.message || 'Failed to delete expense');
+  }
 }

@@ -16,7 +16,7 @@ import { Picker } from '@react-native-picker/picker'
 import { MaterialIcons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { apiCreateExpense, apiGetExpenses, apiGetRoom, apiGetRoommates } from "@/utils/api/apiClient";
+import { apiCreateExpense, apiDeleteExpense, apiGetExpenses, apiGetRoom, apiGetRoommates } from "@/utils/api/apiClient";
 
 interface Expense {
   id: number;
@@ -36,8 +36,11 @@ interface ExpensePeriod {
 
 interface ExpensePeriodCard extends ExpensePeriod {
   updateExpenses: (id: number, updatedExpenses: Expense[]) => void;
-  roommates: Roommate[];
-  currentUser: number;
+  sessionState: {
+    session: any;
+    roommates: Roommate[];
+    currentUser: number;
+  }
 }
 
 interface BalanceMap {
@@ -103,7 +106,9 @@ const calculatePersonalBalances = (expenses: Expense[], setBalances: any, roomma
   setBalances(balanceSheet); 
 };
 
-const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_date, end_date, expenses, updateExpenses, roommates, currentUser }) => {
+const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_date, end_date, expenses, updateExpenses, sessionState }) => {
+  const { roommates, currentUser, session } = sessionState;
+
   const title = current
     ? "Current period expenses"
     : `${dateFormat(new Date(start_date))} to ${dateFormat(new Date(end_date))}`;
@@ -112,8 +117,18 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
   const [balances, setBalances] = useState<BalanceMap>({});
 
   const handleDeleteExpense = (expenseId: number) => {
-    const updatedExpenses = expenses.filter((exp) => exp.id !== expenseId);
-    updateExpenses(id, updatedExpenses);
+    apiDeleteExpense(session, expenseId).then(() => {
+      const updatedExpenses = expenses.filter((exp) => exp.id !== expenseId);
+      updateExpenses(id, updatedExpenses);
+    }).catch(error => {
+      Toast.show({
+        type: 'error',
+        text1: 'Error Deleting Expense',
+        text2: error.message || 'Failed to delete expense'
+      });
+
+      console.error(error);
+    });
   };
 
   if (!current) {
@@ -306,8 +321,8 @@ export default function ExpensesScreen() {
 
         {expensePeriods.map((period) => (
           <ExpenseCard key={period.id} id={period.id} open={period.open} start_date={period.start_date}
-            end_date={period.end_date} expenses={period.expenses} updateExpenses={updateExpenses} roommates={roommates}
-            currentUser={userId || 0} />
+            end_date={period.end_date} expenses={period.expenses} updateExpenses={updateExpenses}
+            sessionState={{ roommates, currentUser: userId || 0, session }} />
         ))}
 
         <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
