@@ -78,6 +78,7 @@ export default function ChoresScreen() {
   const [selectedChore, setSelectedChore] = useState<Chore | null>(null);
   const slideAnim = React.useRef(new Animated.Value(Dimensions.get("window").height)).current;
   const [refreshing, setRefreshing] = useState(false);
+  const [expandedChoreId, setExpandedChoreId] = useState<number | null>(null);
 
 
   const fetchChores = async () => {
@@ -292,26 +293,40 @@ export default function ChoresScreen() {
   };
 
   const renderChoreRow = ({ item }: { item: Chore }) => (
-    <View style={[styles.choreRow, item.completed && styles.completedRow]}>
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>
-          {`${item.assigned_roommate.first_name.charAt(0)}${item.assigned_roommate.last_name.charAt(0)}`}
-        </Text>
-      </View>
-      <View style={styles.choreInfo}>
-        <Text style={[styles.choreName, item.completed && styles.strikethrough]}>
-          {item.description}
-        </Text>
-        <Text style={styles.choreDate}>
-          Ends: {new Date(item.end_date).toLocaleDateString()}
-        </Text>
-        <Text style={styles.choreDate}>
-          Recurrence: {item.recurrence || "None"}
-        </Text>
-      </View>
-      <TouchableOpacity onPress={() => openActionMenu(item)}>
-        <MaterialIcons name="more-vert" size={24} color="#666" />
+    <View>
+      <TouchableOpacity
+        style={[styles.choreRow, item.completed && styles.completedRow, { borderBottomLeftRadius: expandedChoreId === item.id ? 0 : 8, borderBottomRightRadius: expandedChoreId === item.id ? 0 : 8 }]}
+        onPress={() => setExpandedChoreId(expandedChoreId === item.id ? null : item.id)}
+      >
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>
+            {`${item.assigned_roommate.first_name.charAt(0)}${item.assigned_roommate.last_name.charAt(0)}`}
+          </Text>
+        </View>
+        <View style={styles.choreInfo}>
+          <View style={styles.choreNameRow}>
+            <Text style={[styles.choreName, item.completed && styles.strikethrough]}>
+              {item.description}
+            </Text>
+            <Text style={styles.choreDate}>
+              Ends {new Date(item.end_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+            </Text>
+          </View>
+        </View>
+        <TouchableOpacity onPress={(e) => {
+          e.stopPropagation();
+          openActionMenu(item);
+        }}>
+          <MaterialIcons name="more-vert" size={24} color="#666" />
+        </TouchableOpacity>
       </TouchableOpacity>
+      {expandedChoreId === item.id && (
+        <View style={styles.expandedDetails}>
+          <Text style={styles.detailText}>
+            Recurrence: {item.recurrence || "None"}
+          </Text>
+        </View>
+      )}
     </View>
   );
 
@@ -503,12 +518,29 @@ const styles = StyleSheet.create({
   choreRow: { flexDirection: "row", alignItems: "center", padding: 10, backgroundColor: "#FFFFFF", borderRadius: 8, marginBottom: 8 },
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#CDEEEE", justifyContent: "center", alignItems: "center" },
   avatarText: { fontSize: 16, fontWeight: "bold", color: "#007F5F" },
-  choreInfo: { flex: 1, paddingLeft: 15 },
-  choreName: { fontSize: 16, fontWeight: "bold", color: "#333" },
+  choreInfo: { 
+    flex: 1, 
+    paddingLeft: 15 
+  },
+  choreNameRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  choreName: { 
+    fontSize: 16, 
+    fontWeight: "bold", 
+    color: "#333",
+    flex: 1,
+    marginRight: 8,
+  },
+  choreDate: { 
+    fontSize: 14, 
+    color: "#666" 
+  },
   remind: { fontSize: 14, fontWeight: "bold", color: "#007FFF" },
   fab: { position: "absolute", bottom: 20, right: 20, flexDirection: "row", backgroundColor: "#00D09E", padding: 10, borderRadius: 12 },
   fabText: { color: "#FFFFFF", fontWeight: "bold", marginLeft: 8, alignSelf: "center" },
-  choreDate: { fontSize: 14, color: "#666" },
   strikethrough: { textDecorationLine: "line-through", color: "#999" },
   completedRow: { backgroundColor: "#E0FFE6" },
   modalContainer: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0, 0, 0, 0.5)" },
@@ -565,5 +597,18 @@ const styles = StyleSheet.create({
   },
   selectedRoommateName: {
     color: '#FFFFFF',
+  },
+  expandedDetails: {
+    backgroundColor: '#F5F5F5',
+    padding: 15,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+    marginBottom: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#EEE',
+  },
+  detailText: {
+    fontSize: 14,
+    color: '#666',
   },
 });
