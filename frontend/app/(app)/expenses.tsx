@@ -16,7 +16,7 @@ import { Picker } from '@react-native-picker/picker'
 import { MaterialIcons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { apiCreateExpense, apiDeleteExpense, apiGetExpenses, apiGetRoom, apiGetRoommates } from "@/utils/api/apiClient";
+import { apiCloseExpensePeriod, apiCreateExpense, apiDeleteExpense, apiGetExpenses, apiGetRoom, apiGetRoommates } from "@/utils/api/apiClient";
 
 interface Expense {
   id: number;
@@ -56,40 +56,14 @@ type Roommate = {
 
 const dateFormat = new Intl.DateTimeFormat('en-US').format;
 
-const CURRENT_USER = "Caolinn"; //replace this with an API call when ready
-
-const initialMockExpenses = [
-  {
-    title: "Current period expenses",
-    open: true,
-    expenses: [
-      { id: 4, description: "Groceries", cost: 50, payer: "Byron", date: new Date().toLocaleDateString() },
-      { id: 3, description: "Electric Bill", cost: 30, payer: "Claire", date: new Date().toLocaleDateString() },
-    ]
-  },
-  {
-    title: "Jan 10 to Feb 10 expenses",
-    open: false,
-    expenses: [
-      { id: 2, description: "Rent", cost: 4000, payer: "Nik", date: new Date(2025, 0, 29).toLocaleDateString() },
-      { id: 1, description: "Internet", cost: 30, payer: "Ishita", date: new Date(2025, 0, 23).toLocaleDateString() },
-    ]
-  }
-];
-
-const roommates_mock = ["Byron", "Claire", "Nira", "Nik", "Caolinn", "Ishita"];
-
 const calculatePersonalBalances = (expenses: Expense[], setBalances: any, roommates: Roommate[], currentUser: number) => {
   let balanceSheet: BalanceMap = {};
-  // roommates_mock.forEach((roommate) => (balanceSheet[roommate] = 0));
   roommates.forEach(roommate => { balanceSheet[roommate.id] = 0 });
-  // let totalRoommates = roommates_mock.length;
   let totalRoommates = roommates.length;
 
   expenses.forEach(({ cost, roommate_fkey: payer }) => {
     let splitAmount = cost / totalRoommates;
     
-    // roommates_mock.forEach((roommate) => {
     roommates.forEach((roommate) => {
       if (roommate.id !== currentUser) {
         if (payer === currentUser) {
@@ -133,6 +107,20 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
 
   if (!current) {
     useEffect(() => calculatePersonalBalances(expenses, setBalances, roommates, currentUser), [expenses]);
+  }
+
+  const closeCurrentPeriod = () => {
+    apiCloseExpensePeriod(session).then(() => {
+      window.location.reload();
+    }).catch(error => {
+      Toast.show({
+        type: 'error',
+        text1: 'Error Closing Period',
+        text2: error.message || 'Failed to close expense period'
+      });
+
+      console.error(error);
+    });
   }
 
   return (
@@ -187,8 +175,8 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
             </View>
           )}
 
-          {current && (
-            <TouchableOpacity style={styles.expenseCloseButton} onPress={() => setExpanded(false)}>
+          {current && expenses.length > 0 && (
+            <TouchableOpacity style={styles.expenseCloseButton} onPress={closeCurrentPeriod}>
               <Text style={styles.expenseCloseButtonText}>Close expense period</Text>
             </TouchableOpacity>
           )}
@@ -232,7 +220,7 @@ export default function ExpensesScreen() {
 
     try {
       const expensesData = await apiGetExpenses(session);
-      setExpensePeriods(expensesData);
+      setExpensePeriods(expensesData.sort((a: ExpensePeriod, b: ExpensePeriod) => b.id - a.id));
     } catch (error: any) {
       Toast.show({
         type: 'error',
@@ -250,8 +238,8 @@ export default function ExpensesScreen() {
 
   // Function to update expenses for a specific card
   const updateExpenses = (id: number, updatedExpenses: Expense[]) => {
-    setExpensePeriods((prevCards) =>
-      prevCards.map((card) => (card.id === id ? { ...card, expenses: updatedExpenses } : card))
+    setExpensePeriods((prevPeriods) =>
+      prevPeriods.map((period) => (period.id === id ? { ...period, expenses: updatedExpenses } : period))
     );
   };
 

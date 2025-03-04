@@ -231,3 +231,22 @@ export async function apiDeleteExpense(session: any, id: number) {
     throw new Error(data.message || 'Failed to delete expense');
   }
 }
+
+export async function apiCloseExpensePeriod(session: any) {
+  const response = await fetch(`${API_URL}/expense_period`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session}`
+    },
+    body: '{}'
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to close expense period');
+  }
+
+  return data;
+}
