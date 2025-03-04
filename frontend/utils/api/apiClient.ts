@@ -122,7 +122,8 @@ export async function apiCreateChore(
   endDate: string,
   isTask: boolean,
   recurrence: string,
-  assignedRoommateId: number
+  assignedRoommateId: number,
+  rotationOrder: number[] | null
 ) {
   const response = await fetch(`${API_URL}/chores`, {
     method: 'POST',
@@ -136,7 +137,8 @@ export async function apiCreateChore(
       end_date: endDate,
       is_task: isTask,
       recurrence,
-      assigned_roommate_id: assignedRoommateId
+      assigned_roommate_id: assignedRoommateId,
+      rotation_order: rotationOrder
     }),
   });
 
@@ -157,6 +159,7 @@ export async function apiUpdateChore(session: any, choreId: number, updates: {
   recurrence?: string;
   completed?: boolean;
   assigned_roommate_id?: number;
+  rotation_order?: number[] | null;
 }) {
   const response = await fetch(`${API_URL}/chores/${choreId}`, {
     method: 'PUT',

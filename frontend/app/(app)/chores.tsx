@@ -79,6 +79,7 @@ export default function ChoresScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [expandedChoreId, setExpandedChoreId] = useState<number | null>(null);
   const [isRecurring, setIsRecurring] = useState(false); // controls modal UI state
+  const [rotationOrder, setRotationOrder] = useState<number[]>([]);
 
 
   const fetchChores = async () => {
@@ -153,17 +154,28 @@ export default function ChoresScreen() {
       setChoreIsTask(selectedChore.is_task);
       setChoreRecurrence(selectedChore.recurrence || "none");
       setIsRecurring(selectedChore.recurrence !== "none");
+      setRotationOrder(selectedChore.rotation_order || []);
     } else {
       resetModal();
     }
   }, [selectedChore]);
 
   const addOrUpdateChore = async () => {
-    if (!choreName.trim() || !selectedRoommateId) {
+    if (!choreName.trim()) {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Must fill in name and select a roommate'
+        text2: 'Must fill in name'
+      });
+      return;
+    }
+
+    // For non-recurring chores, validate roommate selection
+    if (!isRecurring && !selectedRoommateId) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Must select a roommate'
       });
       return;
     }
@@ -178,6 +190,19 @@ export default function ChoresScreen() {
       return;
     }
 
+    // Add validation for rotation order
+    if (isRecurring && rotationOrder.length === 0) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please select at least one roommate for the rotation order'
+      });
+      return;
+    }
+
+    // For recurring chores, use the first roommate in rotation order
+    const effectiveRoommateId = isRecurring ? rotationOrder[0] : selectedRoommateId;
+
     // Set end date based on recurrence
     let calculatedEndDate = choreEndDate;
     if (isRecurring) {
@@ -186,18 +211,15 @@ export default function ChoresScreen() {
 
       switch (choreRecurrence) {
         case 'daily':
-          // End of today
           endDate.setHours(23, 59, 59, 999);
           break;
         case 'weekly':
-          // End of this week (Sunday)
           endDate.setDate(now.getDate() + (7 - now.getDay()));
           endDate.setHours(23, 59, 59, 999);
           break;
         case 'monthly':
-          // End of this month
           endDate.setMonth(endDate.getMonth() + 1);
-          endDate.setDate(0); // Last day of current month
+          endDate.setDate(0);
           endDate.setHours(23, 59, 59, 999);
           break;
       }
@@ -221,7 +243,8 @@ export default function ChoresScreen() {
           end_date: calculatedEndDate,
           is_task: choreIsTask,
           recurrence: choreRecurrence,
-          assigned_roommate_id: selectedRoommateId
+          assigned_roommate_id: effectiveRoommateId || undefined,
+          rotation_order: isRecurring ? rotationOrder : null
         });
         setChores(prevChores =>
           prevChores.map(chore =>
@@ -236,7 +259,8 @@ export default function ChoresScreen() {
           calculatedEndDate,
           choreIsTask,
           choreRecurrence,
-          selectedRoommateId
+          effectiveRoommateId || undefined,
+          isRecurring ? rotationOrder : null
         );
         setChores(prevChores => [...prevChores, newChore]);
       }
@@ -258,6 +282,7 @@ export default function ChoresScreen() {
     setChoreRecurrence("none");
     setIsRecurring(false);
     setSelectedChore(null);
+    setRotationOrder([]);
     setModalVisible(false);
   };
 
@@ -546,44 +571,6 @@ export default function ChoresScreen() {
                   keyboardType="default"
                 />
 
-                <Text style={styles.label}>Roommate Responsible</Text>
-                <ScrollView
-                  horizontal={true}
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.roommateScrollContainer}
-                >
-                  {roommates
-                    .sort((a, b) => {
-                      if (a.id === userId) return -1;
-                      if (b.id === userId) return 1;
-                      return 0;
-                    })
-                    .map((roommate) => (
-                    <TouchableOpacity
-                      key={roommate.id}
-                      onPress={() => setSelectedRoommateId(roommate.id)}
-                      style={[
-                        styles.roommateOption,
-                        selectedRoommateId === roommate.id && styles.selectedRoommateOption
-                      ]}
-                    >
-                      <View style={styles.roommateAvatar}>
-                        <Text style={styles.roommateAvatarText}>
-                          {`${roommate.first_name.charAt(0)}${roommate.last_name.charAt(0)}`}
-                        </Text>
-                      </View>
-                      <Text
-                        style={[
-                          styles.roommateName,
-                          selectedRoommateId === roommate.id && styles.selectedRoommateName
-                        ]}
-                      >
-                        {roommate.id === userId ? "You" : roommate.first_name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-
                 {/* Is Task Switch */}
                 <View style={styles.switchContainer}>
                   <Text style={styles.switchLabel}>Is this a task?</Text>
@@ -608,7 +595,49 @@ export default function ChoresScreen() {
                   />
                 </View>
 
-                {isRecurring ? (
+                {!isRecurring && (
+                  <>
+                    <Text style={styles.label}>Roommate Responsible</Text>
+                    <ScrollView
+                      horizontal={true}
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.roommateScrollContainer}
+                    >
+                      {roommates
+                        .sort((a, b) => {
+                          if (a.id === userId) return -1;
+                          if (b.id === userId) return 1;
+                          return 0;
+                        })
+                        .map((roommate) => (
+                          <TouchableOpacity
+                            key={roommate.id}
+                            onPress={() => setSelectedRoommateId(roommate.id)}
+                            style={[
+                              styles.roommateOption,
+                              selectedRoommateId === roommate.id && styles.selectedRoommateOption
+                            ]}
+                          >
+                            <View style={styles.roommateAvatar}>
+                              <Text style={styles.roommateAvatarText}>
+                                {`${roommate.first_name.charAt(0)}${roommate.last_name.charAt(0)}`}
+                              </Text>
+                            </View>
+                            <Text
+                              style={[
+                                styles.roommateName,
+                                selectedRoommateId === roommate.id && styles.selectedRoommateName
+                              ]}
+                            >
+                              {roommate.id === userId ? "You" : roommate.first_name}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                  </>
+                )}
+
+                {isRecurring && (
                   <>
                     <Text style={styles.label}>Recurrence</Text>
                     <View style={styles.dropdown}>
@@ -621,7 +650,62 @@ export default function ChoresScreen() {
                       ))}
                     </View>
                   </>
-                ) : (
+                )}
+
+                {isRecurring && (
+                  <>
+                    <Text style={styles.label}>Rotation Order</Text>
+                    <Text style={styles.sublabel}>Tap roommates in the order they should rotate</Text>
+                    <ScrollView
+                      horizontal={true}
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.roommateScrollContainer}
+                    >
+                      {roommates.map((roommate) => {
+                        const orderIndex = rotationOrder.indexOf(roommate.id);
+                        const isInRotation = orderIndex !== -1;
+                        
+                        return (
+                          <TouchableOpacity
+                            key={roommate.id}
+                            onPress={() => {
+                              if (isInRotation) {
+                                setRotationOrder(prev => prev.filter(id => id !== roommate.id));
+                              } else {
+                                setRotationOrder(prev => [...prev, roommate.id]);
+                              }
+                            }}
+                            style={[
+                              styles.roommateOption,
+                              isInRotation && styles.selectedRoommateOption
+                            ]}
+                          >
+                            <View style={styles.roommateAvatar}>
+                              <Text style={styles.roommateAvatarText}>
+                                {`${roommate.first_name.charAt(0)}${roommate.last_name.charAt(0)}`}
+                              </Text>
+                              {isInRotation && (
+                                <View style={styles.orderBadge}>
+                                  <Text style={styles.orderBadgeText}>{orderIndex + 1}</Text>
+                                </View>
+                              )}
+                            </View>
+                            <Text
+                              style={[
+                                styles.roommateName,
+                                isInRotation && styles.selectedRoommateName
+                              ]}
+                            >
+                              {roommate.id === userId ? "You" : roommate.first_name}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  </>
+                )}
+
+                {!isRecurring && (
                   <>
                     <TouchableOpacity style={styles.datePicker} onPress={() => setDatePickerVisible(true)}>
                       <MaterialIcons name="calendar-today" size={20} color="#007FFF" />
@@ -827,5 +911,28 @@ const styles = StyleSheet.create({
     alignItems: "center", 
     padding: 10, 
     backgroundColor: "#FFFFFF",
+  },
+  sublabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 10,
+  },
+  orderBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#007F5F',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  orderBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });
