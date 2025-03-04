@@ -12,6 +12,7 @@ from flask_jwt_extended import (
 
 from database import db
 from models.roommate import Room, Roommate
+from models.chore import Chore
 
 
 def generate_invite_code(length=4):
@@ -114,9 +115,56 @@ def join_room():
 def leave_room():
     roommate_id = get_jwt_identity()
     roommate = Roommate.query.get(roommate_id)
+
     if not roommate:
         return jsonify({"message": "Roommate record not found"}), 404
 
+    if not roommate.room_fkey:
+        return jsonify({"message": "Roommate is not in a room"}), 400
+
+    # Get all roommates in the same room
+    roommates = Roommate.query.filter_by(room_fkey=roommate.room_fkey).all()
+    roommate_ids = [rm.id for rm in roommates]
+
+    # If this is the last roommate in the room, delete the room and all its chores
+    if len(roommate_ids) == 1 and roommate_ids[0] == roommate_id:
+        chores_in_room = Chore.query.filter_by(room_id=roommate.room_fkey).all()
+        for chore in chores_in_room:
+            db.session.delete(chore)
+
+        room_to_delete = Room.query.get(roommate.room_fkey)
+        db.session.delete(room_to_delete)
+        db.session.commit()
+        return {}, 200
+
+    # 1) Get all chores where the leaving roommate is the assignee
+    assigned_chores = Chore.query.filter(Chore.assignee_fkey == roommate_id).all()
+
+    for chore in assigned_chores:
+        if chore.rotation_order and roommate_id in chore.rotation_order:
+            # Remove the leaving roommate from rotation_order
+            chore.rotation_order = [r for r in chore.rotation_order if r != roommate_id]
+
+            if not chore.rotation_order:
+                # If no one is left in rotation, delete the chore
+                db.session.delete(chore)
+            else:
+                # Otherwise, assign the next roommate in rotation
+                chore.assignee_fkey = chore.rotation_order[0]
+        else:
+            # If there's no rotation_order, delete the chore
+            db.session.delete(chore)
+
+    # 2) Update all remaining chores in the room that include the leaving roommate in `rotation_order`
+    remaining_chores = Chore.query.filter(Chore.assignee_fkey.in_(roommate_ids)).all()
+
+    for chore in remaining_chores:
+        if roommate_id in chore.rotation_order:
+            chore.rotation_order = [r for r in chore.rotation_order if r != roommate_id]
+
+    # 3) Remove roommate from the room
     roommate.room_fkey = None
+
     db.session.commit()
+
     return {}, 200

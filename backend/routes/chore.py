@@ -15,14 +15,32 @@ from models.chore import Chore, Roommate
 
 def rotate_chore(chore):
     """Moves the chore to the next roommate in the rotation if end_date has passed"""
-    if chore.end_date < datetime.now() and chore.rotation_order:
+    if chore.recurrence != "none" and chore.end_date < datetime.now() and chore.rotation_order:
+        # Update the assignee_fkey to the next roommate in the rotation
         current_index = chore.rotation_order.index(chore.assignee_fkey)
         next_index = (current_index + 1) % len(chore.rotation_order)
         chore.assignee_fkey = chore.rotation_order[next_index]
 
-        duration = (chore.end_date - chore.start_date).days
-        chore.start_date = datetime.now()
-        chore.end_date = chore.start_date + timedelta(days=duration)
+        # Update the start and end dates depending on recurrence (timezone agnostic)
+        if chore.recurrence == "daily":
+            duration = timedelta(days=1)
+            new_start_date = chore.start_date + duration
+            new_end_date = new_start_date + duration
+            chore.start_date = new_start_date
+            chore.end_date = new_end_date
+        elif chore.recurrence == "weekly":
+            duration = timedelta(weeks=1)
+            new_start_date = chore.start_date + duration
+            new_end_date = new_start_date + duration
+            chore.start_date = new_start_date
+            chore.end_date = new_end_date
+        elif chore.recurrence == "monthly":
+            pass
+
+
+        # Reset completed to False if it's a task
+        if chore.is_task:
+            chore.completed = False
 
 
 # GET /chores
@@ -62,6 +80,11 @@ def get_chores():
     # 3) Combine so incomplete come first, completed after
     active_chores = incomplete_chores + completed_chores
 
+    # rotate chores that have ended
+    for chore in active_chores:
+        rotate_chore(chore)
+    db.session.commit()
+
     chores_list = []
     for chore in active_chores:
         assigned_roommate_data = None
@@ -89,11 +112,6 @@ def get_chores():
             "recurrence": chore.recurrence,
         }
         chores_list.append(chore_data)
-
-    # rotate chores that have ended
-    for chore in chores_list:
-        rotate_chore(chore)
-    db.session.commit()
 
     return jsonify({"chores": chores_list}), 200
 
