@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
   TextInput,
   Modal,
@@ -14,7 +13,6 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
-import { Picker } from '@react-native-picker/picker'
 import { MaterialIcons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -221,22 +219,16 @@ export default function ExpensesScreen() {
   // modal data
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
-  const [payer, setPayer] = useState("");
+  const [payerId, setPayerId] = useState(userId);
   // main view data
   const [balances, setBalances] = useState<BalanceMap>({});
   const slideAnim = React.useRef(new Animated.Value(Dimensions.get("window").height)).current;
-
-  const setPayerDefault = (data?: Roommate[]) => {
-    const roomies: Roommate[] = data ? data : roommates;
-    setPayer(roomies.find((roommate: Roommate) => roommate.id === userId)?.username || '');
-  }
 
   const fetchRoommates = async () => {
     if (!session) return;
     try {
       const roommatesData = await apiGetRoommates(session);
       setRoommates(roommatesData);
-      setPayerDefault(roommatesData);
     } catch (error: any) {
       Toast.show({
         type: 'error',
@@ -289,7 +281,7 @@ export default function ExpensesScreen() {
   useEffect(() => calculatePersonalBalances(expensePeriods.find(period => period.open)?.expenses || [], setBalances, roommates, userId || 0), [expensePeriods]);
 
   const addExpense = () => {
-    if (!description || !amount || !payer) {
+    if (!description || !amount || !payerId) {
       alert(
         'Error adding expense',
         'Must include expense description, amount, and payer',
@@ -325,7 +317,7 @@ export default function ExpensesScreen() {
 
       setDescription("");
       setAmount("");
-      setPayerDefault();
+      setPayerId(userId);
       setModalVisible(false);
     }).catch(error => {
       Toast.show({
@@ -376,15 +368,43 @@ export default function ExpensesScreen() {
               <Text style={styles.modalTitle}>Add Expense</Text>
               <TextInput style={styles.input} placeholder="Description" value={description} onChangeText={setDescription} />
               <TextInput style={styles.input} placeholder="Amount" keyboardType="numeric" value={amount} onChangeText={setAmount} />
-              <Picker
-                selectedValue={payer}
-                onValueChange={(itemValue) => setPayer(itemValue)}
-                style={styles.input}
+              <Text style={styles.label}>Roommate Responsible</Text>
+              <ScrollView
+                horizontal={true}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.roommateScrollContainer}
               >
-                {roommates.map((roommate) => (
-                  <Picker.Item key={roommate.username} label={`${roommate.first_name} ${roommate.last_name}`} value={roommate.username} />
+                {roommates
+                  .sort((a, b) => {
+                    if (a.id === userId) return -1;
+                    if (b.id === userId) return 1;
+                    return 0;
+                  })
+                  .map((roommate) => (
+                  <TouchableOpacity
+                    key={roommate.id}
+                    onPress={() => setPayerId(roommate.id)}
+                    style={[
+                      styles.roommateOption,
+                      payerId === roommate.id && styles.selectedRoommateOption
+                    ]}
+                  >
+                    <View style={styles.roommateAvatar}>
+                      <Text style={styles.roommateAvatarText}>
+                        {`${roommate.first_name.charAt(0)}${roommate.last_name.charAt(0)}`}
+                      </Text>
+                    </View>
+                    <Text
+                      style={[
+                        styles.roommateSelectName,
+                        payerId === roommate.id && styles.selectedRoommateName
+                      ]}
+                    >
+                      {roommate.id === userId ? "You" : roommate.first_name}
+                    </Text>
+                  </TouchableOpacity>
                 ))}
-              </Picker>
+              </ScrollView>
               <TouchableOpacity style={styles.submitButton} onPress={addExpense}>
                 <Text style={styles.submitButtonText}>Save Expense</Text>
               </TouchableOpacity>
@@ -430,4 +450,12 @@ const styles = StyleSheet.create({
   expenseCloseButtonText: { color: "#FFFFFF", fontWeight: "bold" },
   fab: { position: "absolute", bottom: 20, right: 20, flexDirection: "row", backgroundColor: "#00D09E", padding: 10, borderRadius: 12 },
   fabText: { color: "#FFFFFF", fontWeight: "bold", marginLeft: 8, alignSelf: "center" },
+  label: { fontSize: 16, fontWeight: "bold", color: "#007F5F", marginBottom: 5 },
+  roommateScrollContainer: { paddingBottom: 10, },
+  roommateOption: { alignItems: 'center', marginRight: 15, padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#EEE', minWidth: 100 },
+  selectedRoommateOption: { backgroundColor: '#00D09E', borderColor: '#00D09E' },
+  roommateAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#CDEEEE', justifyContent: 'center', alignItems: 'center', marginBottom: 5 },
+  roommateAvatarText: { fontSize: 16, fontWeight: 'bold', color: '#007F5F' },
+  roommateSelectName: { fontSize: 14, color: '#333', textAlign: 'center' },
+  selectedRoommateName: { color: '#FFFFFF' },
 });
