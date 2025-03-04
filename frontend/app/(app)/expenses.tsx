@@ -12,6 +12,7 @@ import {
   Animated,
   ScrollView,
   Alert,
+  RefreshControl,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
@@ -222,6 +223,7 @@ export default function ExpensesScreen() {
   const [payerId, setPayerId] = useState(userId);
   // main view data
   const [balances, setBalances] = useState<BalanceMap>({});
+  const [refreshing, setRefreshing] = useState(false);
   const slideAnim = React.useRef(new Animated.Value(Dimensions.get("window").height)).current;
 
   const fetchRoommates = async () => {
@@ -254,10 +256,14 @@ export default function ExpensesScreen() {
     }
   }
 
-  useEffect(() => {
-    fetchRoommates();
-    fetchExpenses();
-  }, [session, refreshCount]);
+  const fetchAll = async () => {
+    return Promise.all([
+      fetchRoommates(),
+      fetchExpenses(),
+    ]);
+  }
+
+  useEffect(() => {fetchAll()}, [session]);
 
   // Function to update expenses for a specific card
   const updateExpenses = (id: number, updatedExpenses: Expense[]) => {
@@ -330,13 +336,20 @@ export default function ExpensesScreen() {
     });
   };
 
-  const refresh = () => {
-    setRefreshCount(refreshCount => (refreshCount + 1));
+  const refresh = async () => {
+    setRefreshing(true);
+    await fetchAll();
+    setRefreshing(false);
   };
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 80 }}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: 80 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh}
+          tintColor="#00D09E" colors={["#00D09E"]} />}
+      >
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Current period balances</Text>
           {roommates
