@@ -28,7 +28,6 @@ type Chore = {
   description: string;
   start_date: string;
   end_date: string;
-  autorotate: boolean;
   is_task: boolean;
   completed: boolean;
   recurrence: string;
@@ -172,7 +171,6 @@ export default function ChoresScreen() {
           description: choreName,
           start_date: getCurrentDate(),
           end_date: choreEndDate,
-          autorotate: choreRecurrence !== "none",
           is_task: choreIsTask,
           recurrence: choreRecurrence,
           assigned_roommate_id: selectedRoommateId
@@ -188,7 +186,6 @@ export default function ChoresScreen() {
           choreName,
           getCurrentDate(),
           choreEndDate,
-          (choreRecurrence !== "none"),
           choreIsTask,
           choreRecurrence,
           selectedRoommateId
@@ -607,14 +604,6 @@ const styles = StyleSheet.create({
   submitButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
   closeButton: { alignItems: "center", paddingVertical: 10 },
   closeButtonText: { fontSize: 16, color: "#007FFF", fontWeight: "bold" },
-  choreRow: { 
-    flexDirection: "row", 
-    alignItems: "center", 
-    padding: 10, 
-    backgroundColor: "#FFFFFF", 
-    borderRadius: 8, 
-    marginBottom: 0
-  },
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#CDEEEE", justifyContent: "center", alignItems: "center" },
   avatarText: { fontSize: 16, fontWeight: "bold", color: "#007F5F" },
   choreInfo: { 
