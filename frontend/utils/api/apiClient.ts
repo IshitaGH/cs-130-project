@@ -195,7 +195,6 @@ export async function apiGetRoommates(session: any) {
     const errorData = await response.json();
     throw new Error(errorData.message || 'Failed to get roommates');
   }
-  
   const data = await response.json();
-  return data;
+  return data.roommates;
 }
