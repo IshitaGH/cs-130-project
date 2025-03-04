@@ -74,6 +74,7 @@ def get_chores():
             "assigned_roommate": assigned_roommate_data,
             "roommate_assignor_id": chore.assignor_fkey,
             "rotation_order": chore.rotation_order,
+            "recurrence": chore.recurrence,
         }
         chores_list.append(chore_data)
 
