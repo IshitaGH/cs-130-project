@@ -22,7 +22,6 @@ import Toast from "react-native-toast-message";
 import Swipeable from "react-native-gesture-handler/Swipeable";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-// This type mimics the response structure from the backend
 type Chore = {
   id: number;
   description: string;
@@ -41,7 +40,6 @@ type Chore = {
   rotation_order: number[] | null;
 };
 
-// Add after the Chore type definition
 type Roommate = {
   id: number;
   first_name: string;
@@ -49,75 +47,99 @@ type Roommate = {
   username: string;
 };
 
-function getCurrentDate() {
-  const localDate = new Date();
-  localDate.setHours(0, 0, 0, 0);
-  return localDate.toISOString();
-}
+const utils = {
+  getCurrentDate: () => {
+    const localDate = new Date();
+    localDate.setHours(0, 0, 0, 0);
+    return localDate.toISOString();
+  },
+
+  calculateEndDate: (recurrence: string): string => {
+    const now = new Date();
+    const endDate = new Date(now);
+
+    switch (recurrence) {
+      case 'daily':
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      case 'weekly':
+        endDate.setDate(now.getDate() + (7 - now.getDay()));
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      case 'monthly':
+        endDate.setMonth(endDate.getMonth() + 1);
+        endDate.setDate(0);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+    }
+    return endDate.toISOString();
+  },
+
+  getInitials: (firstName: string, lastName: string): string =>
+    `${firstName.charAt(0)}${lastName.charAt(0)}`
+};
 
 export default function ChoresScreen() {
-  // Auth State
   const { session, userId } = useAuthContext();
-  // Roommates State
+
   const [roommates, setRoommates] = useState<Roommate[]>([]);
-  // Chores State
   const [chores, setChores] = useState<Chore[]>([]);
   const [yourChores, setYourChores] = useState<Chore[]>([]);
   const [roommatesChores, setRoommatesChores] = useState<Chore[]>([]);
-  // New/Selected Chore State
+
   const [choreName, setChoreName] = useState("");
   const [choreIsTask, setChoreIsTask] = useState(false);
   const [choreRecurrence, setChoreRecurrence] = useState("none");
   const [choreEndDate, setChoreEndDate] = useState<string | null>(null);
   const [selectedRoommateId, setSelectedRoommateId] = useState<number | null>(null);
-  // Modal State
+  const [rotationOrder, setRotationOrder] = useState<number[]>([]);
+  const [isRecurring, setIsRecurring] = useState(false);
+
   const [modalVisible, setModalVisible] = useState(false);
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
-  // Additional State
   const [selectedChore, setSelectedChore] = useState<Chore | null>(null);
-  const slideAnim = React.useRef(new Animated.Value(Dimensions.get("window").height)).current;
-  const [refreshing, setRefreshing] = useState(false);
   const [expandedChoreId, setExpandedChoreId] = useState<number | null>(null);
-  const [isRecurring, setIsRecurring] = useState(false); // controls modal UI state
-  const [rotationOrder, setRotationOrder] = useState<number[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const slideAnim = React.useRef(new Animated.Value(Dimensions.get("window").height)).current;
 
+  const api = {
+    fetchChores: async () => {
+      if (!session) return;
+      try {
+        const choresData = await apiGetChores(session);
+        setChores(choresData);
+      } catch (error: any) {
+        Toast.show({
+          type: 'error',
+          text1: 'Error Fetching Chores',
+          text2: error.message || 'Failed to fetch chores'
+        });
+      }
+    },
 
-  const fetchChores = async () => {
-    if (!session) return;
-    try {
-      const choresData = await apiGetChores(session);
-      setChores(choresData);
-    } catch (error: any) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error Fetching Chores',
-        text2: error.message || 'Failed to fetch chores'
-      });
-    }
-  };
-
-  const fetchRoommates = async () => {
-    if (!session) return;
-    try {
-      const roommatesData = await apiGetRoommates(session);
-      setRoommates(roommatesData);
-    } catch (error: any) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error Fetching Roommates',
-        text2: error.message || 'Failed to fetch roommates'
-      });
+    fetchRoommates: async () => {
+      if (!session) return;
+      try {
+        const roommatesData = await apiGetRoommates(session);
+        setRoommates(roommatesData);
+      } catch (error: any) {
+        Toast.show({
+          type: 'error',
+          text1: 'Error Fetching Roommates',
+          text2: error.message || 'Failed to fetch roommates'
+        });
+      }
     }
   };
 
   useEffect(() => {
-    fetchChores();
-    fetchRoommates();
+    api.fetchChores();
+    api.fetchRoommates();
   }, [session]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([fetchChores(), fetchRoommates()]);
+    await Promise.all([api.fetchChores(), api.fetchRoommates()]);
     setRefreshing(false);
   };
 
@@ -160,45 +182,57 @@ export default function ChoresScreen() {
     }
   }, [selectedChore]);
 
-  const addOrUpdateChore = async () => {
+  const validateChoreForm = (): boolean => {
     if (!choreName.trim()) {
       Toast.show({
         type: 'error',
         text1: 'Error',
         text2: 'Must fill in name'
       });
-      return;
+      return false;
     }
 
-    // For non-recurring chores, validate roommate selection
     if (!isRecurring && !selectedRoommateId) {
       Toast.show({
         type: 'error',
         text1: 'Error',
         text2: 'Must select a roommate'
       });
-      return;
+      return false;
     }
 
-    // Validation for recurring chores without recurrence selected
     if (isRecurring && choreRecurrence === "none") {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Please select a recurrence pattern for recurring chores'
+        text2: 'Please select a recurrence pattern'
       });
-      return;
+      return false;
     }
 
-    // Add validation for rotation order
     if (isRecurring && rotationOrder.length === 0) {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Please select at least one roommate for the rotation order'
+        text2: 'Please select rotation order'
       });
-      return;
+      return false;
     }
+
+    if (!isRecurring && !choreEndDate) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Must select a due date'
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  const addOrUpdateChore = async () => {
+    if (!validateChoreForm()) return;
 
     // For recurring chores, use the first roommate in rotation order
     const effectiveRoommateId = isRecurring ? rotationOrder[0] : selectedRoommateId;
@@ -206,24 +240,7 @@ export default function ChoresScreen() {
     // Set end date based on recurrence
     let calculatedEndDate = choreEndDate;
     if (isRecurring) {
-      const now = new Date();
-      const endDate = new Date(now);
-
-      switch (choreRecurrence) {
-        case 'daily':
-          endDate.setHours(23, 59, 59, 999);
-          break;
-        case 'weekly':
-          endDate.setDate(now.getDate() + (7 - now.getDay()));
-          endDate.setHours(23, 59, 59, 999);
-          break;
-        case 'monthly':
-          endDate.setMonth(endDate.getMonth() + 1);
-          endDate.setDate(0);
-          endDate.setHours(23, 59, 59, 999);
-          break;
-      }
-      calculatedEndDate = endDate.toISOString();
+      calculatedEndDate = utils.calculateEndDate(choreRecurrence);
     }
 
     if (!calculatedEndDate) {
@@ -239,7 +256,7 @@ export default function ChoresScreen() {
       if (selectedChore) {
         const updatedChore = await apiUpdateChore(session, selectedChore.id, {
           description: choreName,
-          start_date: getCurrentDate(),
+          start_date: utils.getCurrentDate(),
           end_date: calculatedEndDate,
           is_task: choreIsTask,
           recurrence: choreRecurrence,
@@ -255,7 +272,7 @@ export default function ChoresScreen() {
         const newChore = await apiCreateChore(
           session,
           choreName,
-          getCurrentDate(),
+          utils.getCurrentDate(),
           calculatedEndDate,
           choreIsTask,
           choreRecurrence,
@@ -462,7 +479,7 @@ export default function ChoresScreen() {
             >
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>
-                  {`${item.assigned_roommate.first_name.charAt(0)}${item.assigned_roommate.last_name.charAt(0)}`}
+                  {utils.getInitials(item.assigned_roommate.first_name, item.assigned_roommate.last_name)}
                 </Text>
               </View>
               <View style={styles.choreInfo}>
@@ -513,7 +530,7 @@ export default function ChoresScreen() {
                               roommateId === item.assigned_roommate.id && styles.activeRotationAvatar
                             ]}>
                               <Text style={styles.rotationAvatarText}>
-                                {`${roommate.first_name.charAt(0)}${roommate.last_name.charAt(0)}`}
+                                {utils.getInitials(roommate.first_name, roommate.last_name)}
                               </Text>
                             </View>
                             {item.rotation_order && index < item.rotation_order.length - 1 && (
@@ -663,7 +680,7 @@ export default function ChoresScreen() {
                           >
                             <View style={styles.roommateAvatar}>
                               <Text style={styles.roommateAvatarText}>
-                                {`${roommate.first_name.charAt(0)}${roommate.last_name.charAt(0)}`}
+                                {utils.getInitials(roommate.first_name, roommate.last_name)}
                               </Text>
                             </View>
                             <Text
@@ -725,7 +742,7 @@ export default function ChoresScreen() {
                           >
                             <View style={styles.roommateAvatar}>
                               <Text style={styles.roommateAvatarText}>
-                                {`${roommate.first_name.charAt(0)}${roommate.last_name.charAt(0)}`}
+                                {utils.getInitials(roommate.first_name, roommate.last_name)}
                               </Text>
                               {isInRotation && (
                                 <View style={styles.orderBadge}>
