@@ -63,10 +63,10 @@ const alertPolyfill = (title: string, description: string, options: any[], extra
 
   if (result) {
       const confirmOption = options.find(({ style }) => style !== 'cancel')
-      confirmOption && confirmOption.onPress()
+      confirmOption && confirmOption.onPress && confirmOption.onPress()
   } else {
       const cancelOption = options.find(({ style }) => style === 'cancel')
-      cancelOption && cancelOption.onPress()
+      cancelOption && cancelOption.onPress && cancelOption.onPress()
   }
 };
 
@@ -131,7 +131,6 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
       {
         text: 'Cancel',
         style: 'cancel',
-        onPress: () => {}
       },
       {
         text: 'Close period',
@@ -284,7 +283,17 @@ export default function ExpensesScreen() {
   useEffect(() => calculatePersonalBalances(expensePeriods.find(period => period.open)?.expenses || [], setBalances, roommates, userId || 0), [expensePeriods]);
 
   const addExpense = () => {
-    if (!description || !amount /* || !payer */) return; // TODO: add validation
+    if (!description || !amount /* || !payer */) {
+      alert(
+        'Error adding expense',
+        'Must include expense description, amount, and payer',
+        [{
+          text: 'OK',
+        }]
+      )
+
+      return;
+    }
 
     apiCreateExpense(session, parseFloat(amount), description, roommates.map(roommate => {
       return {
