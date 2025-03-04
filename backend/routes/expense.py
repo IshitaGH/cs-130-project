@@ -35,12 +35,12 @@ def create_expense():
     new_expense = Expense(
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
-        title=data["title"].strip(),
+        title=data["title"].strip() if "title" in data else "",
         cost=data["cost"],
         description=data["description"].strip(),
         expense_period_fkey=expense_period.id,
         room_fkey=room.id,
-        roommate_fkey=roommate.id,
+        roommate_fkey=data["roommate_spendor_id"] if "roommate_spendor_id" in data else roommate.id,
     )
 
     db.session.add(new_expense)
