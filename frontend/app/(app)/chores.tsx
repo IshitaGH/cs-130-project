@@ -243,7 +243,7 @@ export default function ChoresScreen() {
           end_date: calculatedEndDate,
           is_task: choreIsTask,
           recurrence: choreRecurrence,
-          assigned_roommate_id: effectiveRoommateId || undefined,
+          assigned_roommate_id: effectiveRoommateId as number,
           rotation_order: isRecurring ? rotationOrder : null
         });
         setChores(prevChores =>
@@ -259,7 +259,7 @@ export default function ChoresScreen() {
           calculatedEndDate,
           choreIsTask,
           choreRecurrence,
-          effectiveRoommateId || undefined,
+          effectiveRoommateId as number, // type assertion since is validated earlier
           isRecurring ? rotationOrder : null
         );
         setChores(prevChores => [...prevChores, newChore]);
