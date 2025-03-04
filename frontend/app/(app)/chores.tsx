@@ -11,16 +11,18 @@ import {
   KeyboardAvoidingView,
   Platform,
   Animated,
-  ActionSheetIOS,
   RefreshControl,
   Switch,
   ScrollView,
+  Alert,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { apiGetChores, apiUpdateChore, apiCreateChore, apiDeleteChore, apiGetRoommates } from "@/utils/api/apiClient";
 import Toast from "react-native-toast-message";
+import Swipeable from "react-native-gesture-handler/Swipeable";
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // This type mimics the response structure from the backend
 type Chore = {
@@ -268,67 +270,163 @@ export default function ChoresScreen() {
     });
   };
 
-  const openActionMenu = (chore: Chore) => {
-    const completeActionLabel = chore.completed ? "Mark as Incomplete" : "Mark as Complete";
+  const renderChoreRow = ({ item }: { item: Chore }) => {
+    const swipeableRef = React.useRef<Swipeable | null>(null);
+    const [isUpdating, setIsUpdating] = useState(false);
 
-    if (Platform.OS === "ios") {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: ["Remind", completeActionLabel, "Edit", "Delete", "Cancel"],
-          destructiveButtonIndex: 3,
-          cancelButtonIndex: 4,
-        },
-        (buttonIndex) => {
-          if (buttonIndex === 0) remindChore(chore);
-          else if (buttonIndex === 1) toggleComplete(chore.id);
-          else if (buttonIndex === 2) {
-            setSelectedChore(chore);
-            setModalVisible(true);
-          } else if (buttonIndex === 3) deleteChore(chore.id);
-        }
+    const handleComplete = async (id: number) => {
+      const chore = chores.find(c => c.id === id);
+      if (!chore) return;
+
+      if (!chore.is_task) {
+        Toast.show({
+          type: 'error',
+          text1: 'Cannot Complete',
+          text2: "This chore is an ongoing responsibility and cannot be marked as complete."
+        });
+        swipeableRef.current?.close();
+        return;
+      }
+
+      setIsUpdating(true);
+      await toggleComplete(id);
+      swipeableRef.current?.close();
+      setTimeout(() => {
+        setIsUpdating(false);
+      }, 300);
+    };
+
+    const handleDelete = async (id: number) => {
+      Alert.alert(
+        "Delete Chore",
+        "Are you sure you want to delete this chore?",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+            onPress: () => {
+              swipeableRef.current?.close();
+            }
+          },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+              setIsUpdating(true);
+              await deleteChore(id);
+              swipeableRef.current?.close();
+            }
+          }
+        ]
       );
-    } else {
-      setSelectedChore(chore);
-    }
-  };
+    };
 
-  const renderChoreRow = ({ item }: { item: Chore }) => (
-    <View>
-      <TouchableOpacity
-        style={[styles.choreRow, item.completed && styles.completedRow, { borderBottomLeftRadius: expandedChoreId === item.id ? 0 : 8, borderBottomRightRadius: expandedChoreId === item.id ? 0 : 8 }]}
-        onPress={() => setExpandedChoreId(expandedChoreId === item.id ? null : item.id)}
-      >
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {`${item.assigned_roommate.first_name.charAt(0)}${item.assigned_roommate.last_name.charAt(0)}`}
-          </Text>
-        </View>
-        <View style={styles.choreInfo}>
-          <View style={styles.choreNameRow}>
-            <Text style={[styles.choreName, item.completed && styles.strikethrough]}>
-              {item.description}
-            </Text>
-            <Text style={styles.choreDate}>
-              Ends {new Date(item.end_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-            </Text>
+    if (isUpdating) {
+      return <View style={styles.placeholderRow} />;
+    }
+
+    const renderRightActions = (progress: any, dragX: any) => (
+      <View style={[
+        styles.rightActions, 
+        { 
+          backgroundColor: item.completed ? '#666666' : '#00D09E',
+          borderRadius: 8,
+          marginBottom: 0
+        }
+      ]}>
+        <Animated.View style={styles.completeAction}>
+          <MaterialIcons 
+            name={item.completed ? "undo" : "check"} 
+            size={24} 
+            color="#FFF" 
+          />
+        </Animated.View>
+      </View>
+    );
+
+    const renderLeftActions = (progress: any, dragX: any) => (
+      <View style={[
+        styles.leftActions, 
+        { 
+          borderRadius: 8,
+          marginBottom: 0
+        }
+      ]}>
+        <Animated.View style={styles.deleteAction}>
+          <MaterialIcons name="delete" size={24} color="#FFF" />
+        </Animated.View>
+      </View>
+    );
+
+    return (
+      <View style={[
+        styles.choreContainer,
+        { marginBottom: 2 }
+      ]}>
+        <Swipeable
+          ref={swipeableRef}
+          renderRightActions={renderRightActions}
+          renderLeftActions={renderLeftActions}
+          rightThreshold={100}
+          leftThreshold={100}
+          onSwipeableRightOpen={() => handleComplete(item.id)}
+          onSwipeableLeftOpen={() => handleDelete(item.id)}
+          containerStyle={styles.swipeableContainer}
+        >
+          <View style={[
+            styles.choreRowWrapper,
+            { backgroundColor: 'white' }
+          ]}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={[
+                styles.choreRow,
+                { 
+                  borderBottomLeftRadius: expandedChoreId === item.id ? 0 : 8,
+                  borderBottomRightRadius: expandedChoreId === item.id ? 0 : 8,
+                  marginBottom: 0
+                }
+              ]}
+              onPress={() => setExpandedChoreId(expandedChoreId === item.id ? null : item.id)}
+              onLongPress={() => {
+                setSelectedChore(item);
+                setModalVisible(true);
+              }}
+            >
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>
+                  {`${item.assigned_roommate.first_name.charAt(0)}${item.assigned_roommate.last_name.charAt(0)}`}
+                </Text>
+              </View>
+              <View style={styles.choreInfo}>
+                <View style={styles.choreNameRow}>
+                  <Text style={[styles.choreName, item.completed && styles.strikethrough]}>
+                    {item.description}
+                  </Text>
+                  <Text style={styles.choreDate}>
+                    Ends {new Date(item.end_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity 
+                onPress={() => remindChore(item)}
+                style={styles.bellButton}
+              >
+                <MaterialIcons name="notifications" size={24} color="#666" />
+              </TouchableOpacity>
+            </TouchableOpacity>
+            {expandedChoreId === item.id && (
+              <View style={[styles.expandedDetails, { marginBottom: 0 }]}>
+                <Text style={styles.detailText}>
+                  Recurrence: {item.recurrence || "None"}
+                </Text>
+              </View>
+            )}
           </View>
-        </View>
-        <TouchableOpacity onPress={(e) => {
-          e.stopPropagation();
-          openActionMenu(item);
-        }}>
-          <MaterialIcons name="more-vert" size={24} color="#666" />
-        </TouchableOpacity>
-      </TouchableOpacity>
-      {expandedChoreId === item.id && (
-        <View style={styles.expandedDetails}>
-          <Text style={styles.detailText}>
-            Recurrence: {item.recurrence || "None"}
-          </Text>
-        </View>
-      )}
-    </View>
-  );
+        </Swipeable>
+      </View>
+    );
+  };
 
   const sections = [
     { 
@@ -344,162 +442,164 @@ export default function ChoresScreen() {
   ];
 
   return (
-    <View style={styles.container}>
-      <SectionList
-        sections={sections}
-        showsVerticalScrollIndicator={false}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => renderChoreRow({ item })}
-        renderSectionHeader={({ section: { title, data, emptyText } }) => (
-          <View>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionHeaderText}>{title}</Text>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={styles.container}>
+        <SectionList
+          sections={sections}
+          showsVerticalScrollIndicator={false}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => renderChoreRow({ item })}
+          renderSectionHeader={({ section: { title, data, emptyText } }) => (
+            <View>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionHeaderText}>{title}</Text>
+              </View>
+              {data.length === 0 && (
+                <Text style={styles.emptyText}>{emptyText}</Text>
+              )}
             </View>
-            {data.length === 0 && (
-              <Text style={styles.emptyText}>{emptyText}</Text>
-            )}
-          </View>
-        )}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor="#00D09E"
-            colors={["#00D09E"]}
-          />
-        }
-      />
+          )}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#00D09E"
+              colors={["#00D09E"]}
+            />
+          }
+        />
 
-      <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
-        <MaterialIcons name="edit" size={24} color="#FFFFFF" />
-        <Text style={styles.fabText}>Assign</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
+          <MaterialIcons name="edit" size={24} color="#FFFFFF" />
+          <Text style={styles.fabText}>Assign</Text>
+        </TouchableOpacity>
 
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === "ios" ? "padding" : "height"} 
-          style={styles.modalContainer}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
         >
-          <TouchableOpacity 
-            style={styles.modalContainer} 
-            activeOpacity={1} 
-            onPress={() => resetModal()}
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === "ios" ? "padding" : "height"} 
+            style={styles.modalContainer}
           >
             <TouchableOpacity 
+              style={styles.modalContainer} 
               activeOpacity={1} 
-              onPress={(e) => e.stopPropagation()}
+              onPress={() => resetModal()}
             >
-              <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
-                <Text style={styles.modalTitle}>
-                  {selectedChore ? "Edit Chore" : "Create a New Chore"}
-                </Text>
+              <TouchableOpacity 
+                activeOpacity={1} 
+                onPress={(e) => e.stopPropagation()}
+              >
+                <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
+                  <Text style={styles.modalTitle}>
+                    {selectedChore ? "Edit Chore" : "Create a New Chore"}
+                  </Text>
 
-                <TextInput
-                  style={styles.input}
-                  placeholder="Description"
-                  placeholderTextColor="#AAA"
-                  value={choreName}
-                  onChangeText={setChoreName}
-                />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Description"
+                    placeholderTextColor="#AAA"
+                    value={choreName}
+                    onChangeText={setChoreName}
+                  />
 
-                <Text style={styles.label}>Roommate Responsible</Text>
-                <ScrollView
-                  horizontal={true}
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.roommateScrollContainer}
-                >
-                  {roommates
-                    .sort((a, b) => {
-                      if (a.id === userId) return -1;
-                      if (b.id === userId) return 1;
-                      return 0;
-                    })
-                    .map((roommate) => (
-                    <TouchableOpacity
-                      key={roommate.id}
-                      onPress={() => setSelectedRoommateId(roommate.id)}
-                      style={[
-                        styles.roommateOption,
-                        selectedRoommateId === roommate.id && styles.selectedRoommateOption
-                      ]}
-                    >
-                      <View style={styles.roommateAvatar}>
-                        <Text style={styles.roommateAvatarText}>
-                          {`${roommate.first_name.charAt(0)}${roommate.last_name.charAt(0)}`}
-                        </Text>
-                      </View>
-                      <Text
+                  <Text style={styles.label}>Roommate Responsible</Text>
+                  <ScrollView
+                    horizontal={true}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.roommateScrollContainer}
+                  >
+                    {roommates
+                      .sort((a, b) => {
+                        if (a.id === userId) return -1;
+                        if (b.id === userId) return 1;
+                        return 0;
+                      })
+                      .map((roommate) => (
+                      <TouchableOpacity
+                        key={roommate.id}
+                        onPress={() => setSelectedRoommateId(roommate.id)}
                         style={[
-                          styles.roommateName,
-                          selectedRoommateId === roommate.id && styles.selectedRoommateName
+                          styles.roommateOption,
+                          selectedRoommateId === roommate.id && styles.selectedRoommateOption
                         ]}
                       >
-                        {roommate.id === userId ? "You" : roommate.first_name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
+                        <View style={styles.roommateAvatar}>
+                          <Text style={styles.roommateAvatarText}>
+                            {`${roommate.first_name.charAt(0)}${roommate.last_name.charAt(0)}`}
+                          </Text>
+                        </View>
+                        <Text
+                          style={[
+                            styles.roommateName,
+                            selectedRoommateId === roommate.id && styles.selectedRoommateName
+                          ]}
+                        >
+                          {roommate.id === userId ? "You" : roommate.first_name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
 
-                {/* Is Task Switch */}
-                <View style={styles.switchContainer}>
-                  <Text style={styles.switchLabel}>Is this a task?</Text>
-                  <Switch
-                    value={choreIsTask}
-                    onValueChange={(newValue) => setChoreIsTask(newValue)}
+                  {/* Is Task Switch */}
+                  <View style={styles.switchContainer}>
+                    <Text style={styles.switchLabel}>Is this a task?</Text>
+                    <Switch
+                      value={choreIsTask}
+                      onValueChange={(newValue) => setChoreIsTask(newValue)}
+                    />
+                  </View>
+
+                  {/* Custom Dropdown for Recurrence */}
+                  <Text style={styles.label}>Recurrence</Text>
+                  <View style={styles.dropdown}>
+                    {["none", "daily", "weekly", "monthly"].map((option) => (
+                      <TouchableOpacity key={option} onPress={() => setChoreRecurrence(option)}>
+                        <Text style={[styles.option, choreRecurrence === option && styles.selectedOption]}>
+                          {option}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  <TouchableOpacity style={styles.datePicker} onPress={() => setDatePickerVisible(true)}>
+                    <MaterialIcons name="calendar-today" size={20} color="#007FFF" />
+                    <Text style={styles.dateText}>
+                      {choreEndDate ? new Date(choreEndDate).toLocaleDateString() : "Select Due Date"}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <DateTimePickerModal
+                    isVisible={isDatePickerVisible}
+                    mode="date"
+                    minimumDate={new Date()}
+                    onConfirm={(date) => {
+                      const localDate = new Date(date);
+                      localDate.setHours(23, 59, 59, 999);
+                      setChoreEndDate(localDate.toISOString());
+                      setDatePickerVisible(false);
+                    }}
+                    onCancel={() => setDatePickerVisible(false)}
                   />
-                </View>
 
-                {/* Custom Dropdown for Recurrence */}
-                <Text style={styles.label}>Recurrence</Text>
-                <View style={styles.dropdown}>
-                  {["none", "daily", "weekly", "monthly"].map((option) => (
-                    <TouchableOpacity key={option} onPress={() => setChoreRecurrence(option)}>
-                      <Text style={[styles.option, choreRecurrence === option && styles.selectedOption]}>
-                        {option}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                  <TouchableOpacity style={styles.submitButton} onPress={addOrUpdateChore}>
+                    <Text style={styles.submitButtonText}>{selectedChore ? "Update Chore" : "Save Chore"}</Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity style={styles.datePicker} onPress={() => setDatePickerVisible(true)}>
-                  <MaterialIcons name="calendar-today" size={20} color="#007FFF" />
-                  <Text style={styles.dateText}>
-                    {choreEndDate ? new Date(choreEndDate).toLocaleDateString() : "Select Due Date"}
-                  </Text>
-                </TouchableOpacity>
-
-                <DateTimePickerModal
-                  isVisible={isDatePickerVisible}
-                  mode="date"
-                  minimumDate={new Date()}
-                  onConfirm={(date) => {
-                    const localDate = new Date(date);
-                    localDate.setHours(23, 59, 59, 999);
-                    setChoreEndDate(localDate.toISOString());
-                    setDatePickerVisible(false);
-                  }}
-                  onCancel={() => setDatePickerVisible(false)}
-                />
-
-                <TouchableOpacity style={styles.submitButton} onPress={addOrUpdateChore}>
-                  <Text style={styles.submitButtonText}>{selectedChore ? "Update Chore" : "Save Chore"}</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.closeButton} onPress={resetModal}>
-                  <Text style={styles.closeButtonText}>Cancel</Text>
-                </TouchableOpacity>
-              </Animated.View>
+                  <TouchableOpacity style={styles.closeButton} onPress={resetModal}>
+                    <Text style={styles.closeButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                </Animated.View>
+              </TouchableOpacity>
             </TouchableOpacity>
-          </TouchableOpacity>
-        </KeyboardAvoidingView>
-      </Modal>
-    </View>
+          </KeyboardAvoidingView>
+        </Modal>
+      </View>
+    </GestureHandlerRootView>
   );
 }
 
@@ -515,7 +615,14 @@ const styles = StyleSheet.create({
   submitButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
   closeButton: { alignItems: "center", paddingVertical: 10 },
   closeButtonText: { fontSize: 16, color: "#007FFF", fontWeight: "bold" },
-  choreRow: { flexDirection: "row", alignItems: "center", padding: 10, backgroundColor: "#FFFFFF", borderRadius: 8, marginBottom: 8 },
+  choreRow: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    padding: 10, 
+    backgroundColor: "#FFFFFF", 
+    borderRadius: 8, 
+    marginBottom: 0
+  },
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#CDEEEE", justifyContent: "center", alignItems: "center" },
   avatarText: { fontSize: 16, fontWeight: "bold", color: "#007F5F" },
   choreInfo: { 
@@ -542,7 +649,6 @@ const styles = StyleSheet.create({
   fab: { position: "absolute", bottom: 20, right: 20, flexDirection: "row", backgroundColor: "#00D09E", padding: 10, borderRadius: 12 },
   fabText: { color: "#FFFFFF", fontWeight: "bold", marginLeft: 8, alignSelf: "center" },
   strikethrough: { textDecorationLine: "line-through", color: "#999" },
-  completedRow: { backgroundColor: "#E0FFE6" },
   modalContainer: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0, 0, 0, 0.5)" },
   modalContent: { backgroundColor: "#FFFFFF", padding: 20, borderTopLeftRadius: 16, borderTopRightRadius: 16, minHeight: Dimensions.get("window").height * 0.4 },
   modalTitle: { fontSize: 20, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
@@ -603,12 +709,63 @@ const styles = StyleSheet.create({
     padding: 15,
     borderBottomLeftRadius: 8,
     borderBottomRightRadius: 8,
-    marginBottom: 8,
+    marginBottom: 0,
     borderTopWidth: 1,
     borderTopColor: '#EEE',
   },
   detailText: {
     fontSize: 14,
     color: '#666',
+  },
+  rightActions: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    backgroundColor: '#00D09E',
+    borderRadius: 8,
+  },
+  leftActions: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    backgroundColor: '#FF4444',
+    borderRadius: 8,
+  },
+  completeAction: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 100,
+    height: '100%',
+  },
+  deleteAction: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 100,
+    height: '100%',
+  },
+  bellButton: {
+    padding: 8,
+  },
+  placeholderRow: {
+    height: 50,
+    backgroundColor: '#F5F5F5',
+  },
+  choreContainer: {
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+  },
+  swipeableContainer: {
+    backgroundColor: 'transparent',
+  },
+  choreRowWrapper: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  choreRow: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    padding: 10, 
+    backgroundColor: "#FFFFFF",
   },
 });
