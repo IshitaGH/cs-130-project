@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from flask import jsonify, request
 from flask_jwt_extended import (
@@ -7,12 +7,11 @@ from flask_jwt_extended import (
     get_jwt_identity,
     jwt_required,
 )
+from sqlalchemy import func
 
 from database import db
-from models.chore import Chore
-from models.chore import Roommate
-from datetime import datetime, timedelta, timezone
-from sqlalchemy import func
+from models.chore import Chore, Roommate
+
 
 # GET /chores
 # Returns all active (not completed) chores in the current user's room.
@@ -74,11 +73,12 @@ def get_chores():
             "completed": chore.completed,
             "room_id": current_roommate.room_fkey,
             "assigned_roommate": assigned_roommate_data,
-            "roommate_assignor_id": chore.assignor_fkey
+            "roommate_assignor_id": chore.assignor_fkey,
         }
         chores_list.append(chore_data)
 
     return jsonify({"chores": chores_list}), 200
+
 
 # POST /chores
 # Creates a new chore.
@@ -119,7 +119,6 @@ def create_chore():
         assignee_fkey=assigned_roommate_id,
         recurrence=recurrence
     )
-    
 
     db.session.add(new_chore)
     db.session.commit()
@@ -132,7 +131,7 @@ def create_chore():
         assigned_roommate_data = {
             "id": new_chore.assignee.id,
             "first_name": new_chore.assignee.first_name,
-            "last_name": new_chore.assignee.last_name
+            "last_name": new_chore.assignee.last_name,
         }
 
     chore_data = {
@@ -148,10 +147,11 @@ def create_chore():
         "assigned_roommate": assigned_roommate_data,
         "roommate_assignor_id": new_chore.assignor_fkey,
         "room_id": current_roommate.room_fkey,
-        "recurrence": new_chore.recurrence
+        "recurrence": new_chore.recurrence,
     }
 
     return jsonify({"chore": chore_data}), 201
+
 
 # PUT /chores/<int:chore_id>
 # Updates an existing chore.
@@ -201,7 +201,6 @@ def update_chore(chore_id):
 
     db.session.commit()
 
-
     assigned_roommate_data = None
     if chore.assignee:  # chore.assignee is the relationship to Roommate
         assigned_roommate_data = {
@@ -224,7 +223,7 @@ def update_chore(chore_id):
         "assigned_roommate": assigned_roommate_data,
         "roommate_assignor_id": chore.assignor_fkey,
         "room_id": current_roommate.room_fkey,
-        "recurrence": chore.recurrence
+        "recurrence": chore.recurrence,
     }
     return jsonify({"chore": chore_data}), 200
 
