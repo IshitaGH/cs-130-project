@@ -77,6 +77,7 @@ export default function ChoresScreen() {
   const slideAnim = React.useRef(new Animated.Value(Dimensions.get("window").height)).current;
   const [refreshing, setRefreshing] = useState(false);
   const [expandedChoreId, setExpandedChoreId] = useState<number | null>(null);
+  const [isRecurring, setIsRecurring] = useState(false); // controls modal UI state
 
 
   const fetchChores = async () => {
@@ -150,6 +151,7 @@ export default function ChoresScreen() {
       setChoreEndDate(selectedChore.end_date);
       setChoreIsTask(selectedChore.is_task);
       setChoreRecurrence(selectedChore.recurrence || "none");
+      setIsRecurring(selectedChore.recurrence !== "none");
     } else {
       resetModal();
     }
@@ -208,6 +210,7 @@ export default function ChoresScreen() {
     setChoreEndDate(null);
     setChoreIsTask(false);
     setChoreRecurrence("none");
+    setIsRecurring(false);
     setSelectedChore(null);
     setModalVisible(false);
   };
@@ -544,37 +547,57 @@ export default function ChoresScreen() {
                   />
                 </View>
 
-                {/* Custom Dropdown for Recurrence */}
-                <Text style={styles.label}>Recurrence</Text>
-                <View style={styles.dropdown}>
-                  {["none", "daily", "weekly", "monthly"].map((option) => (
-                    <TouchableOpacity key={option} onPress={() => setChoreRecurrence(option)}>
-                      <Text style={[styles.option, choreRecurrence === option && styles.selectedOption]}>
-                        {option}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                <View style={styles.switchContainer}>
+                  <Text style={styles.switchLabel}>Is this recurring?</Text>
+                  <Switch
+                    value={isRecurring}
+                    onValueChange={(newValue) => {
+                      setIsRecurring(newValue);
+                      if (newValue) {
+                        setChoreEndDate(null);
+                      } else {
+                        setChoreRecurrence("none");
+                      }
+                    }}
+                  />
                 </View>
 
-                <TouchableOpacity style={styles.datePicker} onPress={() => setDatePickerVisible(true)}>
-                  <MaterialIcons name="calendar-today" size={20} color="#007FFF" />
-                  <Text style={styles.dateText}>
-                    {choreEndDate ? new Date(choreEndDate).toLocaleDateString() : "Select Due Date"}
-                  </Text>
-                </TouchableOpacity>
+                {isRecurring ? (
+                  <>
+                    <Text style={styles.label}>Recurrence</Text>
+                    <View style={styles.dropdown}>
+                      {["daily", "weekly", "monthly"].map((option) => (
+                        <TouchableOpacity key={option} onPress={() => setChoreRecurrence(option)}>
+                          <Text style={[styles.option, choreRecurrence === option && styles.selectedOption]}>
+                            {option}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <TouchableOpacity style={styles.datePicker} onPress={() => setDatePickerVisible(true)}>
+                      <MaterialIcons name="calendar-today" size={20} color="#007FFF" />
+                      <Text style={styles.dateText}>
+                        {choreEndDate ? new Date(choreEndDate).toLocaleDateString() : "Select Due Date"}
+                      </Text>
+                    </TouchableOpacity>
 
-                <DateTimePickerModal
-                  isVisible={isDatePickerVisible}
-                  mode="date"
-                  minimumDate={new Date()}
-                  onConfirm={(date) => {
-                    const localDate = new Date(date);
-                    localDate.setHours(23, 59, 59, 999);
-                    setChoreEndDate(localDate.toISOString());
-                    setDatePickerVisible(false);
-                  }}
-                  onCancel={() => setDatePickerVisible(false)}
-                />
+                    <DateTimePickerModal
+                      isVisible={isDatePickerVisible}
+                      mode="date"
+                      minimumDate={new Date()}
+                      onConfirm={(date) => {
+                        const localDate = new Date(date);
+                        localDate.setHours(23, 59, 59, 999);
+                        setChoreEndDate(localDate.toISOString());
+                        setDatePickerVisible(false);
+                      }}
+                      onCancel={() => setDatePickerVisible(false)}
+                    />
+                  </>
+                )}
 
                 <TouchableOpacity style={styles.submitButton} onPress={addOrUpdateChore}>
                   <Text style={styles.submitButtonText}>{selectedChore ? "Update Chore" : "Save Chore"}</Text>
