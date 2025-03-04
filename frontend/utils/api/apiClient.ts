@@ -1,3 +1,4 @@
+// @ts-ignore
 import { API_URL } from '@/config';
 
 // NOTE: should only be called via AuthContext
@@ -147,6 +148,71 @@ export async function apiGetRoommates(session: any) {
     const errorData = await response.json();
     throw new Error(errorData.message || 'Failed to get roommates');
   }
+  const data = await response.json();
+  return data;
+}
+
+// EXPENSES
+async function apiCreateFirstExpensePeriod(session: any) {
+  const response = await fetch(`${API_URL}/expense_period`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session}`
+    },
+    body: "{}"
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to create initial expense period');
+  }
+}
+
+export async function apiGetExpenses(session: any) {
+  const response = await fetch(`${API_URL}/expense_period`, {
+    headers: {
+      Authorization: `Bearer ${session}`
+    }
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to get expenses');
+  }
+
+  const data = await response.json();
+
+  if (data.length === 0) { // new room; need to create first expense period
+    await apiCreateFirstExpensePeriod(session);
+    return await apiGetExpenses(session);
+  }
+
+  return data;
+}
+
+export async function apiCreateExpense(session: any, cost: number, desc: string, expenses: any[]) {
+  const body = {
+    title: "a",
+    cost,
+    description: desc,
+    expenses
+  };
+
+  const response = await fetch(`${API_URL}/expense`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session}`
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to create expense');
+  }
+
   const data = await response.json();
   return data;
 }

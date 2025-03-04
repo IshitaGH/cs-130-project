@@ -16,7 +16,7 @@ import { Picker } from '@react-native-picker/picker'
 import { MaterialIcons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { apiGetRoommates } from "@/utils/api/apiClient";
+import { apiCreateExpense, apiGetExpenses, apiGetRoommates } from "@/utils/api/apiClient";
 
 interface Expense {
   id: number;
@@ -174,7 +174,7 @@ export default function ExpensesScreen() {
   // modal data
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
-  const [payer, setPayer] = useState(roommates_mock[0]);
+  const [payer, setPayer] = useState("");
   // main view data
   const [balances, setBalances] = useState<BalanceMap>({});
   const slideAnim = React.useRef(new Animated.Value(Dimensions.get("window").height)).current;
@@ -184,8 +184,6 @@ export default function ExpensesScreen() {
     try {
       const roommatesData = await apiGetRoommates(session);
       setRoommates(roommatesData);
-      console.log(roommates);
-      console.log(userId);
     } catch (error: any) {
       Toast.show({
         type: 'error',
@@ -195,8 +193,26 @@ export default function ExpensesScreen() {
     }
   };
 
+  const fetchExpenses = async () => {
+    if (!session) return;
+
+    try {
+      const choresData = await apiGetExpenses(session);
+      console.log(choresData);
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error Fetching Expenses',
+        text2: error.message || 'Failed to fetch expenses'
+      });
+      console.error(error);
+    }
+  }
+
   useEffect(() => {
     fetchRoommates();
+    fetchExpenses();
+    console.log(roommates);
   }, [session]);
 
   // Function to update expenses for a specific card
@@ -222,6 +238,7 @@ export default function ExpensesScreen() {
 
   const addExpense = () => {
     if (!description || !amount || !payer) return;
+
     const newExpense = {
       id: Math.random(),
       description,
@@ -239,6 +256,13 @@ export default function ExpensesScreen() {
     setAmount("");
     setPayer(roommates_mock[0]);
     setModalVisible(false);
+
+    apiCreateExpense(session, parseFloat(amount), description, roommates.map(roommate => {
+      return {
+        username: roommate.username,
+        percentage: 1 / roommates.length
+      }
+    })).then(console.log);
   };
 
   return (
@@ -278,8 +302,8 @@ export default function ExpensesScreen() {
                 onValueChange={(itemValue) => setPayer(itemValue)}
                 style={styles.input}
               >
-                {roommates_mock.map((roommate) => (
-                  <Picker.Item key={roommate} label={roommate} value={roommate} />
+                {roommates.map((roommate) => (
+                  <Picker.Item key={roommate.username} label={`${roommate.first_name} ${roommate.last_name}`} value={roommate.username} />
                 ))}
               </Picker>
               <TouchableOpacity style={styles.submitButton} onPress={addExpense}>
