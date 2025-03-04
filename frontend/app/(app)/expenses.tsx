@@ -226,11 +226,17 @@ export default function ExpensesScreen() {
   const [balances, setBalances] = useState<BalanceMap>({});
   const slideAnim = React.useRef(new Animated.Value(Dimensions.get("window").height)).current;
 
+  const setPayerDefault = (data?: Roommate[]) => {
+    const roomies: Roommate[] = data ? data : roommates;
+    setPayer(roomies.find((roommate: Roommate) => roommate.id === userId)?.username || '');
+  }
+
   const fetchRoommates = async () => {
     if (!session) return;
     try {
       const roommatesData = await apiGetRoommates(session);
       setRoommates(roommatesData);
+      setPayerDefault(roommatesData);
     } catch (error: any) {
       Toast.show({
         type: 'error',
@@ -283,14 +289,26 @@ export default function ExpensesScreen() {
   useEffect(() => calculatePersonalBalances(expensePeriods.find(period => period.open)?.expenses || [], setBalances, roommates, userId || 0), [expensePeriods]);
 
   const addExpense = () => {
-    if (!description || !amount /* || !payer */) {
+    if (!description || !amount || !payer) {
       alert(
         'Error adding expense',
         'Must include expense description, amount, and payer',
         [{
           text: 'OK',
         }]
-      )
+      );
+
+      return;
+    }
+
+    if (!RegExp(/^[0-9]+\.?[0-9]{0,2}$/).test(amount)) {
+      alert(
+        'Error adding expense',
+        'Expense amount must be numeric',
+        [{
+          text: 'OK',
+        }]
+      );
 
       return;
     }
@@ -307,7 +325,7 @@ export default function ExpensesScreen() {
 
       setDescription("");
       setAmount("");
-      setPayer(""); // TODO: update to be current user
+      setPayerDefault();
       setModalVisible(false);
     }).catch(error => {
       Toast.show({
