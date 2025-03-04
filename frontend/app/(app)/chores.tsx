@@ -367,107 +367,121 @@ export default function ChoresScreen() {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalContainer}>
-          <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
-            <Text style={styles.modalTitle}>
-              {selectedChore ? "Edit Chore" : "Create a New Chore"}
-            </Text>
-
-            <TextInput
-              style={styles.input}
-              placeholder="Description"
-              placeholderTextColor="#AAA"
-              value={choreName}
-              onChangeText={setChoreName}
-            />
-
-            <Text style={styles.label}>Roommate Responsible</Text>
-            <ScrollView
-              horizontal={true}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.roommateScrollContainer}
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === "ios" ? "padding" : "height"} 
+          style={styles.modalContainer}
+        >
+          <TouchableOpacity 
+            style={styles.modalContainer} 
+            activeOpacity={1} 
+            onPress={() => resetModal()}
+          >
+            <TouchableOpacity 
+              activeOpacity={1} 
+              onPress={(e) => e.stopPropagation()}
             >
-              {roommates
-                .sort((a, b) => {
-                  if (a.id === userId) return -1;
-                  if (b.id === userId) return 1;
-                  return 0;
-                })
-                .map((roommate) => (
-                <TouchableOpacity
-                  key={roommate.id}
-                  onPress={() => setSelectedRoommateId(roommate.id)}
-                  style={[
-                    styles.roommateOption,
-                    selectedRoommateId === roommate.id && styles.selectedRoommateOption
-                  ]}
+              <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
+                <Text style={styles.modalTitle}>
+                  {selectedChore ? "Edit Chore" : "Create a New Chore"}
+                </Text>
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="Description"
+                  placeholderTextColor="#AAA"
+                  value={choreName}
+                  onChangeText={setChoreName}
+                />
+
+                <Text style={styles.label}>Roommate Responsible</Text>
+                <ScrollView
+                  horizontal={true}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.roommateScrollContainer}
                 >
-                  <View style={styles.roommateAvatar}>
-                    <Text style={styles.roommateAvatarText}>
-                      {`${roommate.first_name.charAt(0)}${roommate.last_name.charAt(0)}`}
-                    </Text>
-                  </View>
-                  <Text
-                    style={[
-                      styles.roommateName,
-                      selectedRoommateId === roommate.id && styles.selectedRoommateName
-                    ]}
-                  >
-                    {roommate.id === userId ? "You" : roommate.first_name}
+                  {roommates
+                    .sort((a, b) => {
+                      if (a.id === userId) return -1;
+                      if (b.id === userId) return 1;
+                      return 0;
+                    })
+                    .map((roommate) => (
+                    <TouchableOpacity
+                      key={roommate.id}
+                      onPress={() => setSelectedRoommateId(roommate.id)}
+                      style={[
+                        styles.roommateOption,
+                        selectedRoommateId === roommate.id && styles.selectedRoommateOption
+                      ]}
+                    >
+                      <View style={styles.roommateAvatar}>
+                        <Text style={styles.roommateAvatarText}>
+                          {`${roommate.first_name.charAt(0)}${roommate.last_name.charAt(0)}`}
+                        </Text>
+                      </View>
+                      <Text
+                        style={[
+                          styles.roommateName,
+                          selectedRoommateId === roommate.id && styles.selectedRoommateName
+                        ]}
+                      >
+                        {roommate.id === userId ? "You" : roommate.first_name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+
+                {/* Is Task Switch */}
+                <View style={styles.switchContainer}>
+                  <Text style={styles.switchLabel}>Is this a task?</Text>
+                  <Switch
+                    value={choreIsTask}
+                    onValueChange={(newValue) => setChoreIsTask(newValue)}
+                  />
+                </View>
+
+                {/* Custom Dropdown for Recurrence */}
+                <Text style={styles.label}>Recurrence</Text>
+                <View style={styles.dropdown}>
+                  {["none", "daily", "weekly", "monthly"].map((option) => (
+                    <TouchableOpacity key={option} onPress={() => setChoreRecurrence(option)}>
+                      <Text style={[styles.option, choreRecurrence === option && styles.selectedOption]}>
+                        {option}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <TouchableOpacity style={styles.datePicker} onPress={() => setDatePickerVisible(true)}>
+                  <MaterialIcons name="calendar-today" size={20} color="#007FFF" />
+                  <Text style={styles.dateText}>
+                    {choreEndDate ? new Date(choreEndDate).toLocaleDateString() : "Select Due Date"}
                   </Text>
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
 
-            {/* Is Task Switch */}
-            <View style={styles.switchContainer}>
-              <Text style={styles.switchLabel}>Is this a task?</Text>
-              <Switch
-                value={choreIsTask}
-                onValueChange={(newValue) => setChoreIsTask(newValue)}
-              />
-            </View>
+                <DateTimePickerModal
+                  isVisible={isDatePickerVisible}
+                  mode="date"
+                  minimumDate={new Date()}
+                  onConfirm={(date) => {
+                    const localDate = new Date(date);
+                    localDate.setHours(23, 59, 59, 999);
+                    setChoreEndDate(localDate.toISOString());
+                    setDatePickerVisible(false);
+                  }}
+                  onCancel={() => setDatePickerVisible(false)}
+                />
 
-            {/* Custom Dropdown for Recurrence */}
-            <Text style={styles.label}>Recurrence</Text>
-            <View style={styles.dropdown}>
-              {["none", "daily", "weekly", "monthly"].map((option) => (
-                <TouchableOpacity key={option} onPress={() => setChoreRecurrence(option)}>
-                  <Text style={[styles.option, choreRecurrence === option && styles.selectedOption]}>
-                    {option}
-                  </Text>
+                <TouchableOpacity style={styles.submitButton} onPress={addOrUpdateChore}>
+                  <Text style={styles.submitButtonText}>{selectedChore ? "Update Chore" : "Save Chore"}</Text>
                 </TouchableOpacity>
-              ))}
-            </View>
 
-            <TouchableOpacity style={styles.datePicker} onPress={() => setDatePickerVisible(true)}>
-              <MaterialIcons name="calendar-today" size={20} color="#007FFF" />
-              <Text style={styles.dateText}>
-                {choreEndDate ? new Date(choreEndDate).toLocaleDateString() : "Select Due Date"}
-              </Text>
+                <TouchableOpacity style={styles.closeButton} onPress={resetModal}>
+                  <Text style={styles.closeButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </Animated.View>
             </TouchableOpacity>
-
-            <DateTimePickerModal
-              isVisible={isDatePickerVisible}
-              mode="date"
-              minimumDate={new Date()}
-              onConfirm={(date) => {
-                const localDate = new Date(date);
-                localDate.setHours(23, 59, 59, 999);
-                setChoreEndDate(localDate.toISOString());
-                setDatePickerVisible(false);
-              }}
-              onCancel={() => setDatePickerVisible(false)}
-            />
-
-            <TouchableOpacity style={styles.submitButton} onPress={addOrUpdateChore}>
-              <Text style={styles.submitButtonText}>{selectedChore ? "Update Chore" : "Save Chore"}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.closeButton} onPress={resetModal}>
-              <Text style={styles.closeButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          </Animated.View>
+          </TouchableOpacity>
         </KeyboardAvoidingView>
       </Modal>
     </View>
