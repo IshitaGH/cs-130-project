@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Animated,
+  ScrollView,
 } from "react-native";
 import { Picker } from '@react-native-picker/picker'
 import { MaterialIcons } from "@expo/vector-icons";
@@ -132,24 +133,20 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
 
       {expanded && (
         <>
-          <FlatList
-            data={expenses}
-            renderItem={({ item }) => (
-              <View style={styles.expenseRow}>
-                <View style={styles.expenseInfo}>
-                  <Text style={styles.expenseDescription}>{item.description}: ${item.cost.toFixed(2)}</Text>
-                  <Text style={styles.expensePayer}>Paid by {(() => {
-                      let roommate = roommates.find(roommate => roommate.id === item.roommate_fkey);
-                      return roommate ? `${roommate.first_name} ${roommate.last_name}` : 'Unknown'
-                    })()} on {dateFormat(new Date(item.created_at))}</Text>
-                </View>
-                { current && <TouchableOpacity onPress={() => handleDeleteExpense(item.id)}>
-                  <MaterialIcons name="delete" size={24} color="#E57373" />
-                </TouchableOpacity> }
+          {expenses.map(item => (
+            <View key={item.id} style={styles.expenseRow}>
+              <View style={styles.expenseInfo}>
+                <Text style={styles.expenseDescription}>{item.description}: ${item.cost.toFixed(2)}</Text>
+                <Text style={styles.expensePayer}>Paid by {(() => {
+                    let roommate = roommates.find(roommate => roommate.id === item.roommate_fkey);
+                    return roommate ? `${roommate.first_name} ${roommate.last_name}` : 'Unknown'
+                  })()} on {dateFormat(new Date(item.created_at))}</Text>
               </View>
-            )}
-            keyExtractor={(item) => item.id.toString()}
-          />
+              { current && <TouchableOpacity onPress={() => handleDeleteExpense(item.id)}>
+                <MaterialIcons name="delete" size={24} color="#E57373" />
+              </TouchableOpacity> }
+            </View>
+          ))}
           
           {!current && Object.keys(balances).length > 0 && (
             <Text style={styles.balanceTitle}>Balances</Text>
@@ -287,7 +284,7 @@ export default function ExpensesScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <View style={styles.container}>
+      <ScrollView style={styles.container}>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Current period balances</Text>
           {roommates
@@ -337,7 +334,7 @@ export default function ExpensesScreen() {
             </Animated.View>
           </KeyboardAvoidingView>
         </Modal>
-      </View>
+      </ScrollView>
       
       <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
         <MaterialIcons name="add" size={24} color="#FFFFFF" />
@@ -348,7 +345,7 @@ export default function ExpensesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, overflow: 'scroll', padding: 20, backgroundColor: "#FFFFFF" },
+  container: { flex: 1, flexGrow: 1, overflow: 'scroll', padding: 20, backgroundColor: "#FFFFFF" },
   card: { backgroundColor: "#DFF7E280", borderRadius: 12, padding: 15, marginBottom: 20 },
   cardTitle: { fontSize: 18, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 10 },
