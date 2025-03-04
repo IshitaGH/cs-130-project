@@ -485,8 +485,51 @@ export default function ChoresScreen() {
             {expandedChoreId === item.id && (
               <View style={[styles.expandedDetails, { marginBottom: 0 }]}>
                 <Text style={styles.detailText}>
-                  Recurrence: {item.recurrence}
+                  Type: {item.is_task ? 'Task' : 'Responsibility'}
                 </Text>
+                
+                <Text style={[styles.detailText, { marginTop: 8 }]}>
+                  Recurrence: {item.recurrence || 'None'}
+                </Text>
+                
+                {item.recurrence !== "none" && item.rotation_order && (
+                  <>
+                    <Text style={[styles.detailText, { marginTop: 8 }]}>
+                      Rotation Order:
+                    </Text>
+                    <ScrollView 
+                      horizontal 
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.rotationScrollContainer}
+                    >
+                      {item.rotation_order.map((roommateId, index) => {
+                        const roommate = roommates.find(r => r.id === roommateId);
+                        if (!roommate) return null;
+                        
+                        return (
+                          <View key={roommateId} style={styles.rotationItem}>
+                            <View style={[
+                              styles.rotationAvatar,
+                              roommateId === item.assigned_roommate.id && styles.activeRotationAvatar
+                            ]}>
+                              <Text style={styles.rotationAvatarText}>
+                                {`${roommate.first_name.charAt(0)}${roommate.last_name.charAt(0)}`}
+                              </Text>
+                            </View>
+                            {item.rotation_order && index < item.rotation_order.length - 1 && (
+                              <MaterialIcons 
+                                name="arrow-forward" 
+                                size={16} 
+                                color="#666" 
+                                style={styles.rotationArrow}
+                              />
+                            )}
+                          </View>
+                        );
+                      })}
+                    </ScrollView>
+                  </>
+                )}
               </View>
             )}
           </View>
@@ -934,5 +977,38 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  expandedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  rotationScrollContainer: {
+    marginLeft: 28,
+    paddingVertical: 8,
+  },
+  rotationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 4,
+  },
+  rotationAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#CDEEEE',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  activeRotationAvatar: {
+    backgroundColor: '#00D09E',
+  },
+  rotationAvatarText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#007F5F',
+  },
+  rotationArrow: {
+    marginHorizontal: 4,
   },
 });
