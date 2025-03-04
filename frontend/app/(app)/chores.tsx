@@ -159,11 +159,56 @@ export default function ChoresScreen() {
   }, [selectedChore]);
 
   const addOrUpdateChore = async () => {
-    if (!choreName.trim() || !choreEndDate || !selectedRoommateId) {
+    if (!choreName.trim() || !selectedRoommateId) {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Must fill in name, due date, and select a roommate'
+        text2: 'Must fill in name and select a roommate'
+      });
+      return;
+    }
+
+    // Validation for recurring chores without recurrence selected
+    if (isRecurring && choreRecurrence === "none") {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please select a recurrence pattern for recurring chores'
+      });
+      return;
+    }
+
+    // Set end date based on recurrence
+    let calculatedEndDate = choreEndDate;
+    if (isRecurring) {
+      const now = new Date();
+      const endDate = new Date(now);
+
+      switch (choreRecurrence) {
+        case 'daily':
+          // End of today
+          endDate.setHours(23, 59, 59, 999);
+          break;
+        case 'weekly':
+          // End of this week (Sunday)
+          endDate.setDate(now.getDate() + (7 - now.getDay()));
+          endDate.setHours(23, 59, 59, 999);
+          break;
+        case 'monthly':
+          // End of this month
+          endDate.setMonth(endDate.getMonth() + 1);
+          endDate.setDate(0); // Last day of current month
+          endDate.setHours(23, 59, 59, 999);
+          break;
+      }
+      calculatedEndDate = endDate.toISOString();
+    }
+
+    if (!calculatedEndDate) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Must select a due date for non-recurring chores'
       });
       return;
     }
@@ -173,7 +218,7 @@ export default function ChoresScreen() {
         const updatedChore = await apiUpdateChore(session, selectedChore.id, {
           description: choreName,
           start_date: getCurrentDate(),
-          end_date: choreEndDate,
+          end_date: calculatedEndDate,
           is_task: choreIsTask,
           recurrence: choreRecurrence,
           assigned_roommate_id: selectedRoommateId
@@ -188,7 +233,7 @@ export default function ChoresScreen() {
           session,
           choreName,
           getCurrentDate(),
-          choreEndDate,
+          calculatedEndDate,
           choreIsTask,
           choreRecurrence,
           selectedRoommateId
