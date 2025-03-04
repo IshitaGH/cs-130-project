@@ -73,6 +73,7 @@ def get_chores():
             "room_id": current_roommate.room_fkey,
             "assigned_roommate": assigned_roommate_data,
             "roommate_assignor_id": chore.assignor_fkey,
+            "rotation_order": chore.rotation_order,
         }
         chores_list.append(chore_data)
 
@@ -95,6 +96,7 @@ def create_chore():
     is_task = data.get("is_task")
     recurrence = data.get("recurrence")
     assigned_roommate_id = data.get("assigned_roommate_id")
+    rotation_order = data.get("rotation_order")
 
     if not all([description, end_date_str, is_task is not None, recurrence]):
         return jsonify({"message": "Missing required fields"}), 400
@@ -114,7 +116,8 @@ def create_chore():
         completed=False,
         assignor_fkey=current_roommate_id,  # using the current user as assignor
         assignee_fkey=assigned_roommate_id,
-        recurrence=recurrence
+        recurrence=recurrence,
+        rotation_order=rotation_order
     )
 
     db.session.add(new_chore)
@@ -144,6 +147,7 @@ def create_chore():
         "roommate_assignor_id": new_chore.assignor_fkey,
         "room_id": current_roommate.room_fkey,
         "recurrence": new_chore.recurrence,
+        "rotation_order": new_chore.rotation_order,
     }
 
     return jsonify({"chore": chore_data}), 201
@@ -169,6 +173,7 @@ def update_chore(chore_id):
     is_task = data.get("is_task")
     recurrence = data.get("recurrence")
     completed = data.get("completed")
+    rotation_order = data.get("rotation_order")
 
     if description:
         chore.description = description
@@ -191,6 +196,8 @@ def update_chore(chore_id):
         chore.recurrence = recurrence
     if completed is not None:
         chore.completed = completed
+    if rotation_order is not None:
+        chore.rotation_order = rotation_order
 
     db.session.commit()
 
@@ -216,6 +223,7 @@ def update_chore(chore_id):
         "roommate_assignor_id": chore.assignor_fkey,
         "room_id": current_roommate.room_fkey,
         "recurrence": chore.recurrence,
+        "rotation_order": chore.rotation_order,
     }
     return jsonify({"chore": chore_data}), 200
 
