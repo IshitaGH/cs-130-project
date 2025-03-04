@@ -239,7 +239,7 @@ def remove_expense():
     data = request.get_json()
 
     expense = Expense.query.filter_by(
-        roommate_fkey=roommate_id, room_fkey=room.id, id=data["id"]
+        room_fkey=room.id, id=data["id"]
     ).first()
 
     if expense:

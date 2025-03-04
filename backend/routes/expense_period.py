@@ -84,6 +84,7 @@ def get_expense_period():
                 "start_date": expense_period.start_date.isoformat(),
                 "end_date": expense_period.end_date.isoformat(),
                 "expenses": expense_result,
+                "open": expense_period.open,
             }
         )
     return jsonify(expense_period_result), 200
