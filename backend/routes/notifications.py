@@ -26,25 +26,22 @@ def create_notification():
     data = request.get_json()
     
     if "notification_sender" in data:
-        notification_sender_id = Room.query.get(data.get("notification_sender"))
-        if not notification_sender_id:
+        notification_sender = Roommate.query.get(data.get("notification_sender"))
+        if not notification_sender:
             return jsonify({"message": "Roommate sender id not found"}), 404
     else:
-        notification_sender_id=roommate_id
+        notification_sender=roommate
 
-    notification_recipient_id = Room.query.get(data.get("notification_recipient"))
-    if not notification_recipient_id:
+    notification_recipient = Roommate.query.get(data.get("notification_recipient"))
+    if not notification_recipient:
         return jsonify({"message": "Roommate recipient id not found"}), 404
-    
-    if notification_sender_id == notification_recipient_id:
-        return jsonify({"message": "notification sender and recipient cannot be the same"}), 400
     
     new_notification = Notification(
         title=data.get("title"),
         description=data.get("description"),
         notification_time=datetime.utcnow(),
-        notification_sender=notification_sender_id,
-        notification_recipient=notification_recipient_id,
+        notification_sender=notification_sender.id,
+        notification_recipient=notification_recipient.id,
         room_fkey=room.id
     )
 
