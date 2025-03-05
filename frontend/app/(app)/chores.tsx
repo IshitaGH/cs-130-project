@@ -63,12 +63,13 @@ const utils = {
         endDate.setHours(23, 59, 59, 999);
         break;
       case 'weekly':
-        endDate.setDate(now.getDate() + (7 - now.getDay()));
+        // Calculate days until Saturday (6 is Saturday, 0 is Sunday)
+        const daysUntilSaturday = 6 - now.getDay();
+        endDate.setDate(now.getDate() + daysUntilSaturday);
         endDate.setHours(23, 59, 59, 999);
         break;
       case 'monthly':
-        endDate.setMonth(endDate.getMonth() + 1);
-        endDate.setDate(0);
+        endDate.setMonth(now.getMonth() + 1, 0);
         endDate.setHours(23, 59, 59, 999);
         break;
     }

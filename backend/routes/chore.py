@@ -26,17 +26,28 @@ def rotate_chore(chore):
             duration = timedelta(days=1)
             new_start_date = chore.start_date + duration
             new_end_date = new_start_date + duration
-            chore.start_date = new_start_date
-            chore.end_date = new_end_date
         elif chore.recurrence == "weekly":
             duration = timedelta(weeks=1)
             new_start_date = chore.start_date + duration
             new_end_date = new_start_date + duration
-            chore.start_date = new_start_date
-            chore.end_date = new_end_date
         elif chore.recurrence == "monthly":
-            pass
+            # Get the number of days in the previous month (using start_date)
+            # Add a couple days to ensure we're in the right month regardless of timezone
+            reference_date1 = chore.start_date + timedelta(days=2)
+            first_day_of_month = reference_date1.replace(day=1)
+            last_day_of_month = (first_day_of_month + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+            duration1 = timedelta(days=last_day_of_month.day)
+            new_start_date = chore.start_date + duration1
 
+            # Get the number of days in the next month (using end_date)
+            reference_date2 = chore.end_date + timedelta(days=2)
+            first_day_of_month = reference_date2.replace(day=1)
+            last_day_of_month = (first_day_of_month + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+            duration2 = timedelta(days=last_day_of_month.day)
+            new_end_date = chore.end_date + duration2
+
+        chore.start_date = new_start_date
+        chore.end_date = new_end_date
 
         # Reset completed to False if it's a task
         if chore.is_task:
