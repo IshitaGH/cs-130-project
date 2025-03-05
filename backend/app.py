@@ -26,7 +26,7 @@ from routes.room import create_room, get_current_room, join_room, leave_room
 from routes.chore import create_chore, get_chores, update_chore, delete_chore
 from routes.roommate import get_roommates_in_room
 from routes.roommate_expense import get_roommate_expense
-from routes.notifications import create_notification, get_notification, update_notification
+from routes.notifications import create_notification, get_notification, update_notification, delete_notification
 
 app = Flask(__name__)
 # The following environment variables are set in docker-compose.yml
@@ -184,6 +184,7 @@ def create_notification_route():
     return create_notification()
 
 
+# NOTIFICATION ROUTES
 @app.route("/notifications", methods=["GET"])
 def get_notification_route():
     return get_notification()
@@ -192,6 +193,11 @@ def get_notification_route():
 @app.route("/notifications", methods=["PUT"])
 def update_notification_route():
     return update_notification()
+
+
+@app.route("/notifications", methods=["DELETE"])
+def delete_notification_route():
+    return delete_notification()
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)

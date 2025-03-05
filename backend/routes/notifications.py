@@ -166,3 +166,16 @@ def update_notification():
         ),
         201,
     )
+    
+
+@jwt_required()
+def delete_notification():
+    data = request.get_json()
+    notification = Notification.query.get(data["notification_id"])
+    
+    if notification:
+        db.session.delete(notification)
+        db.session.commit()
+        return jsonify({"message": "Notification deleted successfully"}), 200
+    else:
+        return jsonify({"message": "Notification not found"}), 404
