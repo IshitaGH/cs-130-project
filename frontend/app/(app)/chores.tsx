@@ -494,10 +494,14 @@ export default function ChoresScreen() {
                 </View>
               </View>
               <TouchableOpacity 
-                onPress={() => remindChore(item)}
+                onPress={() => item.assigned_roommate.id !== userId && remindChore(item)}
                 style={styles.bellButton}
               >
-                <MaterialIcons name="notifications" size={24} color="#666" />
+                <MaterialIcons 
+                  name="notifications" 
+                  size={24} 
+                  color={item.assigned_roommate.id === userId ? "#FFF" : "#666"} 
+                />
               </TouchableOpacity>
             </TouchableOpacity>
             {expandedChoreId === item.id && (
