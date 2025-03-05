@@ -10,7 +10,7 @@ export async function apiSignIn(username: string, password: string) {
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to sign in');
+    throw new Error(errorData.message);
   }
   
   const data = await response.json();
@@ -27,7 +27,7 @@ export async function apiCreateAccount(firstName: string, lastName: string, user
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to create account');
+    throw new Error(errorData.message);
   }
 }
 
@@ -39,7 +39,7 @@ export async function apiGetRoom(session: any) {
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to fetch Room');
+    throw new Error(errorData.message);
   }
   
   const data = await response.json();
@@ -58,7 +58,7 @@ export async function apiCreateRoom(session: any, roomName: string) {
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to create Room');
+    throw new Error(errorData.message);
   }
   const data = await response.json();
   return data;
@@ -76,7 +76,7 @@ export async function apiJoinRoom(session: any, inviteCode: string) {
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to join Room');
+    throw new Error(errorData.message);
   }
   
   const data = await response.json();
@@ -93,14 +93,13 @@ export async function apiLeaveRoom(session: any) {
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to leave Room');
+    throw new Error(errorData.message);
   }
   
   const data = await response.json();
   return data;
 }
 
-// returns the message from the backend or throws an error
 export async function apiGetChores(session: any) {
   const response = await fetch(`${API_URL}/chores`, {
     headers: {
@@ -109,13 +108,23 @@ export async function apiGetChores(session: any) {
   });
 
   if (!response.ok) {
-    throw new Error('Failed to get chores');
+    const errorData = await response.json();
+    throw new Error(errorData.message);
   }
   const data = await response.json();
   return data.chores;
 }
 
-export async function apiCreateChore(session: any, description: string, startDate: string, endDate: string, autorotate: boolean, isTask: boolean, recurrence: string, assignedRoommateId: number) {
+export async function apiCreateChore(
+  session: any,
+  description: string,
+  startDate: string,
+  endDate: string,
+  isTask: boolean,
+  recurrence: string,
+  assignedRoommateId: number,
+  rotationOrder: number[] | null
+) {
   const response = await fetch(`${API_URL}/chores`, {
     method: 'POST',
     headers: {
@@ -126,16 +135,16 @@ export async function apiCreateChore(session: any, description: string, startDat
       description,
       start_date: startDate,
       end_date: endDate,
-      autorotate,
       is_task: isTask,
       recurrence,
-      assigned_roommate_id: assignedRoommateId
+      assigned_roommate_id: assignedRoommateId,
+      rotation_order: rotationOrder
     }),
   });
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to create chore');
+    throw new Error(errorData.message);
   }
 
   const data = await response.json();
@@ -146,11 +155,11 @@ export async function apiUpdateChore(session: any, choreId: number, updates: {
   description?: string;
   start_date?: string;
   end_date?: string;
-  autorotate?: boolean;
   is_task?: boolean;
   recurrence?: string;
   completed?: boolean;
   assigned_roommate_id?: number;
+  rotation_order?: number[] | null;
 }) {
   const response = await fetch(`${API_URL}/chores/${choreId}`, {
     method: 'PUT',
@@ -163,7 +172,7 @@ export async function apiUpdateChore(session: any, choreId: number, updates: {
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to update chore');
+    throw new Error(errorData.message);
   }
 
   const data = await response.json();
@@ -180,7 +189,7 @@ export async function apiDeleteChore(session: any, choreId: number) {
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to delete chore');
+    throw new Error(errorData.message);
   }
 }
 
@@ -193,7 +202,7 @@ export async function apiGetRoommates(session: any) {
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to get roommates');
+    throw new Error(errorData.message);
   }
   const data = await response.json();
   return data.roommates;
