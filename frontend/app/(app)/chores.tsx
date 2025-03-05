@@ -489,7 +489,7 @@ export default function ChoresScreen() {
                     {item.description}
                   </Text>
                   <Text style={styles.choreDate}>
-                    Ends {new Date(item.end_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    {item.recurrence !== "none" ? "Rotates" : "Ends"} {new Date(item.end_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                   </Text>
                 </View>
               </View>
