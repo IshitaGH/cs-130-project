@@ -56,7 +56,7 @@ def create_notification():
                 "description": new_notification.description,
                 "notification_time": new_notification.notification_time.isoformat(),
                 "notification_sender": new_notification.notification_sender,
-                "new_notification_recipient": new_notification.notification_recipient,
+                "notification_recipient": new_notification.notification_recipient,
                 "room_fkey": new_notification.room_fkey,
             }
         ),
@@ -87,7 +87,7 @@ def get_notification():
                     "description": notification.description,
                     "notification_time": notification.notification_time.isoformat(),
                     "notification_sender": notification.notification_sender,
-                    "new_notification_recipient": notification.notification_recipient,
+                    "notification_recipient": notification.notification_recipient,
                     "room_fkey": notification.room_fkey,
                 }
             ),
@@ -120,7 +120,7 @@ def get_notification():
                 "description": n.description,
                 "notification_time": n.notification_time.isoformat(),
                 "notification_sender": n.notification_sender,
-                "new_notification_recipient": n.notification_recipient,
+                "notification_recipient": n.notification_recipient,
                 "room_fkey": n.room_fkey,
             }
         )
@@ -186,7 +186,7 @@ def update_notification():
                 "description": notification.description,
                 "notification_time": notification.notification_time.isoformat(),
                 "notification_sender": notification.notification_sender,
-                "new_notification_recipient": notification.notification_recipient,
+                "notification_recipient": notification.notification_recipient,
                 "room_fkey": notification.room_fkey,
             }
         ),
