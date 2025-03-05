@@ -30,11 +30,11 @@ export default function LoginScreen() {
     try {
       await createAccount(firstName, lastName, username, password);
       router.replace("/login");
-    } catch (err: any) {
+    } catch (error: any) {
       Toast.show({
         type: 'error',
-        text1: 'Error Creating Account',
-        text2: err.message,
+        text1: 'Error',
+        text2: error.message,
       });
     }
   };

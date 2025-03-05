@@ -112,8 +112,8 @@ export default function ChoresScreen() {
       } catch (error: any) {
         Toast.show({
           type: 'error',
-          text1: 'Error Fetching Chores',
-          text2: error.message || 'Failed to fetch chores'
+          text1: 'Error',
+          text2: error.message
         });
       }
     },
@@ -126,8 +126,8 @@ export default function ChoresScreen() {
       } catch (error: any) {
         Toast.show({
           type: 'error',
-          text1: 'Error Fetching Roommates',
-          text2: error.message || 'Failed to fetch roommates'
+          text1: 'Error',
+          text2: error.message
         });
       }
     }
@@ -286,7 +286,7 @@ export default function ChoresScreen() {
     } catch (error: any) {
       Toast.show({
         type: 'error',
-        text1: 'Error Saving Chore',
+        text1: 'Error',
         text2: error.message || 'Failed to save chore'
       });
     }
@@ -327,7 +327,7 @@ export default function ChoresScreen() {
     } catch (error: any) {
       Toast.show({
         type: 'error',
-        text1: 'Error Updating Chore',
+        text1: 'Error',
         text2: error.message || 'Failed to update chore status'
       });
     }
@@ -350,8 +350,8 @@ export default function ChoresScreen() {
   const remindChore = (chore: Chore) => {
     Toast.show({
       type: 'success',
-      text1: 'Reminder Sent',
-      text2: `Reminder sent for ${chore.description}!`
+      text1: 'Success',
+      text2: `Reminder sent to ${chore.assigned_roommate.first_name}!`
     });
   };
 

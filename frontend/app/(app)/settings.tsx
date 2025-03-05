@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { useAuthContext } from '@/contexts/AuthContext';
 import { apiLeaveRoom } from "@/utils/api/apiClient";
 import { useRouter } from "expo-router";
+import Toast from "react-native-toast-message";
 
 export default function SettingsScreen() {
   const { session, signOut } = useAuthContext();
@@ -10,7 +11,7 @@ export default function SettingsScreen() {
   const handleLeaveRoom = async () => {
     Alert.alert(
       "Leave Room",
-      "Are you sure you want to leave this room?",
+      "Are you sure? All your chores will be deleted.",
       [
         {
           text: "Cancel",
@@ -20,12 +21,15 @@ export default function SettingsScreen() {
           text: "Leave",
           style: "destructive",
           onPress: async () => {
-            let data;
             try {
-              data = await apiLeaveRoom(session);
-            } catch (error) {
-              console.error(error);
-              throw error;
+              await apiLeaveRoom(session);
+            } catch (error: any) {
+              Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: error.message
+              });
+              return;
             }
             router.replace("/room-landing");
           }
