@@ -143,6 +143,14 @@ def create_chore():
 
     if assigned_roommate.room_fkey != current_roommate.room_fkey:
         return jsonify({"message": "Assigned roommate is not in the same room"}), 400
+    
+    if recurrence != "none" and rotation_order is not None:
+        for roommate_id in rotation_order:
+            roommate = Roommate.query.get(roommate_id)
+            if not roommate:
+                return jsonify({"message": "Rotation order contains invalid roommate id"}), 400
+            if roommate.room_fkey != current_roommate.room_fkey:
+                return jsonify({"message": "Rotation order contains roommate not in the same room"}), 400
 
     # Parse start and end date strings
     try:
@@ -209,6 +217,10 @@ def update_chore(chore_id):
     chore = Chore.query.get(chore_id)
     if not chore:
         return jsonify({"message": "Chore not found"}), 404
+    
+    current_assigned_roommate = Roommate.query.get(chore.assignee_fkey)
+    if current_assigned_roommate.room_fkey != current_roommate.room_fkey:
+        return jsonify({"message": "This chore does not belong to the same room"}), 400
 
     data = request.get_json()
 
@@ -223,12 +235,24 @@ def update_chore(chore_id):
 
     # Update rotation_order and assignee_fkey together if rotation_order is provided
     if recurrence != "none" and rotation_order is not None:
+        for roommate_id in rotation_order:
+            roommate = Roommate.query.get(roommate_id)
+            if not roommate:
+                return jsonify({"message": "Rotation order contains invalid roommate id"}), 400
+            if roommate.room_fkey != current_roommate.room_fkey:
+                return jsonify({"message": "Rotation order contains roommate not in the same room"}), 400
+
         chore.rotation_order = rotation_order
         # If rotation_order is not empty, set assignee_fkey to the first person in the list
         if rotation_order:
             chore.assignee_fkey = rotation_order[0]
     # If this is not a recurring chore (no rotation_order) and assigned_roommate_id is provided
     elif assigned_roommate_id is not None:
+        roommate = Roommate.query.get(assigned_roommate_id)
+        if not roommate:
+            return jsonify({"message": "Assigned roommate not found"}), 404
+        if roommate.room_fkey != current_roommate.room_fkey:
+            return jsonify({"message": "Assigned roommate is not in the same room"}), 400
         chore.assignee_fkey = assigned_roommate_id
 
     if description:
@@ -296,6 +320,10 @@ def delete_chore(chore_id):
     chore = Chore.query.get(chore_id)
     if not chore:
         return jsonify({"message": "Chore not found"}), 404
+
+    assigned_roommate = Roommate.query.get(chore.assignee_fkey)
+    if assigned_roommate.room_fkey != current_roommate.room_fkey:
+        return jsonify({"message": "This chore does not belong to the same room"}), 400
 
     db.session.delete(chore)
     db.session.commit()
