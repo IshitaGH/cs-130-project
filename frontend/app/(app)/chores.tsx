@@ -366,7 +366,7 @@ export default function ChoresScreen() {
       if (!chore.is_task) {
         Toast.show({
           type: 'error',
-          text1: 'Cannot Complete',
+          text1: 'Error',
           text2: "This chore is an ongoing responsibility and cannot be marked as complete."
         });
         swipeableRef.current?.close();
