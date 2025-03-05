@@ -117,3 +117,52 @@ def get_notification():
             }
         )
     return jsonify(result), 200
+
+
+@jwt_required()
+def update_notification():
+    roommate_id = get_jwt_identity()
+    roommate = Roommate.query.get(roommate_id)
+    if not roommate or not roommate.room_fkey:
+        return jsonify({"room_id": None}), 404
+    room = Room.query.get(roommate.room_fkey)
+    if not room:
+        return jsonify({"message": "Room not found"}), 404
+    
+    data = request.get_json()
+    
+    notification = Notification.query.get(data["notification_id"])
+    
+    if "notification_sender" in data:
+        notification_sender = Roommate.query.get(data.get("notification_sender"))
+        if not notification_sender:
+            return jsonify({"message": "Roommate sender id not found"}), 404
+    
+    if "notification_sender" in data:
+        notification_recipient = Roommate.query.get(data.get("notification_recipient"))
+        if not notification_recipient:
+            return jsonify({"message": "Roommate recipient id not found"}), 404
+    
+    if notification:
+        notification.title=data.get("title")  if "title" in data else notification.title,
+        notification.description=data.get("description") if "description" in data else notification.description,
+        notification.notification_time=datetime.utcnow(),
+        notification.notification_sender=data.get("notification_sender") if "notification_sender" in data else notification.notification_sender,
+        notification.notification_recipient=data.get("notification_recipient") if "notification_recipient" in data else notification.notification_recipient
+        
+    db.session.commit()
+    
+    return (
+        jsonify(
+            {
+                "id": notification.id,
+                "title": notification.title,
+                "description": notification.description,
+                "notification_time": notification.notification_time.isoformat(),
+                "notification_sender": notification.notification_sender,
+                "new_notification_recipient": notification.notification_recipient,
+                "room_fkey": notification.room_fkey
+            }
+        ),
+        201,
+    )
