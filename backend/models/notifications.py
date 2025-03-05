@@ -18,4 +18,3 @@ class Notification(db.Model):
     notification_sender = Column(Integer, ForeignKey("roommates.id"), nullable=True)
     notification_recipient = Column(Integer, ForeignKey("roommates.id"), nullable=True)
     room_fkey = Column(Integer, ForeignKey("rooms.id"), nullable=True)
-
