@@ -1,20 +1,16 @@
 from datetime import datetime, timedelta, timezone
 
 from flask import jsonify, request
-from flask_jwt_extended import (
-    JWTManager,
-    create_access_token,
-    get_jwt_identity,
-    jwt_required,
-)
-from sqlalchemy import func
+from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from database import db
-from models.chore import Chore, Roommate
+from models.chore import Chore
+from models.roommate import Roommate
 
 
+# Rotates the chore to the next roommate in the rotation if the end_date has passed
+# NOTE: This relies on the caller to commit the changes to the database
 def rotate_chore(chore):
-    """Moves the chore to the next roommate in the rotation if end_date has passed"""
     if chore.recurrence != "none" and chore.end_date < datetime.now() and chore.rotation_order:
         # Update the assignee_fkey to the next roommate in the rotation
         current_index = chore.rotation_order.index(chore.assignee_fkey)
@@ -55,48 +51,36 @@ def rotate_chore(chore):
 
 
 # GET /chores
-# Returns all active (not completed) chores in the current user's room.
+# Returns all active chores in the current user's room.
 @jwt_required()
 def get_chores():
-    current_roommate_id = get_jwt_identity()
-    current_roommate = Roommate.query.get(current_roommate_id)
-    if not current_roommate or not current_roommate.room_fkey:
-        return jsonify({"chores": []}), 200  # No room, so no chores
+    current_roommate_id = int(get_jwt_identity())
 
-    # Get all roommate IDs in the same room
+    current_roommate = Roommate.query.get(current_roommate_id)
+    if not current_roommate:
+        return jsonify({"message": "User not found"}), 404
+
+    if not current_roommate.room_fkey:
+        return jsonify({"message": "User is not in a room"}), 400
+
+    # Get all roommates in the same room
     roommates = Roommate.query.filter_by(room_fkey=current_roommate.room_fkey).all()
     roommate_ids = [rm.id for rm in roommates]
 
-    # 1) Filter chores in the active window for the room
-    # active meaning start_date <= now() <= end_date
-    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
-
-    # Filter chores in the active window for the room
-    # active meaning start_date <= now_utc <= end_date
-    active_window_chores = Chore.query.filter(
+    # Get active chores in the same room (active meaning start_date <= now() <= end_date)
+    now_utc = datetime.now()
+    active_chores = Chore.query.filter(
         Chore.assignee_fkey.in_(roommate_ids),
         Chore.start_date <= now_utc,
         now_utc <= Chore.end_date
     ).all()
 
-    # 2) separate incomplete vs. completed
-    incomplete_chores = []
-    completed_chores = []
-    for chore in active_window_chores:
-        if chore.completed:
-            completed_chores.append(chore)
-        else:
-            incomplete_chores.append(chore)
-
-    # 3) Combine so incomplete come first, completed after
-    active_chores = incomplete_chores + completed_chores
-
-    # rotate chores that have ended
+    # Rotate chores that have ended
     for chore in active_chores:
         rotate_chore(chore)
-    db.session.commit()
+    db.session.commit() # Commit the changes to the database
 
-    chores_list = []
+    data = []
     for chore in active_chores:
         assigned_roommate_data = None
         if chore.assignee:
@@ -122,21 +106,26 @@ def get_chores():
             "rotation_order": chore.rotation_order,
             "recurrence": chore.recurrence,
         }
-        chores_list.append(chore_data)
+        data.append(chore_data)
 
-    return jsonify({"chores": chores_list}), 200
+    return jsonify({"chores": data}), 200
 
 
 # POST /chores
 # Creates a new chore.
 @jwt_required()
 def create_chore():
-    current_roommate_id = get_jwt_identity()
+    current_roommate_id = int(get_jwt_identity())
+
     current_roommate = Roommate.query.get(current_roommate_id)
-    if not current_roommate or not current_roommate.room_fkey:
+    if not current_roommate:
+        return jsonify({"message": "User not found"}), 404
+
+    if not current_roommate.room_fkey:
         return jsonify({"message": "User is not in a room"}), 400
 
     data = request.get_json()
+
     description = data.get("description")
     start_date_str = data.get("start_date")
     end_date_str = data.get("end_date")
@@ -145,10 +134,17 @@ def create_chore():
     assigned_roommate_id = data.get("assigned_roommate_id")
     rotation_order = data.get("rotation_order")
 
-    if not all([description, end_date_str, is_task is not None, recurrence]):
+    if not all([description, start_date_str, end_date_str, is_task is not None, recurrence, assigned_roommate_id]):
         return jsonify({"message": "Missing required fields"}), 400
+    
+    assigned_roommate = Roommate.query.get(assigned_roommate_id)
+    if not assigned_roommate:
+        return jsonify({"message": "Assigned roommate not found"}), 404
 
-    # Parse start and end dates from the provided string
+    if assigned_roommate.room_fkey != current_roommate.room_fkey:
+        return jsonify({"message": "Assigned roommate is not in the same room"}), 400
+
+    # Parse start and end date strings
     try:
         start_date = datetime.fromisoformat(start_date_str).replace(tzinfo=None)
         end_date = datetime.fromisoformat(end_date_str).replace(tzinfo=None)
@@ -169,9 +165,6 @@ def create_chore():
 
     db.session.add(new_chore)
     db.session.commit()
-
-    # If we want to return a duration string for the frontend
-    # duration_str = str(new_chore.end_date - new_chore.start_date)
 
     assigned_roommate_data = None
     if new_chore.assignee:
@@ -204,9 +197,13 @@ def create_chore():
 # Updates an existing chore.
 @jwt_required()
 def update_chore(chore_id):
-    current_roommate_id = get_jwt_identity()
+    current_roommate_id = int(get_jwt_identity())
+
     current_roommate = Roommate.query.get(current_roommate_id)
-    if not current_roommate or not current_roommate.room_fkey:
+    if not current_roommate:
+        return jsonify({"message": "User not found"}), 404
+
+    if not current_roommate.room_fkey:
         return jsonify({"message": "User is not in a room"}), 400
 
     chore = Chore.query.get(chore_id)
@@ -214,6 +211,7 @@ def update_chore(chore_id):
         return jsonify({"message": "Chore not found"}), 404
 
     data = request.get_json()
+
     description = data.get("description")
     start_date_str = data.get("start_date")
     end_date_str = data.get("end_date")
@@ -224,7 +222,7 @@ def update_chore(chore_id):
     assigned_roommate_id = data.get("assigned_roommate_id")
 
     # Update rotation_order and assignee_fkey together if rotation_order is provided
-    if rotation_order is not None:
+    if recurrence != "none" and rotation_order is not None:
         chore.rotation_order = rotation_order
         # If rotation_order is not empty, set assignee_fkey to the first person in the list
         if rotation_order:
@@ -237,14 +235,12 @@ def update_chore(chore_id):
         chore.description = description
     if start_date_str:
         try:
-            start_date = datetime.fromisoformat(start_date_str).replace(tzinfo=None)
-            chore.start_date = start_date
+            chore.start_date = datetime.fromisoformat(start_date_str).replace(tzinfo=None)
         except Exception:
             return jsonify({"message": "Invalid start_date format"}), 400
     if end_date_str:
         try:
-            end_date = datetime.fromisoformat(end_date_str).replace(tzinfo=None)
-            chore.end_date = end_date
+            chore.end_date = datetime.fromisoformat(end_date_str).replace(tzinfo=None)
         except Exception:
             return jsonify({"message": "Invalid end_date format"}), 400
 
@@ -258,7 +254,7 @@ def update_chore(chore_id):
     db.session.commit()
 
     assigned_roommate_data = None
-    if chore.assignee:  # chore.assignee is the relationship to Roommate
+    if chore.assignee:
         assigned_roommate_data = {
             "id": chore.assignee.id,
             "first_name": chore.assignee.first_name,
@@ -280,6 +276,7 @@ def update_chore(chore_id):
         "recurrence": chore.recurrence,
         "rotation_order": chore.rotation_order,
     }
+
     return jsonify({"chore": chore_data}), 200
 
 
@@ -287,10 +284,20 @@ def update_chore(chore_id):
 # Deletes a chore.
 @jwt_required()
 def delete_chore(chore_id):
+    current_roommate_id = int(get_jwt_identity())
+
+    current_roommate = Roommate.query.get(current_roommate_id)
+    if not current_roommate:
+        return jsonify({"message": "User not found"}), 404
+
+    if not current_roommate.room_fkey:
+        return jsonify({"message": "User is not in a room"}), 400
+
     chore = Chore.query.get(chore_id)
     if not chore:
         return jsonify({"message": "Chore not found"}), 404
 
     db.session.delete(chore)
     db.session.commit()
-    return "", 204
+
+    return {}, 204
