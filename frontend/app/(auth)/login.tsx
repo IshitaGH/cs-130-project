@@ -66,6 +66,7 @@ export default function LoginScreen() {
           style={styles.input}
           placeholderTextColor="#aaa"
           onSubmitEditing={() => passwordInputRef.current?.focus()}
+          autoCapitalize="none"
         />
 
         <TextInput
@@ -77,6 +78,7 @@ export default function LoginScreen() {
           style={styles.input}
           placeholderTextColor="#aaa"
           onSubmitEditing={() => {}}
+          autoCapitalize="none"
         />
 
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
