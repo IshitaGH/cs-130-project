@@ -1,3 +1,4 @@
+// @ts-ignore
 import { API_URL } from '@/config';
 
 // NOTE: should only be called via AuthContext
@@ -36,6 +37,12 @@ export async function apiGetRoom(session: any) {
     method: 'GET',
     headers: { 'Authorization': `Bearer ${session}` },
   });
+
+  if (response.status === 404) {
+    return {
+      room_id: null
+    }
+  }
 
   if (!response.ok) {
     const errorData = await response.json();
@@ -206,4 +213,103 @@ export async function apiGetRoommates(session: any) {
   }
   const data = await response.json();
   return data.roommates;
+}
+
+// EXPENSES
+async function apiCreateFirstExpensePeriod(session: any) {
+  const response = await fetch(`${API_URL}/expense_period`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session}`
+    },
+    body: "{}"
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to create initial expense period');
+  }
+}
+
+export async function apiGetExpenses(session: any) {
+  const response = await fetch(`${API_URL}/expense_period`, {
+    headers: {
+      Authorization: `Bearer ${session}`
+    }
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to get expenses');
+  }
+
+  if (data.length === 0) { // new room; need to create first expense period
+    await apiCreateFirstExpensePeriod(session);
+    return await apiGetExpenses(session);
+  }
+
+  return data;
+}
+
+export async function apiCreateExpense(session: any, cost: number, desc: string, payerId: number, expenses: any[]) {
+  const body = {
+    cost,
+    description: desc,
+    expenses,
+    roommate_spendor_id: payerId
+  };
+
+  const response = await fetch(`${API_URL}/expense`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session}`
+    },
+    body: JSON.stringify(body)
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to create expense');
+  }
+
+  return data;
+}
+
+export async function apiDeleteExpense(session: any, id: number) {
+  const response = await fetch(`${API_URL}/expense`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session}`
+    },
+    body: JSON.stringify({ id })
+  });
+
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.message || 'Failed to delete expense');
+  }
+}
+
+export async function apiCloseExpensePeriod(session: any) {
+  const response = await fetch(`${API_URL}/expense_period`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session}`
+    },
+    body: '{}'
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to close expense period');
+  }
+
+  return data;
 }
