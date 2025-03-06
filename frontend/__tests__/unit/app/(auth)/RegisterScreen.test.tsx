@@ -89,7 +89,7 @@ describe('<RegisterScreen />', () => {
     });
   });
 
-  test('shows error toast when registration fails', async () => {
+  test('shows toast error when registration fails', async () => {
     const { getByTestId } = renderResult;
     const error = new Error('Username already exists');
     mockCreateAccount.mockRejectedValueOnce(error);

@@ -8,7 +8,11 @@ export default function RoomLandingScreen() {
 
   return (
     <View style={styles.container}>
-      <Image source={require("@/assets/images/icon.png")} style={styles.logo} />
+      <Image 
+        source={require("@/assets/images/icon.png")} 
+        style={styles.logo}
+        testID="app-logo"
+      />
 
       <TouchableOpacity
         style={styles.button}

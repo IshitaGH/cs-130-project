@@ -82,7 +82,7 @@ describe('<LoginScreen />', () => {
     expect(mockSignIn).toHaveBeenCalledWith('testuser', 'password123');
   });
 
-  test('shows error toast when login fails', async () => {
+  test('shows toast error when login fails', async () => {
     const { getByText } = renderResult;
     const error = new Error('Invalid credentials');
     mockSignIn.mockRejectedValueOnce(error);
