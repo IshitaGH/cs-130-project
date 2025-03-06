@@ -3,12 +3,7 @@ import os
 from flask import Flask, jsonify, request
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
-from flask_jwt_extended import (
-    JWTManager,
-    create_access_token,
-    get_jwt_identity,
-    jwt_required,
-)
+from flask_jwt_extended import JWTManager, create_access_token
 
 from database import db, migrate
 from models.chore import Chore
@@ -22,12 +17,14 @@ from routes.expense_period import (
     delete_expense_period,
     get_expense_period,
 )
+
 from routes.notifications import (
     create_notification,
     delete_notification,
     get_notification,
     update_notification,
 )
+
 from routes.room import create_room, get_current_room, join_room, leave_room
 from routes.roommate import get_roommates_in_room
 from routes.roommate_expense import get_roommate_expense
@@ -61,6 +58,9 @@ def register():
     if not (first_name and last_name and username and password):
         return jsonify({"message": "All fields are required"}), 400
 
+    if len(username) < 3 or len(password) < 3:
+        return jsonify({"message": "Username and password must be at least 3 characters long"}), 400
+
     if Roommate.query.filter_by(username=username).first():
         return jsonify({"message": "Username already exists"}), 400
 
@@ -73,7 +73,7 @@ def register():
     )
     db.session.add(new_roommate)
     db.session.commit()
-    return "", 201
+    return {}, 204
 
 
 @app.route("/login", methods=["POST"])
