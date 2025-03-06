@@ -18,8 +18,14 @@ from routes.expense_period import (
     get_expense_period,
 )
 
+from routes.notifications import (
+    create_notification,
+    delete_notification,
+    get_notification,
+    update_notification,
+)
+
 from routes.room import create_room, get_current_room, join_room, leave_room
-from routes.chore import create_chore, get_chores, update_chore, delete_chore
 from routes.roommate import get_roommates_in_room
 from routes.roommate_expense import get_roommate_expense
 
@@ -176,6 +182,27 @@ def update_chore_route(chore_id):
 @app.route("/chores/<int:chore_id>", methods=["DELETE"])
 def delete_chore_route(chore_id):
     return delete_chore(chore_id)
+
+
+@app.route("/notifications", methods=["POST"])
+def create_notification_route():
+    return create_notification()
+
+
+# NOTIFICATION ROUTES
+@app.route("/notifications", methods=["GET"])
+def get_notification_route():
+    return get_notification()
+
+
+@app.route("/notifications", methods=["PUT"])
+def update_notification_route():
+    return update_notification()
+
+
+@app.route("/notifications", methods=["DELETE"])
+def delete_notification_route():
+    return delete_notification()
 
 
 if __name__ == "__main__":
