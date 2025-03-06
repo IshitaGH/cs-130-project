@@ -16,6 +16,14 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
     npx expo start
    ```
 
+### Testing
+
+To run the tests, use the following command:
+
+```bash
+npm test
+```
+
 ### Developer Notes
 1. Export the URL of the backend app at `frontend/config.ts` (see `frontend/config-example.ts`)
    1. `frontend/apiClient.ts` will read this value to make API calls
