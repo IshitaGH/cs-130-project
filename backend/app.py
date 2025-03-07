@@ -28,7 +28,11 @@ from routes.notifications import (
 )
 
 from routes.room import create_room, get_current_room, join_room, leave_room
-from routes.roommate import get_profile_picture, update_profile_picture, get_roommates_in_room
+from routes.roommate import (
+    get_profile_picture,
+    update_profile_picture,
+    get_roommates_in_room,
+)
 from routes.roommate_expense import get_roommate_expense
 from logs.logging_config import setup_logging, log_request_info, log_response_info
 
@@ -77,7 +81,12 @@ def register():
         return jsonify({"message": "All fields are required"}), 400
 
     if len(username) < 3 or len(password) < 3:
-        return jsonify({"message": "Username and password must be at least 3 characters long"}), 400
+        return (
+            jsonify(
+                {"message": "Username and password must be at least 3 characters long"}
+            ),
+            400,
+        )
 
     if Roommate.query.filter_by(username=username).first():
         logger.warning(f"Attempt to register with existing username: {username}")

@@ -36,6 +36,4 @@ class Chore(db.Model):
     assignee = relationship(
         "Roommate", foreign_keys=[assignee_fkey], back_populates="chores"
     )
-    assignor = relationship(
-        "Roommate", foreign_keys=[assignor_fkey]
-    )
+    assignor = relationship("Roommate", foreign_keys=[assignor_fkey])
