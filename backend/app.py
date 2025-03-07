@@ -1,14 +1,10 @@
+import base64
 import os
 
 from flask import Flask, jsonify, request
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
-from flask_jwt_extended import (
-    JWTManager,
-    create_access_token,
-    get_jwt_identity,
-    jwt_required,
-)
+from flask_jwt_extended import JWTManager, create_access_token
 
 from database import db, migrate
 from models.chore import Chore
@@ -22,14 +18,16 @@ from routes.expense_period import (
     delete_expense_period,
     get_expense_period,
 )
+
 from routes.notifications import (
     create_notification,
     delete_notification,
     get_notification,
     update_notification,
 )
+
 from routes.room import create_room, get_current_room, join_room, leave_room
-from routes.roommate import get_roommates_in_room
+from routes.roommate import get_profile_picture, update_profile_picture, get_roommates_in_room
 from routes.roommate_expense import get_roommate_expense
 
 app = Flask(__name__)
@@ -57,23 +55,37 @@ def register():
     last_name = data.get("last_name")
     username = data.get("username")
     password = data.get("password")
+    file = data.get("profile_picture")
 
     if not (first_name and last_name and username and password):
         return jsonify({"message": "All fields are required"}), 400
+
+    if len(username) < 3 or len(password) < 3:
+        return jsonify({"message": "Username and password must be at least 3 characters long"}), 400
 
     if Roommate.query.filter_by(username=username).first():
         return jsonify({"message": "Username already exists"}), 400
 
     hashed_pw = bcrypt.generate_password_hash(password).decode("utf-8")
+
+    if file:
+        try:
+            profile_picture = base64.b64decode(file)
+        except (base64.binascii.Error, TypeError):
+            return jsonify({"message": "Invalid base64-encoded profile picture"}), 400
+    else:
+        profile_picture = None
+
     new_roommate = Roommate(
         first_name=first_name,
         last_name=last_name,
         username=username,
         password_hash=hashed_pw,
+        profile_picture=profile_picture,
     )
     db.session.add(new_roommate)
     db.session.commit()
-    return "", 201
+    return {}, 204
 
 
 @app.route("/login", methods=["POST"])
@@ -184,12 +196,11 @@ def delete_chore_route(chore_id):
     return delete_chore(chore_id)
 
 
+# NOTIFICATION ROUTES
 @app.route("/notifications", methods=["POST"])
 def create_notification_route():
     return create_notification()
 
-
-# NOTIFICATION ROUTES
 @app.route("/notifications", methods=["GET"])
 def get_notification_route():
     return get_notification()

@@ -1,7 +1,8 @@
 """Create notification table
 
 Revision ID: 5246e7e4cb55
-Revises: e3c906c4907f
+
+Revises: ffb4c21d9d23
 Create Date: 2025-03-04 08:31:46.840488
 
 """
@@ -11,7 +12,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '5246e7e4cb55'
-down_revision = 'e3c906c4907f'
+down_revision = 'ffb4c21d9d23'
 branch_labels = None
 depends_on = None
 
