@@ -1,3 +1,4 @@
+import base64
 import os
 
 from flask import Flask, jsonify, request
@@ -26,7 +27,7 @@ from routes.notifications import (
 )
 
 from routes.room import create_room, get_current_room, join_room, leave_room
-from routes.roommate import get_roommates_in_room
+from routes.roommate import get_profile_picture, update_profile_picture, get_roommates_in_room
 from routes.roommate_expense import get_roommate_expense
 
 app = Flask(__name__)
@@ -54,6 +55,7 @@ def register():
     last_name = data.get("last_name")
     username = data.get("username")
     password = data.get("password")
+    file = data.get("profile_picture")
 
     if not (first_name and last_name and username and password):
         return jsonify({"message": "All fields are required"}), 400
@@ -65,11 +67,21 @@ def register():
         return jsonify({"message": "Username already exists"}), 400
 
     hashed_pw = bcrypt.generate_password_hash(password).decode("utf-8")
+
+    if file:
+        try:
+            profile_picture = base64.b64decode(file)
+        except (base64.binascii.Error, TypeError):
+            return jsonify({"message": "Invalid base64-encoded profile picture"}), 400
+    else:
+        profile_picture = None
+
     new_roommate = Roommate(
         first_name=first_name,
         last_name=last_name,
         username=username,
         password_hash=hashed_pw,
+        profile_picture=profile_picture,
     )
     db.session.add(new_roommate)
     db.session.commit()
@@ -184,12 +196,12 @@ def delete_chore_route(chore_id):
     return delete_chore(chore_id)
 
 
+# NOTIFICATION ROUTES
 @app.route("/notifications", methods=["POST"])
 def create_notification_route():
     return create_notification()
 
 
-# NOTIFICATION ROUTES
 @app.route("/notifications", methods=["GET"])
 def get_notification_route():
     return get_notification()
