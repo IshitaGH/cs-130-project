@@ -24,11 +24,11 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     try {
       await signIn(username, password);
-    } catch (err: any) {
+    } catch (error: any) {
       Toast.show({
         type: 'error',
-        text1: 'Error Logging-In',
-        text2: err.message,
+        text1: 'Error',
+        text2: error.message,
       });
     }
   };

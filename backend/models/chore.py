@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, Interval, String
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import ARRAY
 
 from database import db
 from models.roommate import Roommate
@@ -22,7 +23,6 @@ class Chore(db.Model):
         DateTime, default=datetime.utcnow, nullable=False
     )  # auto-set at creation (should be midnight)
     end_date = Column(DateTime, nullable=False)
-    autorotate = Column(Boolean, nullable=False)
     is_task = Column(Boolean, default=False, nullable=False)
     completed = Column(Boolean, nullable=True)
     # use as title
@@ -31,7 +31,11 @@ class Chore(db.Model):
 
     assignee_fkey = Column(Integer, ForeignKey("roommates.id"), nullable=False)
     assignor_fkey = Column(Integer, ForeignKey("roommates.id"), nullable=False)
+    rotation_order = Column(ARRAY(Integer), nullable=True)
 
     assignee = relationship(
         "Roommate", foreign_keys=[assignee_fkey], back_populates="chores"
+    )
+    assignor = relationship(
+        "Roommate", foreign_keys=[assignor_fkey]
     )

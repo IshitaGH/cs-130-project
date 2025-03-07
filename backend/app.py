@@ -4,12 +4,7 @@ import os
 from flask import Flask, jsonify, request
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
-from flask_jwt_extended import (
-    JWTManager,
-    create_access_token,
-    get_jwt_identity,
-    jwt_required,
-)
+from flask_jwt_extended import JWTManager, create_access_token
 
 from database import db, migrate
 from models.chore import Chore
@@ -23,8 +18,16 @@ from routes.expense_period import (
     delete_expense_period,
     get_expense_period,
 )
+
+from routes.notifications import (
+    create_notification,
+    delete_notification,
+    get_notification,
+    update_notification,
+)
+
 from routes.room import create_room, get_current_room, join_room, leave_room
-from routes.roommate import get_profile_picture, update_profile_picture
+from routes.roommate import get_profile_picture, update_profile_picture, get_roommates_in_room
 from routes.roommate_expense import get_roommate_expense
 
 app = Flask(__name__)
@@ -57,6 +60,9 @@ def register():
     if not (first_name and last_name and username and password):
         return jsonify({"message": "All fields are required"}), 400
 
+    if len(username) < 3 or len(password) < 3:
+        return jsonify({"message": "Username and password must be at least 3 characters long"}), 400
+
     if Roommate.query.filter_by(username=username).first():
         return jsonify({"message": "Username already exists"}), 400
 
@@ -79,7 +85,7 @@ def register():
     )
     db.session.add(new_roommate)
     db.session.commit()
-    return "", 201
+    return {}, 204
 
 
 @app.route("/login", methods=["POST"])
@@ -94,17 +100,6 @@ def login():
 
     access_token = create_access_token(identity=str(roommate.id))
     return jsonify({"access_token": access_token}), 200
-
-
-# Temporary: for current home screen to demonstrate protected endpoints with JWT
-@app.route("/protected", methods=["GET"])
-@jwt_required()
-def protected():
-    current_user = get_jwt_identity()  # gets the username of the current user
-    return (
-        jsonify({"message": f"Hello, {current_user}! Welcome to the protected page."}),
-        200,
-    )
 
 
 # ROOM ROUTES
@@ -126,6 +121,12 @@ def join_room_route():
 @app.route("/rooms/leave", methods=["POST"])
 def leave_room_route():
     return leave_room()
+
+
+# ROOMMATES ROUTES
+@app.route("/roommates", methods=["GET"])
+def get_roommates_route():
+    return get_roommates_in_room()
 
 
 # EXPENSE ROUTES
@@ -195,14 +196,25 @@ def delete_chore_route(chore_id):
     return delete_chore(chore_id)
 
 
-@app.route("/profile_picture", methods=["GET"])
-def get_profile_picture_route():
-    return get_profile_picture()
+# NOTIFICATION ROUTES
+@app.route("/notifications", methods=["POST"])
+def create_notification_route():
+    return create_notification()
 
 
-@app.route("/profile_picture", methods=["POST"])
-def update_profile_picture_route():
-    return update_profile_picture()
+@app.route("/notifications", methods=["GET"])
+def get_notification_route():
+    return get_notification()
+
+
+@app.route("/notifications", methods=["PUT"])
+def update_notification_route():
+    return update_notification()
+
+
+@app.route("/notifications", methods=["DELETE"])
+def delete_notification_route():
+    return delete_notification()
 
 
 if __name__ == "__main__":
