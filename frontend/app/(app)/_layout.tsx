@@ -3,7 +3,6 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useRouter, Tabs } from "expo-router";
 import { useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { Text, TouchableOpacity } from "react-native";
 
 export default function AppLayout() {
   const { session, sessionLoading } = useAuthContext();
