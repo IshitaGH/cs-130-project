@@ -109,8 +109,7 @@ PYTHONPATH=/Users/username/projects/cs-130-project/backend pytest __tests__/ -v
 2. **Run specific test file**:
 ```bash
 PYTHONPATH=/path/to/your/backend pytest __tests__/test_chores.py -v
-# or
-PYTHONPATH=/path/to/your/backend pytest __tests__/test_expenses.py -v
+
 ```
 
 3. **Run with coverage report**:
@@ -121,8 +120,7 @@ PYTHONPATH=/path/to/your/backend pytest __tests__/ --cov=routes --cov-report=ter
 4. **Run specific test**:
 ```bash
 PYTHONPATH=/path/to/your/backend pytest __tests__/test_chores.py -v -k "test_create_chore"
-# or
-PYTHONPATH=/path/to/your/backend pytest __tests__/test_expenses.py -v -k "test_create_expense"
+
 ```
 
 ## Test Database
@@ -143,8 +141,7 @@ The database is automatically set up and cleaned between tests using pytest fixt
 The tests use fixtures that set up:
 - A test room
 - Two test roommates
-- Sample chores and expenses
-- Expense periods
+- Sample chores
 
 These fixtures are automatically used by the integration tests to provide a consistent test environment.
 
