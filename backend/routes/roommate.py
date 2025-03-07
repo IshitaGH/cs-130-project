@@ -15,8 +15,13 @@ from models.roommate import Roommate
 
 @jwt_required()
 def get_profile_picture():
-    roommate_id = get_jwt_identity()
-    roommate = Roommate.query.get_or_404(roommate_id)
+    user_id = request.args.get("user_id")
+    if user_id:
+        roommate = Roommate.query.get_or_404(user_id)
+    else:
+        roommate_id = get_jwt_identity()
+        roommate = Roommate.query.get_or_404(roommate_id)
+    
     if not roommate.profile_picture:
         return jsonify({"message": "No profile picture found"}), 404
 
