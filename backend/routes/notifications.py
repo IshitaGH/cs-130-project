@@ -79,6 +79,9 @@ def get_notification():
     if not data is None and "notification_id" in data:
         notification = Notification.query.get(data["notification_id"])
 
+        if not notification:
+            return jsonify({"message": "Notification not found"}), 404
+
         return (
             jsonify(
                 {
