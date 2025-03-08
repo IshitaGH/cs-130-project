@@ -104,13 +104,13 @@ def test_get_notification_by_id(client, test_data):
 
     headers = {'Authorization': f'Bearer {access_token}'}
     data = {
-        "notification_id": 2
+        "notification_id": test_data['notification2_id']
     }
     response = client.get('/notifications', json=data, headers=headers)
 
     assert response.status_code == 200
     data = response.get_json()
-    assert data['id'] == 2
+    assert data['id'] == test_data['notification2_id']
     assert data['title'] == "Test Notification 2"
     assert data['description'] == "with description"
     assert data['notification_sender'] == test_data['roommate1_id']
@@ -122,14 +122,14 @@ def test_get_notification_by_sender(client, test_data):
 
     headers = {'Authorization': f'Bearer {access_token}'}
     data = {
-        "notification_sender": 2
+        "notification_sender": test_data['roommate2_id']
     }
     response = client.get('/notifications', json=data, headers=headers)
 
     assert response.status_code == 200
     data = response.get_json()
     assert len(data) == 1
-    assert data[0]['id'] == 3
+    assert data[0]['id'] == test_data['notification3_id']
     assert data[0]['title'] == None
     assert data[0]['description'] == "test notification 3 without title"
     assert data[0]['notification_sender'] == test_data['roommate2_id']
@@ -141,14 +141,14 @@ def test_get_notification_by_recipient(client, test_data):
 
     headers = {'Authorization': f'Bearer {access_token}'}
     data = {
-        "notification_recipient": 1
+        "notification_recipient": test_data['roommate1_id']
     }
     response = client.get('/notifications', json=data, headers=headers)
 
     assert response.status_code == 200
     data = response.get_json()
     assert len(data) == 2
-    assert data[0]['id'] == 1
+    assert data[0]['id'] == test_data['notification1_id']
     assert data[0]['title'] == "Test Notification 1"
     assert data[0]['description'] == None
     assert data[0]['notification_sender'] == test_data['roommate1_id']
@@ -160,15 +160,15 @@ def test_get_notification_by_sender_and_recipient(client, test_data):
 
     headers = {'Authorization': f'Bearer {access_token}'}
     data = {
-        "notification_sender": 1,
-        "notification_recipient": 1
+        "notification_sender": test_data['roommate1_id'],
+        "notification_recipient": test_data['roommate1_id']
     }
     response = client.get('/notifications', json=data, headers=headers)
 
     assert response.status_code == 200
     data = response.get_json()
     assert len(data) == 1
-    assert data[0]['id'] == 1
+    assert data[0]['id'] == test_data['notification1_id']
     assert data[0]['title'] == "Test Notification 1"
     assert data[0]['description'] == None
     assert data[0]['notification_sender'] == test_data['roommate1_id']
