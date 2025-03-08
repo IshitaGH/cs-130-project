@@ -17,6 +17,9 @@ This is a backend service for the Roomies app built with Docker, Flask, and Post
 4. Run `docker compose down` to stop the backend containers.
 
 ## Developer Notes
+### Testing
+See `/__tests__/README.md` for instructions on running tests
+
 ### How to execute scripts inside Flask backend
 1. `docker compose up -d`
 2. `docker compose exec backend bash`
