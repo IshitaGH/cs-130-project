@@ -18,17 +18,41 @@ def log_request_info(logger):
     try:
         verify_jwt_in_request()
         g.user_id = get_jwt_identity()
+        # Log headers
+        logger.info(f"Request Headers: {dict(request.headers)}")
+        
         if request.method == "POST":
-            logger.info(f"Request: {request.method} {request.url} - Data: {request.get_json()} - User: {g.user_id}")
+            # Try to get JSON data
+            try:
+                json_data = request.get_json(silent=True)
+                logger.info(f"Request: {request.method} {request.url} - JSON Data: {json_data} - User: {g.user_id}")
+            except Exception as e:
+                logger.error(f"Error parsing JSON: {str(e)}")
+                # Log raw data if JSON parsing fails
+                logger.info(f"Request: {request.method} {request.url} - Raw Data: {request.get_data()} - User: {g.user_id}")
         else:
             logger.info(f"Request: {request.method} {request.url} - Params: {request.args} - User: {g.user_id}")
     except Exception as e:
+        # Log headers even when JWT is not present
+        logger.info(f"Request Headers: {dict(request.headers)}")
+        
         if request.method == "POST":
-            logger.info(f"Request: {request.method} {request.url} - Data: {request.get_json()} - No JWT present")
+            try:
+                json_data = request.get_json(silent=True)
+                logger.info(f"Request: {request.method} {request.url} - JSON Data: {json_data} - No JWT present")
+            except Exception as json_e:
+                logger.error(f"Error parsing JSON: {str(json_e)}")
+                logger.info(f"Request: {request.method} {request.url} - Raw Data: {request.get_data()} - No JWT present")
         else:
             logger.info(f"Request: {request.method} {request.url} - Params: {request.args} - No JWT present")
 
+
 # Log response details
 def log_response_info(response, logger):
-    logger.info(f"Response: {response.status_code} for {request.method} {request.url}")
-    return response 
+    logger.info(f"Response: {response.status_code} - {response.status} for {request.method} {request.url}")
+    if response.status_code >= 400:  # Log response data for errors
+        try:
+            logger.info(f"Response Data: {response.get_data(as_text=True)}")
+        except Exception as e:
+            logger.error(f"Error logging response data: {str(e)}")
+    return response
