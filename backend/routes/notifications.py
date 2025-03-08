@@ -94,7 +94,7 @@ def get_notification():
                     "room_fkey": notification.room_fkey,
                 }
             ),
-            201,
+            200,
         )
 
     elif not data is None:
