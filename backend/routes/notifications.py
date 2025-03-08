@@ -197,6 +197,6 @@ def delete_notification():
     if notification:
         db.session.delete(notification)
         db.session.commit()
-        return jsonify({"message": "Notification deleted successfully"}), 200
+        return jsonify({"message": "Notification deleted successfully"}), 204
     else:
         return jsonify({"message": "Notification not found"}), 404

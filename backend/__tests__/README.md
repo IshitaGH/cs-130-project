@@ -29,6 +29,7 @@ The tests are organized into test files:
    - `test_get_all_notifications`: Tests GET /notifications endpoint without any filters
    - `test_create_notification`: Tests POST /notifications endpoint
    - `test_update_notification`: Tests PUT /notifications endpoint
+   - `test_delete_notification`: Tests DELETE /notifications endpoint
 
 ## Prerequisites
 

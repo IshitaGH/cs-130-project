@@ -229,3 +229,18 @@ def test_update_notification(client, test_data):
     assert data['description'] == None
     assert data['notification_sender'] == test_data['roommate1_id']
     assert data['notification_recipient'] == test_data['roommate1_id']
+    
+       
+# Test DELETE /notifications endpoint 
+def test_delete_notification(client, test_data):
+    with app.app_context():
+        access_token = create_access_token(identity=str(test_data['roommate1_id']))
+    
+    headers = {'Authorization': f'Bearer {access_token}'}
+    data = {
+        'notification_id': test_data['notification1_id'],
+    }
+    
+    response = client.delete('/notifications', json=data, headers=headers)
+    
+    assert response.status_code == 204
