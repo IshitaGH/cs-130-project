@@ -22,12 +22,12 @@ The tests are organized into test files:
 
 ### Notification Tests (`test_notifications.py`)
 1. **Integration Tests**
-   - GET /notifications endpoint
-      - `test_get_notification_by_id`: Tests GET /notifications endpoint to retrieve a notification by its ID
-      - `test_get_notification_by_sender`: Tests GET /notifications endpoint to retrieve a notification by its sender ID
-      - `test_get_notification_by_recipient`: Tests GET /notifications endpoint to retrieve a notification by its recipient ID
-      - `test_get_notification_by_sender_and_recipient`: Tests GET /notifications endpoint to retrieve a notification by its sender and recipient ID
-      - `test_get_all_notifications`: Tests GET /notifications endpoint without any filters
+   - `test_get_notification_by_id`: Tests GET /notifications endpoint to retrieve a notification by its ID
+   - `test_get_notification_by_sender`: Tests GET /notifications endpoint to retrieve a notification by its sender ID
+   - `test_get_notification_by_recipient`: Tests GET /notifications endpoint to retrieve a notification by its recipient ID
+   - `test_get_notification_by_sender_and_recipient`: Tests GET /notifications endpoint to retrieve a notification by its sender and recipient ID
+   - `test_get_all_notifications`: Tests GET /notifications endpoint without any filters
+   - `test_create_notification`: Tests POST /notifications endpoint
 
 ## Prerequisites
 

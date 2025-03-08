@@ -186,3 +186,25 @@ def test_get_all_notifications(client, test_data):
     assert len(data) == 3
     assert data[0]['id'] != data[1]['id']
     assert data[1]['id'] != data[2]['id']
+    
+    
+# Test POST /notifications endpoint
+def test_create_notification(client, test_data):
+    with app.app_context():
+        access_token = create_access_token(identity=str(test_data['roommate1_id']))
+    
+    headers = {'Authorization': f'Bearer {access_token}'}
+    data = {
+        'title': 'New Notification',
+        'notification_sender': test_data['roommate2_id'],
+        'notification_recipient': test_data['roommate1_id']
+    }
+    
+    response = client.post('/notifications', json=data, headers=headers)
+    
+    assert response.status_code == 201
+    data = response.get_json()
+    assert data['title'] == "New Notification"
+    assert data['description'] == None
+    assert data['notification_sender'] == test_data['roommate2_id']
+    assert data['notification_recipient'] == test_data['roommate1_id']
