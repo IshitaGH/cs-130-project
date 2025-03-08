@@ -208,3 +208,24 @@ def test_create_notification(client, test_data):
     assert data['description'] == None
     assert data['notification_sender'] == test_data['roommate2_id']
     assert data['notification_recipient'] == test_data['roommate1_id']
+   
+# Test PUT /notifications endpoint 
+def test_update_notification(client, test_data):
+    with app.app_context():
+        access_token = create_access_token(identity=str(test_data['roommate1_id']))
+    
+    headers = {'Authorization': f'Bearer {access_token}'}
+    data = {
+        'notification_id': test_data['notification1_id'],
+        'title': "Updated Title"
+    }
+    
+    response = client.put('/notifications', json=data, headers=headers)
+    
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['id'] == test_data['notification1_id']
+    assert data['title'] == "Updated Title"
+    assert data['description'] == None
+    assert data['notification_sender'] == test_data['roommate1_id']
+    assert data['notification_recipient'] == test_data['roommate1_id']

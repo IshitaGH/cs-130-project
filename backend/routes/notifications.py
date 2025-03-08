@@ -185,7 +185,7 @@ def update_notification():
                 "room_fkey": notification.room_fkey,
             }
         ),
-        201,
+        200,
     )
 
 

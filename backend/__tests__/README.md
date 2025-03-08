@@ -28,6 +28,7 @@ The tests are organized into test files:
    - `test_get_notification_by_sender_and_recipient`: Tests GET /notifications endpoint to retrieve a notification by its sender and recipient ID
    - `test_get_all_notifications`: Tests GET /notifications endpoint without any filters
    - `test_create_notification`: Tests POST /notifications endpoint
+   - `test_update_notification`: Tests PUT /notifications endpoint
 
 ## Prerequisites
 
