@@ -6,14 +6,13 @@ from flask_jwt_extended import create_access_token
 
 from app import app
 from database import db
-from models.expense import Expense, Expense_Period, Roommate_Expense
 
 os.environ["DATABASE_URL"] = (
     "postgresql://myuser:securepassword@localhost:5432/test_database"
 )
 
 
-class ExpensesTestCase(unittest.TestCase):
+class RoommateExpensesTestCase(unittest.TestCase):
     def setUp(self):
         # Configure the app for testing.
         # if this does not work (the SQLALCHEMY_DATABSE_URI is not recognized), then
@@ -70,60 +69,32 @@ class ExpensesTestCase(unittest.TestCase):
 
         return headers
 
-    def test_no_room_create_expense(self):
-        self.register_user("John", "Doe", "johndoe", "password")
-        token = self.login_user("johndoe", "password")
-        headers = {"Authorization": f"Bearer {token}"}
-
-        response = self.app.post("/expense", json={"expenses": []}, headers=headers)
-        self.assertEqual(response.status_code, 404)
-        data = json.loads(response.data)
-        self.assertEqual(data["room_id"], None)
-
-    def test_no_expense_period_create_expense(self):
+    def test_get_roommmate_expense(self):
         headers = self.handle_roommate_set_up()
 
-        response = self.app.post("/expense", json={"expenses": []}, headers=headers)
-        self.assertEqual(response.status_code, 404)
-        data = json.loads(response.data)
-        self.assertEqual(data["message"], "Open expense period not found")
+        empty_response = self.app.get("/roommate_expense", json={}, headers=headers)
+        empty_data = json.loads(empty_response.data)
+        self.assertEqual(empty_response.status_code, 200)
+        self.assertEqual(empty_data, [])
 
-    def test_normal_create_expense(self):
-        headers = self.handle_roommate_set_up()
         self.app.post("/expense_period", json={}, headers=headers)
-        response = self.app.post(
+        self.app.post(
             "/expense",
             json={
                 "title": "rent",
                 "cost": "1000",
                 "description": "unrealistically cheap rent",
+                "expenses": [
+                    {"username": "johndoe", "percentage": 0.4},
+                ],
             },
             headers=headers,
         )
-        self.assertEqual(response.status_code, 201)
-
+        response = self.app.get("/roommate_expense", json={}, headers=headers)
         data = json.loads(response.data)
-        self.assertEqual(data["title"], "rent")
-        self.assertEqual(data["cost"], 1000)
-        self.assertEqual(data["description"], "unrealistically cheap rent")
-
-        self.app.post("/expense_period", json={}, headers=headers)
-        response = self.app.post(
-            "/expense",
-            json={
-                "title": "vacuum",
-                "cost": "500",
-                "description": "need to clean",
-                "roommate_spendor_id": 1,
-            },
-            headers=headers,
-        )
-        self.assertEqual(response.status_code, 201)
-
-        data = json.loads(response.data)
-        self.assertEqual(data["title"], "vacuum")
-        self.assertEqual(data["cost"], 500)
-        self.assertEqual(data["description"], "need to clean")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["percentage"], 0.4)
 
 
 if __name__ == "__main__":

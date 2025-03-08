@@ -6,6 +6,7 @@ from flask import jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from database import db
+from models.chore import Chore
 from models.roommate import Room, Roommate
 from models.chore import Chore
 from models.expense import Expense, Roommate_Expense, Expense_Period

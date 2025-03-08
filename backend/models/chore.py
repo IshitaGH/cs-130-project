@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
-from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.orm import relationship
 
 from database import db
 from models.roommate import Roommate

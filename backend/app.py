@@ -19,19 +19,17 @@ from routes.expense_period import (
     delete_expense_period,
     get_expense_period,
 )
-
 from routes.notifications import (
     create_notification,
     delete_notification,
     get_notification,
     update_notification,
 )
-
 from routes.room import create_room, get_current_room, join_room, leave_room
 from routes.roommate import (
     get_profile_picture,
-    update_profile_picture,
     get_roommates_in_room,
+    update_profile_picture,
 )
 from routes.roommate_expense import get_roommate_expense
 from logs.logging_config import setup_logging, log_request_info, log_response_info
