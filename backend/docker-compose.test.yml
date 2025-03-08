@@ -1,0 +1,31 @@
+services:
+  db-test:
+    image: postgres
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: test_db
+    # tmpfs means data is stored only in memory and disappears when the container stops
+    tmpfs:
+      - /var/lib/postgresql/data
+    # This ensures that flask app is not started before the DB is ready
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d test_db"]
+      interval: 1s
+      timeout: 5s
+      retries: 5
+      start_period: 2s
+  backend-test:
+    build: .
+    depends_on:
+      db-test:
+        condition: service_healthy
+    environment:
+      FLASK_APP: app.py
+      PYTHONUNBUFFERED: 1
+      DATABASE_URL: postgresql://test:test@db-test:5432/test_db
+      JWT_SECRET_KEY: testsecret
+      PYTHONPATH: /backend
+    # Run the tests once the DB is ready
+    command: >
+      bash -c "flask db upgrade && pytest __tests__/ -v --maxfail=1 --disable-warnings"
