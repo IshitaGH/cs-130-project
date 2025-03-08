@@ -2,10 +2,10 @@ import base64
 import os
 import logging
 
-from flask import Flask, jsonify, request, g
+from flask import Flask, jsonify, request
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager, create_access_token, get_jwt_identity, verify_jwt_in_request
+from flask_jwt_extended import JWTManager, create_access_token
 
 from database import db, migrate
 from models.chore import Chore
