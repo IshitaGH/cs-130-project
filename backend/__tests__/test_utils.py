@@ -1,7 +1,5 @@
-import json
 from functools import wraps
 from flask import current_app
-from models.chore import Chore
 
 def handle_rotation_order(f):
     @wraps(f)
