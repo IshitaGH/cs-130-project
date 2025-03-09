@@ -22,35 +22,32 @@ export default function NotificationsScreen() {
   const router = useRouter();
   const { session, userId } = useAuthContext();
 
+  // Fetch notifications function that can be reused
+  const fetchNotifications = async () => {
+    if (!session) return;
+    try {
+      const data = await apiGetNotifications(session);
+      const filteredNotifications = data.filter(
+        (notification: Notification) => notification.notification_recipient === userId
+      );
+      setNotifications(filteredNotifications);
+    } catch (error: any) {
+      Toast.show({ type: "error", text1: "Error", text2: error.message || "Failed to fetch notifications" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial load
   useEffect(() => {
-    const fetchNotifications = async () => {
-      if (!session) return;
-      try {
-        const data = await apiGetNotifications(session);
-        const filteredNotifications = data.filter(
-          (notification: Notification) => notification.notification_recipient === userId
-        );
-        setNotifications(filteredNotifications);
-      } catch (error: any) {
-        Toast.show({ type: "error", text1: "Error", text2: error.message || "Failed to fetch notifications" });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchNotifications();
-  }, [session]);
+  }, [session, userId]);
 
+  // Refresh function
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      if (session) {
-        const data = await apiGetNotifications(session);
-        const filteredNotifications = data.filter(
-          (notification: Notification) => notification.notification_recipient === userId
-        );
-        setNotifications(filteredNotifications);
-      }
+      await fetchNotifications();
     } catch (error: any) {
       Toast.show({ type: "error", text1: "Error", text2: error.message || "Failed to refresh notifications" });
     } finally {
@@ -58,10 +55,15 @@ export default function NotificationsScreen() {
     }
   };
 
+  // Delete notification
   const handleDeleteNotification = async (notificationId: number) => {
     try {
       await apiDeleteNotification(session, notificationId);
-      setNotifications(prevNotifications => prevNotifications.filter(notification => notification.id !== notificationId));
+      // Update the local list
+      setNotifications(prevNotifications => 
+        prevNotifications.filter(notification => notification.id !== notificationId)
+      );
+      // Show success message
       Toast.show({ type: "success", text1: "Success", text2: "Notification deleted successfully" });
     } catch (error: any) {
       Toast.show({ type: "error", text1: "Error", text2: error.message || "Failed to delete notification" });
@@ -111,8 +113,8 @@ export default function NotificationsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={["#00D09E"]} // Customize the refresh spinner color
-              tintColor="#00D09E" // Customize the refresh spinner color (iOS)
+              colors={["#00D09E"]} 
+              tintColor="#00D09E" 
             />
           }
         />
