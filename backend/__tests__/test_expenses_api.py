@@ -124,6 +124,115 @@ class ExpensesTestCase(unittest.TestCase):
         self.assertEqual(data["title"], "vacuum")
         self.assertEqual(data["cost"], 500)
         self.assertEqual(data["description"], "need to clean")
+    
+    def test_get_roommmate_expense(self):
+        headers = self.handle_roommate_set_up()
+
+        empty_response = self.app.get("/roommate_expense", json={}, headers=headers)
+        empty_data = json.loads(empty_response.data)
+        self.assertEqual(empty_response.status_code, 200)
+        self.assertEqual(empty_data, [])
+
+        self.app.post("/expense_period", json={}, headers=headers)
+        self.app.post(
+            "/expense",
+            json={
+                "title": "rent",
+                "cost": "1000",
+                "description": "unrealistically cheap rent",
+                "expenses": [
+                    {"username": "johndoe", "percentage": 0.4},
+                ],
+            },
+            headers=headers,
+        )
+        response = self.app.get("/roommate_expense", json={}, headers=headers)
+        data = json.loads(response.data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["percentage"], 0.4)
+
+    def test_no_room_create_expense_period(self):
+        self.register_user("John", "Doe", "johndoe", "password")
+        token = self.login_user("johndoe", "password")
+        headers = {"Authorization": f"Bearer {token}"}
+
+        response = self.app.post("/expense_period", json={}, headers=headers)
+        self.assertEqual(response.status_code, 404)
+        data = json.loads(response.data)
+        self.assertEqual(data["room_id"], None)
+
+    def test_normal_create_expense_period(self):
+        headers = self.handle_roommate_set_up()
+        response = self.app.post("/expense_period", json={}, headers=headers)
+        data = json.loads(response.data)
+        self.assertEqual(response.status_code, 201)
+
+        room_response = self.app.get("/room", json={}, headers=headers)
+        room_data = json.loads(room_response.data)
+        self.assertEqual(data["room_fkey"], room_data["room_id"])
+        self.assertEqual(data["open"], True)
+
+    def test_get_expense_period_with_no_expense_periods(self):
+        headers = self.handle_roommate_set_up()
+        response = self.app.get("/expense_period", json={}, headers=headers)
+        data = json.loads(response.data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data, [])
+
+    def test_normal_get_expense_period(self):
+        headers = self.handle_roommate_set_up()
+        for i in range(5):
+            self.app.post("/expense_period", json={}, headers=headers)
+
+        response = self.app.get("/expense_period", json={}, headers=headers)
+        data = json.loads(response.data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(data), 5)
+
+    def test_close_expense_period(self):
+        headers = self.handle_roommate_set_up()
+
+        close_response = self.app.put("/expense_period", json={}, headers=headers)
+        close_data = json.loads(close_response.data)
+        self.assertEqual(close_response.status_code, 404)
+        self.assertEqual(close_data["message"], "Open expense period not found")
+
+        self.app.post("/expense_period", json={}, headers=headers)
+
+        get_response = self.app.get("/expense_period", json={}, headers=headers)
+        get_data = json.loads(get_response.data)
+        self.assertEqual(get_response.status_code, 200)
+        self.assertEqual(len(get_data), 1)
+
+        close_response_1 = self.app.put("/expense_period", json={}, headers=headers)
+        close_data_1 = json.loads(close_response_1.data)
+        self.assertEqual(close_response_1.status_code, 201)
+        self.assertEqual(close_data_1["open"], True)
+        get_response = self.app.get("/expense_period", json={}, headers=headers)
+        get_data = json.loads(get_response.data)
+        self.assertEqual(len(get_data), 2)
+
+    def test_delete_expense_period(self):
+        headers = self.handle_roommate_set_up()
+
+        self.app.post("/expense_period", json={}, headers=headers)
+        get_response = self.app.get("/expense_period", json={}, headers=headers)
+        get_data = json.loads(get_response.data)
+        self.assertEqual(get_response.status_code, 200)
+        self.assertEqual(len(get_data), 1)
+
+        delete_response = self.app.delete(
+            "/expense_period", json={"id": get_data[0]["id"]}, headers=headers
+        )
+        self.assertEqual(delete_response.status_code, 200)
+        delete_data = json.loads(delete_response.data)
+        self.assertEqual(delete_data["message"], "Expense period deleted successfully")
+
+        get_response_1 = self.app.get("/expense_period", json={}, headers=headers)
+        get_data_1 = json.loads(get_response_1.data)
+        self.assertEqual(get_response_1.status_code, 200)
+        self.assertEqual(len(get_data_1), 0)
 
 
 if __name__ == "__main__":
