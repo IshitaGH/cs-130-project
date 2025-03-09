@@ -88,31 +88,40 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
   const { roommates, currentUser, session, refresh } = sessionState;
 
   const title = current
-    ? "Current Expense Period"
+    ? "Current"
     : `${dateFormat(new Date(start_date))} to ${dateFormat(new Date(end_date))}`;
 
   const [expanded, setExpanded] = useState<boolean>(current);
   const [balances, setBalances] = useState<BalanceMap>({});
 
   const handleDeleteExpense = (expenseId: number) => {
-    apiDeleteExpense(session, expenseId).then(() => {
-      const updatedExpenses = expenses.filter((exp) => exp.id !== expenseId);
-      updateExpenses(id, updatedExpenses);
-      
-      Toast.show({
-        type: 'success',
-        text1: 'Success',
-        text2: 'Expense deleted successfully'
-      });
-    }).catch(error => {
-      Toast.show({
-        type: 'error',
-        text1: 'Error Deleting Expense',
-        text2: error.message || 'Failed to delete expense'
-      });
+    Alert.alert(
+      'Delete Expense',
+      'Are you sure you want to delete this expense?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          onPress: () => {
+            apiDeleteExpense(session, expenseId).then(() => {
+              const updatedExpenses = expenses.filter((exp) => exp.id !== expenseId);
+              updateExpenses(id, updatedExpenses);
+            }).catch(error => {
+              Toast.show({
+                type: 'error',
+                text1: 'Error Deleting Expense',
+                text2: error.message || 'Failed to delete expense'
+              });
 
-      console.error(error);
-    });
+              console.error(error);
+            });
+          }
+        }
+      ]
+    );
   };
 
   useEffect(() => calculatePersonalBalances(expenses, setBalances, roommates, currentUser), [expenses]);
@@ -131,11 +140,6 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
           onPress: () => {
             apiCloseExpensePeriod(session).then(() => {
               refresh();
-              Toast.show({
-                type: 'success',
-                text1: 'Success',
-                text2: 'Expense period closed successfully'
-              });
             }).catch(error => {
               Toast.show({
                 type: 'error',
