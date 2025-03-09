@@ -1,8 +1,7 @@
-import { useContext, createContext, type PropsWithChildren } from 'react';
+import { useContext, createContext, useState, useEffect, useCallback, type PropsWithChildren } from 'react';
 import { useStorageState } from '@/hooks/useStorageState';
-import { apiSignIn, apiCreateAccount } from '@/utils/api/apiClient'
+import { apiSignIn, apiCreateAccount } from '@/utils/api/apiClient';
 import { jwtDecode } from 'jwt-decode';
-import { useState, useEffect, useCallback } from 'react';
 
 interface AuthContextType {
   session: string | null;

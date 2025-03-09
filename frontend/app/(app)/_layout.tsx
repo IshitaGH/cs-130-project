@@ -1,8 +1,9 @@
+import React from 'react';
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useRouter, Tabs } from "expo-router";
 import { useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { Text, TouchableOpacity } from "react-native";
+import { TouchableOpacity } from 'react-native'; // Make sure to import TouchableOpacity
 
 export default function AppLayout() {
   const { session, sessionLoading } = useAuthContext();

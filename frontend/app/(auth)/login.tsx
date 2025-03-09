@@ -24,11 +24,11 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     try {
       await signIn(username, password);
-    } catch (err: any) {
+    } catch (error: any) {
       Toast.show({
         type: 'error',
-        text1: 'Error Logging-In',
-        text2: err.message,
+        text1: 'Error',
+        text2: error.message,
       });
     }
   };
@@ -38,9 +38,9 @@ export default function LoginScreen() {
       (async () => {
         const roomData = await apiGetRoom(session);
         if (roomData.room_id === null) {
-          router.replace("/room-landing");
+          router.push("/room-landing");
         } else {
-          router.replace("/home");
+          router.push("/home");
         }
       })();
     }
@@ -66,6 +66,7 @@ export default function LoginScreen() {
           style={styles.input}
           placeholderTextColor="#aaa"
           onSubmitEditing={() => passwordInputRef.current?.focus()}
+          autoCapitalize="none"
         />
 
         <TextInput
@@ -77,6 +78,7 @@ export default function LoginScreen() {
           style={styles.input}
           placeholderTextColor="#aaa"
           onSubmitEditing={() => {}}
+          autoCapitalize="none"
         />
 
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
