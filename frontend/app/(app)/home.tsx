@@ -16,6 +16,7 @@ interface Roommate {
   first_name: string;
   last_name: string;
   avatar: string | null;
+  isCurrentUser?: boolean;
 }
 
 export default function HomeScreen() {
@@ -59,41 +60,48 @@ export default function HomeScreen() {
       const roommatesData = await apiGetRoommates(session);
 
       const roommatesWithAvatars = await Promise.all(
-        roommatesData
-          .filter((roommate: any) => roommate.id !== userId)
-          .map(async (roommate: any) => {
-            let avatar = defaultAvatar;
+        roommatesData.map(async (roommate: any) => {
+          let avatar = defaultAvatar;
+          const isCurrentUser = roommate.id === userId;
 
-            try {
-              const profilePicture = await apiGetProfilePicture(session, roommate.id);
+          try {
+            const profilePicture = await apiGetProfilePicture(session, roommate.id);
 
-              if (typeof profilePicture === "string") {
-                let base64Image = profilePicture;
+            if (typeof profilePicture === "string") {
+              let base64Image = profilePicture;
 
-                if (base64Image.includes("dataimage/jpegbase64")) {
-                  base64Image = base64Image.replace("dataimage/jpegbase64", "");
-                }
-
-                if (!base64Image.startsWith("data:image/jpeg;base64,")) {
-                  base64Image = `data:image/jpeg;base64,${base64Image}`;
-                }
-
-                avatar = base64Image;
+              if (base64Image.includes("dataimage/jpegbase64")) {
+                base64Image = base64Image.replace("dataimage/jpegbase64", "");
               }
-            } catch (error) {
-              console.error("Error fetching profile picture for roommate:", roommate.id, error);
-            }
 
-            return {
-              id: roommate.id,
-              first_name: roommate.first_name,
-              last_name: roommate.last_name,
-              avatar: avatar,
-            };
-          })
+              if (!base64Image.startsWith("data:image/jpeg;base64,")) {
+                base64Image = `data:image/jpeg;base64,${base64Image}`;
+              }
+
+              avatar = base64Image;
+            }
+          } catch (error) {
+            console.error("Error fetching profile picture for roommate:", roommate.id, error);
+          }
+
+          return {
+            id: roommate.id,
+            first_name: roommate.first_name,
+            last_name: roommate.last_name,
+            avatar: avatar,
+            isCurrentUser: isCurrentUser,
+          };
+        })
       );
 
-      setRoommates(roommatesWithAvatars);
+      // Sort the roommates array to put the current user first
+      const sortedRoommates = roommatesWithAvatars.sort((a, b) => {
+        if (a.isCurrentUser) return -1;
+        if (b.isCurrentUser) return 1;
+        return 0;
+      });
+
+      setRoommates(sortedRoommates);
     } catch (error: any) {
       Toast.show({
         type: "error",
@@ -175,7 +183,7 @@ export default function HomeScreen() {
                         />
                       </View>
                       <Text style={styles.roommate} numberOfLines={1} ellipsizeMode="tail">
-                        {item.first_name} {item.last_name}
+                        {item.isCurrentUser ? "You" : `${item.first_name} ${item.last_name}`}
                       </Text>
                     </View>
                   ))}
