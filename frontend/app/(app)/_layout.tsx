@@ -3,7 +3,8 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useRouter, Tabs } from "expo-router";
 import { useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { TouchableOpacity } from 'react-native'; // Make sure to import TouchableOpacity
+import { TouchableOpacity, View } from 'react-native';
+import { NotificationBadge } from '@/components/NotificationBadge';
 
 export default function AppLayout() {
   const { session, sessionLoading } = useAuthContext();
@@ -14,6 +15,19 @@ export default function AppLayout() {
       router.replace("/");
     }
   }, [session, sessionLoading]);
+
+  // Create a reusable header right component with notification badge
+  const headerRightComponent = () => (
+    <TouchableOpacity
+      onPress={() => router.push("/(reminder)/reminder")}
+      style={{ marginRight: 15 }}
+    >
+      <View>
+        <Ionicons name="notifications" size={24} color="#555" />
+        <NotificationBadge count={3} showCount={true} />
+      </View>
+    </TouchableOpacity>
+  );
 
   return (
     <Tabs
@@ -36,14 +50,7 @@ export default function AppLayout() {
           ),
           title: "Home",
           headerTitle: "",
-          headerRight: () => (
-            <TouchableOpacity
-              onPress={() => router.push("/(reminder)/reminder")} // Navigate to the reminder page
-              style={{ marginRight: 15 }}
-            >
-              <Ionicons name="notifications" size={24} color="#555" />
-            </TouchableOpacity>
-          ),
+          headerRight: headerRightComponent,
         }}
       />
       <Tabs.Screen
@@ -53,14 +60,7 @@ export default function AppLayout() {
             <Ionicons name="list" color={color} size={size} />
           ),
           title: "Chores",
-          headerRight: () => (
-            <TouchableOpacity
-              onPress={() => router.push("/(reminder)/reminder")} // Navigate to the reminder page
-              style={{ marginRight: 15 }}
-            >
-              <Ionicons name="notifications" size={24} color="#555" />
-            </TouchableOpacity>
-          ),
+          headerRight: headerRightComponent,
         }}
       />
       <Tabs.Screen
@@ -70,14 +70,7 @@ export default function AppLayout() {
             <Ionicons name="wallet" color={color} size={size} />
           ),
           title: "Expenses",
-          headerRight: () => (
-            <TouchableOpacity
-              onPress={() => router.push("/(reminder)/reminder")} // Navigate to the reminder page
-              style={{ marginRight: 15 }}
-            >
-              <Ionicons name="notifications" size={24} color="#555" />
-            </TouchableOpacity>
-          ),
+          headerRight: headerRightComponent,
         }}
       />
       <Tabs.Screen
