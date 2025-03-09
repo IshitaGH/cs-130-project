@@ -155,7 +155,7 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
     <View style={styles.card}>
       <TouchableOpacity style={styles.cardHeader} onPress={() => setExpanded(!expanded)}>
         <Text style={styles.cardTitle}>{title}</Text>
-        <MaterialIcons name={expanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={24} color="black" />
+        <MaterialIcons name={expanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={24} color="#007F5F" />
       </TouchableOpacity>
 
       {expanded && (
@@ -172,7 +172,10 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
                       return roommate ? `${roommate.first_name} ${roommate.last_name}` : 'Unknown'
                     })()} on {dateFormat(new Date(item.created_at))}</Text>
                 </View>
-                { current && <TouchableOpacity onPress={() => handleDeleteExpense(item.id)}>
+                { current && <TouchableOpacity 
+                  onPress={() => handleDeleteExpense(item.id)}
+                  style={styles.deleteButton}
+                >
                   <MaterialIcons name="delete" size={24} color="#E57373" />
                 </TouchableOpacity> }
               </View>
@@ -342,15 +345,18 @@ export default function ExpensesScreen() {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={{ paddingBottom: 80 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh}
           tintColor="#00D09E" colors={["#00D09E"]} />}
       >
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Your Current Balance</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionHeaderText}>Your Current Balance</Text>
+        </View>
+        
+        <View style={styles.balanceCard}>
           {roommates
             .filter((roommate) => roommate.id !== userId) // Exclude the current user
             .map((roommate) => (
@@ -366,6 +372,10 @@ export default function ExpensesScreen() {
                 </Text>
               </View>
             ))}
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionHeaderText}>Expense Periods</Text>
         </View>
 
         {expensePeriods.map((period) => (
@@ -451,43 +461,234 @@ export default function ExpensesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, flexGrow: 1, overflow: 'scroll', padding: 20, backgroundColor: "#FFFFFF" },
-  card: { backgroundColor: "#DFF7E280", borderRadius: 12, padding: 15, marginBottom: 20 },
-  cardTitle: { fontSize: 18, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
-  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 10 },
-  balancesContainer: { margin: 15 },
-  balanceTitle: { fontSize: 18, fontWeight: "bold", color: "#007F5F", marginTop: 25 },
-  balanceRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 5 },
-  roommateName: { fontSize: 16, fontWeight: "bold", color: "#333" },
-  balanceAmount: { fontSize: 16, fontWeight: "bold" },
-  expenseRow: { flexDirection: "row", justifyContent: "space-between", padding: 10, borderBottomWidth: 1, borderColor: "#DDD" },
-  expenseInfo: { flex: 1 },
-  expenseDescription: { fontSize: 16, fontWeight: "bold", color: "#333" },
-  expensePayer: { fontSize: 14, color: "#666" },
-  modalTitle: { fontSize: 20, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
-  modalContainer: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0, 0, 0, 0.5)" },
-  modalContent: { backgroundColor: "#FFFFFF", padding: 20, borderTopLeftRadius: 16, borderTopRightRadius: 16 },
-  input: { borderWidth: 1, borderColor: "#CCC", borderRadius: 8, padding: 10, marginBottom: 15 },
-  submitButton: { backgroundColor: "#00D09E", padding: 10, borderRadius: 8, alignItems: "center" },
-  submitButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
-  closeButton: { alignItems: "center", paddingVertical: 10 },
-  closeButtonText: { fontSize: 16, color: "#007FFF", fontWeight: "bold" },
-  expenseCloseButton: { alignSelf: "center", marginTop: 30, paddingVertical: 10, paddingHorizontal: 20, backgroundColor: "#00D09E", padding: 10, borderRadius: 12 },
-  expenseCloseButtonText: { color: "#FFFFFF", fontWeight: "bold" },
-  fab: { position: "absolute", bottom: 20, right: 20, flexDirection: "row", backgroundColor: "#00D09E", padding: 10, borderRadius: 12 },
-  fabText: { color: "#FFFFFF", fontWeight: "bold", marginLeft: 8, alignSelf: "center" },
-  label: { fontSize: 16, fontWeight: "bold", color: "#007F5F", marginBottom: 5 },
-  roommateScrollContainer: { paddingBottom: 10, },
-  roommateOption: { alignItems: 'center', marginRight: 15, padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#EEE', minWidth: 100 },
-  selectedRoommateOption: { backgroundColor: '#00D09E', borderColor: '#00D09E' },
-  roommateAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#CDEEEE', justifyContent: 'center', alignItems: 'center', marginBottom: 5 },
-  roommateAvatarText: { fontSize: 16, fontWeight: 'bold', color: '#007F5F' },
-  roommateSelectName: { fontSize: 14, color: '#333', textAlign: 'center' },
-  selectedRoommateName: { color: '#FFFFFF' },
+  container: { 
+    flex: 1, 
+    padding: 20, 
+    backgroundColor: "#FFFFFF" 
+  },
+  sectionHeader: { 
+    backgroundColor: "#FFFFFF", 
+    paddingVertical: 10, 
+    paddingHorizontal: 0,
+    marginBottom: 5
+  },
+  sectionHeaderText: { 
+    fontSize: 18, 
+    fontWeight: "bold", 
+    color: "#007F5F" 
+  },
+  balanceCard: { 
+    backgroundColor: "#DFF7E280", 
+    borderRadius: 12, 
+    padding: 15, 
+    marginBottom: 20 
+  },
+  card: { 
+    backgroundColor: "#FFFFFF", 
+    borderRadius: 12, 
+    padding: 15, 
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "#EEE",
+    elevation: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  cardTitle: { 
+    fontSize: 18, 
+    fontWeight: "bold", 
+    color: "#007F5F"
+  },
+  cardHeader: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    alignItems: "center", 
+    paddingVertical: 10 
+  },
+  balancesContainer: { 
+    marginTop: 10 
+  },
+  balanceTitle: { 
+    fontSize: 16, 
+    fontWeight: "bold", 
+    color: "#007F5F", 
+    marginTop: 15,
+    marginBottom: 5
+  },
+  balanceRow: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0"
+  },
+  roommateName: { 
+    fontSize: 16, 
+    fontWeight: "600", 
+    color: "#333" 
+  },
+  balanceAmount: { 
+    fontSize: 16, 
+    fontWeight: "bold" 
+  },
+  expenseRow: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    padding: 12, 
+    borderBottomWidth: 1, 
+    borderColor: "#F0F0F0",
+    alignItems: "center"
+  },
+  expenseInfo: { 
+    flex: 1 
+  },
+  expenseDescription: { 
+    fontSize: 16, 
+    fontWeight: "bold", 
+    color: "#333",
+    marginBottom: 4
+  },
+  expensePayer: { 
+    fontSize: 14, 
+    color: "#666" 
+  },
+  deleteButton: {
+    padding: 8,
+  },
+  modalTitle: { 
+    fontSize: 20, 
+    fontWeight: "bold", 
+    color: "#007F5F", 
+    marginBottom: 15 
+  },
+  modalContainer: { 
+    flex: 1, 
+    justifyContent: "flex-end", 
+    backgroundColor: "rgba(0, 0, 0, 0.5)" 
+  },
+  modalContent: { 
+    backgroundColor: "#FFFFFF", 
+    padding: 20, 
+    borderTopLeftRadius: 16, 
+    borderTopRightRadius: 16 
+  },
+  input: { 
+    borderWidth: 1, 
+    borderColor: "#CCC", 
+    borderRadius: 8, 
+    padding: 12,
+    marginBottom: 15,
+    fontSize: 16,
+    color: "#333"
+  },
+  submitButton: { 
+    backgroundColor: "#00D09E", 
+    paddingVertical: 15,
+    paddingHorizontal: 10, 
+    borderRadius: 8, 
+    alignItems: "center",
+    marginTop: 5
+  },
+  submitButtonText: { 
+    color: "#FFFFFF", 
+    fontSize: 16, 
+    fontWeight: "bold" 
+  },
+  closeButton: { 
+    alignItems: "center", 
+    paddingVertical: 12,
+    marginTop: 5
+  },
+  closeButtonText: { 
+    fontSize: 16, 
+    color: "#007FFF", 
+    fontWeight: "bold" 
+  },
+  expenseCloseButton: { 
+    alignSelf: "center", 
+    marginTop: 20, 
+    marginBottom: 10,
+    paddingVertical: 12, 
+    paddingHorizontal: 20, 
+    backgroundColor: "#00D09E", 
+    borderRadius: 12 
+  },
+  expenseCloseButtonText: { 
+    color: "#FFFFFF", 
+    fontSize: 16,
+    fontWeight: "bold" 
+  },
+  fab: { 
+    position: "absolute", 
+    bottom: 20, 
+    right: 20, 
+    flexDirection: "row", 
+    backgroundColor: "#00D09E", 
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  fabText: { 
+    color: "#FFFFFF", 
+    fontWeight: "bold", 
+    marginLeft: 8, 
+    fontSize: 16
+  },
+  label: { 
+    fontSize: 16, 
+    fontWeight: "bold", 
+    color: "#007F5F", 
+    marginBottom: 8 
+  },
+  roommateScrollContainer: { 
+    paddingBottom: 15,
+  },
+  roommateOption: { 
+    alignItems: 'center', 
+    marginRight: 15, 
+    padding: 12, 
+    borderRadius: 8, 
+    borderWidth: 1, 
+    borderColor: '#EEE', 
+    minWidth: 100 
+  },
+  selectedRoommateOption: { 
+    backgroundColor: '#00D09E', 
+    borderColor: '#00D09E' 
+  },
+  roommateAvatar: { 
+    width: 40, 
+    height: 40, 
+    borderRadius: 20, 
+    backgroundColor: '#CDEEEE', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    marginBottom: 8 
+  },
+  roommateAvatarText: { 
+    fontSize: 16, 
+    fontWeight: 'bold', 
+    color: '#007F5F' 
+  },
+  roommateSelectName: { 
+    fontSize: 14, 
+    color: '#333', 
+    textAlign: 'center' 
+  },
+  selectedRoommateName: { 
+    color: '#FFFFFF' 
+  },
   emptyText: {
     textAlign: 'center',
     color: '#999',
     fontSize: 14,
-    paddingVertical: 10,
+    paddingVertical: 15,
   },
 });
