@@ -40,7 +40,11 @@ def create_expense():
         description=data["description"].strip(),
         expense_period_fkey=expense_period.id,
         room_fkey=room.id,
-        roommate_fkey=data["roommate_spendor_id"] if "roommate_spendor_id" in data else roommate.id,
+        roommate_fkey=(
+            data["roommate_spendor_id"]
+            if "roommate_spendor_id" in data
+            else roommate.id
+        ),
     )
 
     db.session.add(new_expense)
@@ -238,9 +242,7 @@ def remove_expense():
 
     data = request.get_json()
 
-    expense = Expense.query.filter_by(
-        room_fkey=room.id, id=data["id"]
-    ).first()
+    expense = Expense.query.filter_by(room_fkey=room.id, id=data["id"]).first()
 
     if expense:
         roommate_expenses = Roommate_Expense.query.filter_by(
