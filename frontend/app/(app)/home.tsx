@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { RefreshControl, View, Text, StyleSheet, ScrollView, FlatList, Image, Dimensions} from "react-native";
+import { RefreshControl, View, Text, StyleSheet, ScrollView, Image } from "react-native";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { apiGetRoom, apiGetRoommates, apiGetProfilePicture } from "@/utils/api/apiClient";
 import Toast from "react-native-toast-message";
@@ -15,7 +15,7 @@ interface Roommate {
   id: number;
   first_name: string;
   last_name: string;
-  avatar: string | null; //updated to include avatar
+  avatar: string | null;
 }
 
 export default function HomeScreen() {
@@ -33,11 +33,8 @@ export default function HomeScreen() {
     if (!session) return;
 
     try {
-      //fetch room data
       const room = await apiGetRoom(session);
       setRoomData(room);
-
-      //fetch roommates
       await fetchRoommates();
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -61,26 +58,22 @@ export default function HomeScreen() {
     try {
       const roommatesData = await apiGetRoommates(session);
 
-      //fetch profile pictures for each roommate
       const roommatesWithAvatars = await Promise.all(
         roommatesData
-          .filter((roommate: any) => roommate.id !== userId) // Filter out the current user
+          .filter((roommate: any) => roommate.id !== userId)
           .map(async (roommate: any) => {
-            let avatar = defaultAvatar; // Default avatar as fallback
+            let avatar = defaultAvatar;
 
             try {
               const profilePicture = await apiGetProfilePicture(session, roommate.id);
 
-              //format the base64 string if it's valid
               if (typeof profilePicture === "string") {
                 let base64Image = profilePicture;
 
-                //remove redundant prefixes like "dataimage/jpegbase64"
                 if (base64Image.includes("dataimage/jpegbase64")) {
                   base64Image = base64Image.replace("dataimage/jpegbase64", "");
                 }
 
-                //add the correct prefix if missing
                 if (!base64Image.startsWith("data:image/jpeg;base64,")) {
                   base64Image = `data:image/jpeg;base64,${base64Image}`;
                 }
@@ -95,7 +88,7 @@ export default function HomeScreen() {
               id: roommate.id,
               first_name: roommate.first_name,
               last_name: roommate.last_name,
-              avatar: avatar, //set the avatar (either base64 or default)
+              avatar: avatar,
             };
           })
       );
@@ -113,25 +106,23 @@ export default function HomeScreen() {
   if (sessionLoading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Loading...</Text>
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      {/* Welcome Message */}
       <View style={styles.headerContainer}>
         <View style={styles.welcomeContainer}>
           <Text style={styles.welcomeTitle}>Welcome to Roomies!</Text>
           <Text style={styles.welcomeSubtitle}>
-            {roomData && roomData.room_id 
+            {roomData?.room_id 
               ? "Your shared living space" 
               : "You are not in a room yet"}
           </Text>
         </View>
 
-        {/* Room Card */}
         {roomData?.invite_code && (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
@@ -147,7 +138,6 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Roommates Section */}
         <View style={[styles.card, styles.roommatesCard]}>
           <View style={styles.cardHeader}>
             <Ionicons name="people" size={22} color="#007F5F" />
@@ -160,7 +150,7 @@ export default function HomeScreen() {
                 style={styles.roommatesScrollView}
                 contentContainerStyle={[
                   styles.roommatesScrollContent,
-                  { paddingTop: 10 } // Add some padding at the top for the refresh control
+                  { paddingTop: 10 }
                 ]}
                 refreshControl={
                   <RefreshControl
@@ -168,7 +158,7 @@ export default function HomeScreen() {
                     onRefresh={onRefresh}
                     tintColor="#00D09E"
                     colors={["#00D09E"]}
-                    progressViewOffset={10} // Add some offset for better visibility
+                    progressViewOffset={10}
                   />
                 }
               >
@@ -204,11 +194,6 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flexGrow: 1,
-    backgroundColor: "#FFFFFF",
-    padding: 20,
-  },
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
@@ -228,6 +213,12 @@ const styles = StyleSheet.create({
     color: "#007F5F",
     textAlign: "center",
     marginBottom: 6,
+  },
+  loadingText: {
+    fontSize: 18,
+    textAlign: "center",
+    marginTop: 20,
+    color: "#007F5F",
   },
   roomName: {
     fontSize: 20,
@@ -344,9 +335,6 @@ const styles = StyleSheet.create({
     color: "#333",
     textAlign: "center",
   },
-  columnWrapper: {
-    justifyContent: "center", // Center the columns horizontally
-  },
   emptyContainer: {
     padding: 30,
     alignItems: "center",
@@ -355,13 +343,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
     fontStyle: "italic",
-  },
-  noRoom: {
-    fontSize: 16,
-    color: "#666",
-    fontStyle: "italic",
-    textAlign: "center",
-    marginVertical: 20,
-    paddingHorizontal: 20,
   },
 });
