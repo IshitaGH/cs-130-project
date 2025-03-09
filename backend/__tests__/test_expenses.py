@@ -1,12 +1,9 @@
 import pytest
-import json
-from datetime import datetime
 from flask_jwt_extended import create_access_token
 from flask import g
 
 from app import app
 from database import db
-from models.expense import Expense, Expense_Period, Roommate_Expense
 from models.roommate import Room, Roommate
 
 

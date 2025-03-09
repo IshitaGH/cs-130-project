@@ -1,14 +1,6 @@
-import json
-import os
-from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
-
 import pytest
+from datetime import datetime
 from flask_jwt_extended import create_access_token
-
-# Set test environment variables
-os.environ["DATABASE_URL"] = "postgresql://user:secret@localhost:5432/test_database"
-os.environ["JWT_SECRET_KEY"] = "test-secret-key"
 
 from app import app
 from database import db
@@ -16,15 +8,14 @@ from models.notifications import Notification
 from models.roommate import Room, Roommate
 
 
-# Fixture for test client
 @pytest.fixture
 def client():
+    """
+    Pytest fixture to provide a Flask test client.
+    We rely on DATABASE_URL and JWT_SECRET_KEY
+    being set in the environment (via Docker Compose).
+    """
     app.config["TESTING"] = True
-    app.config["SQLALCHEMY_DATABASE_URI"] = (
-        "postgresql://user:secret@localhost:5432/test_database"
-    )
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["JWT_SECRET_KEY"] = "test-secret-key"
 
     with app.test_client() as client:
         with app.app_context():
@@ -34,9 +25,15 @@ def client():
             db.drop_all()
 
 
-# Fixture for test data
 @pytest.fixture
-def test_data():
+def test_data(client):
+    """
+    Fixture that sets up initial database data:
+    - One Room
+    - Two Roommates
+    - Sample Notifications
+    Returns IDs so tests can reference them.
+    """
     with app.app_context():
         # Create a room
         room = Room(name="Test Room", invite_code="TEST1")
@@ -58,45 +55,26 @@ def test_data():
             password_hash="hash2",
             room_fkey=room.id,
         )
-        db.session.add_all([roommate1, roommate2])
+        db.session.add(roommate1)
+        db.session.add(roommate2)
         db.session.flush()
 
-        # Create a test notification using the actual Notification model
-        notification1 = Notification(
-            title="Test Notification 1",
-            notification_time=datetime.utcnow(),
-            notification_sender=roommate1.id,
-            notification_recipient=roommate1.id,
-            room_fkey=room.id,
+        # Create notifications
+        notification = Notification(
+            sender_id=roommate1.id,
+            recipient_id=roommate2.id,
+            message="Test notification",
+            read=False,
+            created_at=datetime.utcnow(),
         )
-        notification2 = Notification(
-            title="Test Notification 2",
-            description="with description",
-            notification_time=datetime.utcnow(),
-            notification_sender=roommate1.id,
-            notification_recipient=roommate2.id,
-            room_fkey=room.id,
-        )
-        notification3 = Notification(
-            description="test notification 3 without title",
-            notification_time=datetime.utcnow(),
-            notification_sender=roommate2.id,
-            notification_recipient=roommate1.id,
-            room_fkey=room.id,
-        )
-
-        db.session.add(notification1)
-        db.session.add(notification2)
-        db.session.add(notification3)
+        db.session.add(notification)
         db.session.commit()
 
         return {
             "room_id": room.id,
             "roommate1_id": roommate1.id,
             "roommate2_id": roommate2.id,
-            "notification1_id": notification1.id,
-            "notification2_id": notification2.id,
-            "notification3_id": notification3.id,
+            "notification_id": notification.id,
         }
 
 
@@ -110,12 +88,12 @@ def test_get_notification_by_id(client, test_data):
         access_token = create_access_token(identity=str(test_data["roommate1_id"]))
 
     headers = {"Authorization": f"Bearer {access_token}"}
-    data = {"notification_id": test_data["notification2_id"]}
+    data = {"notification_id": test_data["notification_id"]}
     response = client.get("/notifications", json=data, headers=headers)
 
     assert response.status_code == 200
     data = response.get_json()
-    assert data["id"] == test_data["notification2_id"]
+    assert data["id"] == test_data["notification_id"]
     assert data["title"] == "Test Notification 2"
     assert data["description"] == "with description"
     assert data["notification_sender"] == test_data["roommate1_id"]
@@ -133,7 +111,7 @@ def test_get_notification_by_sender(client, test_data):
     assert response.status_code == 200
     data = response.get_json()
     assert len(data) == 1
-    assert data[0]["id"] == test_data["notification3_id"]
+    assert data[0]["id"] == test_data["notification_id"]
     assert data[0]["title"] == None
     assert data[0]["description"] == "test notification 3 without title"
     assert data[0]["notification_sender"] == test_data["roommate2_id"]
@@ -151,7 +129,7 @@ def test_get_notification_by_recipient(client, test_data):
     assert response.status_code == 200
     data = response.get_json()
     assert len(data) == 2
-    assert data[0]["id"] == test_data["notification1_id"]
+    assert data[0]["id"] == test_data["notification_id"]
     assert data[0]["title"] == "Test Notification 1"
     assert data[0]["description"] == None
     assert data[0]["notification_sender"] == test_data["roommate1_id"]
@@ -172,7 +150,7 @@ def test_get_notification_by_sender_and_recipient(client, test_data):
     assert response.status_code == 200
     data = response.get_json()
     assert len(data) == 1
-    assert data[0]["id"] == test_data["notification1_id"]
+    assert data[0]["id"] == test_data["notification_id"]
     assert data[0]["title"] == "Test Notification 1"
     assert data[0]["description"] == None
     assert data[0]["notification_sender"] == test_data["roommate1_id"]
@@ -221,13 +199,13 @@ def test_update_notification(client, test_data):
         access_token = create_access_token(identity=str(test_data["roommate1_id"]))
 
     headers = {"Authorization": f"Bearer {access_token}"}
-    data = {"notification_id": test_data["notification1_id"], "title": "Updated Title"}
+    data = {"notification_id": test_data["notification_id"], "title": "Updated Title"}
 
     response = client.put("/notifications", json=data, headers=headers)
 
     assert response.status_code == 200
     data = response.get_json()
-    assert data["id"] == test_data["notification1_id"]
+    assert data["id"] == test_data["notification_id"]
     assert data["title"] == "Updated Title"
     assert data["description"] == None
     assert data["notification_sender"] == test_data["roommate1_id"]
@@ -241,7 +219,7 @@ def test_delete_notification(client, test_data):
 
     headers = {"Authorization": f"Bearer {access_token}"}
     data = {
-        "notification_id": test_data["notification1_id"],
+        "notification_id": test_data["notification_id"],
     }
 
     response = client.delete("/notifications", json=data, headers=headers)
