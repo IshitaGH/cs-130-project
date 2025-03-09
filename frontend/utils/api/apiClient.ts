@@ -329,7 +329,6 @@ export async function apiGetProfilePicture(session: any, userId?: string) {
 
     //handle 404 error specifically
     if (response.status === 404) {
-      console.log('No profile picture found, returning null.');
       return null; //return null to indicate no profile picture
     }
 
@@ -401,4 +400,93 @@ export async function apiUpdateProfilePicture(session: any, profilePicture: stri
   }
 
   return await response.json();
+}
+
+//Notifications API
+export async function apiCreateNotification(session: any, notification: {
+  title?: string;
+  description?: string;
+  notification_sender: number;
+  notification_recipient: number;
+}) {
+  const response = await fetch(`${API_URL}/notifications`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session}`
+    },
+    body: JSON.stringify(notification),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message);
+  }
+  return response.json();
+}
+
+export async function apiGetNotifications(session: any, query?: {
+  notification_id?: number;
+  notification_sender?: number;
+  notification_recipient?: number;
+}) {
+  const url = new URL(`${API_URL}/notifications`);
+  if (query) {
+    Object.entries(query).forEach(([key, value]) => {
+      if (value !== undefined) {
+        url.searchParams.append(key, value.toString());
+      }
+    });
+  }
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${session}`
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message);
+  }
+  return response.json();
+}
+
+
+export async function apiUpdateNotification(session: any, notification: {
+  notification_id: number;
+  title?: string;
+  notification_sender?: number;
+  notification_recipient?: number;
+}) {
+  const response = await fetch(`${API_URL}/notifications`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session}`
+    },
+    body: JSON.stringify(notification),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message);
+  }
+  return response.json();
+}
+
+export async function apiDeleteNotification(session: any, notification_id: number) {
+  const response = await fetch(`${API_URL}/notifications`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session}`
+    },
+    body: JSON.stringify({ notification_id }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message);
+  }
 }

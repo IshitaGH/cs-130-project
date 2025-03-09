@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Image, ScrollView, RefreshControl } from "react-native";
+import { RefreshControl, View, Text, StyleSheet, ScrollView, FlatList, Image, Dimensions} from "react-native";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { apiGetRoom, apiGetRoommates, apiGetProfilePicture } from "@/utils/api/apiClient";
 import Toast from "react-native-toast-message";
@@ -204,6 +204,11 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  scrollContainer: {
+    flexGrow: 1,
+    backgroundColor: "#FFFFFF",
+    padding: 20,
+  },
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
@@ -216,7 +221,6 @@ const styles = StyleSheet.create({
   welcomeContainer: {
     marginBottom: 44,
     alignItems: "center",
-    paddingHorizontal: 20,
   },
   welcomeTitle: {
     fontSize: 24,
@@ -336,14 +340,12 @@ const styles = StyleSheet.create({
   },
   roommate: {
     fontSize: 16,
+    fontWeight: "bold",
     color: "#333",
     textAlign: "center",
-    fontWeight: "500",
   },
-  title: {
-    fontSize: 18,
-    color: "#333",
-    textAlign: "center",
+  columnWrapper: {
+    justifyContent: "center", // Center the columns horizontally
   },
   emptyContainer: {
     padding: 30,

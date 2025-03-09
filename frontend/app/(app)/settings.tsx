@@ -38,7 +38,6 @@ export default function SettingsScreen() {
   
           setProfileImage(base64Image);
         } else {
-          console.log('No profile picture found or invalid data:', response);
           setProfileImage(null); //use default avatar
         }
       } catch (error) {
