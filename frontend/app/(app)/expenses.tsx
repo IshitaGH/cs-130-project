@@ -124,7 +124,7 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
     });
   };
 
-  useEffect(() => calculatePersonalBalances(expenses, setBalances, roommates, currentUser), [expenses]);
+  useEffect(() => calculatePersonalBalances(expenses, setBalances, roommates, currentUser), [expenses, roommates, currentUser]);
 
   const closeCurrentPeriod = () => {
     alert('Close expense period',
@@ -290,7 +290,7 @@ export default function ExpensesScreen() {
     }
   }, [modalVisible, slideAnim]);
 
-  useEffect(() => calculatePersonalBalances(expensePeriods.find(period => period.open)?.expenses || [], setBalances, roommates, userId || 0), [expensePeriods]);
+  useEffect(() => calculatePersonalBalances(expensePeriods.find(period => period.open)?.expenses || [], setBalances, roommates, userId || 0), [expensePeriods, roommates, userId]);
 
   const addExpense = () => {
     if (!description || !amount || !payerId) {
