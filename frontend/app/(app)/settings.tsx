@@ -133,22 +133,29 @@ export default function SettingsScreen() {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={pickImage} style={styles.profileButton}>
-      <Image
-        source={profileImage ? { uri: profileImage } : defaultAvatar}
-        style={styles.profileImage}
-        onError={(e) => {
-          console.log('Image loading error:', e.nativeEvent.error);
-          setProfileImage(null); // Fallback to default avatar
-        }}
-      />
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.button} onPress={handleLeaveRoom}>
-        <Text style={styles.buttonText}>Leave Room</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.button} onPress={signOut}>
-        <Text style={styles.buttonText}>Sign Out</Text>
-      </TouchableOpacity>
+      <View style={styles.topSection}>
+        <TouchableOpacity onPress={pickImage} style={styles.profileButton}>
+          <Image
+            source={profileImage ? { uri: profileImage } : defaultAvatar}
+            style={styles.profileImage}
+            onError={(e) => {
+              console.log('Image loading error:', e.nativeEvent.error);
+              setProfileImage(null); // Fallback to default avatar
+            }}
+          />
+        </TouchableOpacity>
+        <Text style={styles.profileLabel}>Your Profile</Text>
+        <Text style={styles.tapHint}>Tap to change</Text>
+      </View>
+      
+      <View style={styles.bottomSection}>
+        <TouchableOpacity style={styles.button} onPress={handleLeaveRoom}>
+          <Text style={styles.buttonText}>Leave Room</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={signOut}>
+          <Text style={styles.buttonText}>Sign Out</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -156,9 +163,20 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
+    paddingVertical: 40,
+  },
+  topSection: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  bottomSection: {
+    width: "100%",
+    alignItems: "center",
+    marginBottom: 40,
   },
   title: {
     fontSize: 24,
@@ -170,12 +188,23 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     overflow: "hidden",
-    marginBottom: 15,
+    marginBottom: 10,
   },
   profileImage: {
     width: "100%",
     height: "100%",
     borderRadius: 50,
+  },
+  profileLabel: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#333333",
+    marginBottom: 5,
+  },
+  tapHint: {
+    fontSize: 14,
+    color: "#666666",
+    marginBottom: 15,
   },
   button: {
     width: 200,
