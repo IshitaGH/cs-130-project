@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, FlatList, Image } from "react-native";
+import { RefreshControl, View, Text, StyleSheet, FlatList, Image, Dimensions } from "react-native";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { apiGetRoom, apiGetRoommates, apiGetProfilePicture } from "@/utils/api/apiClient";
 import Toast from "react-native-toast-message";
@@ -21,6 +21,7 @@ export default function HomeScreen() {
   const { session, sessionLoading } = useAuthContext();
   const [roomData, setRoomData] = useState<RoomData | null>(null);
   const [roommates, setRoommates] = useState<Roommate[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
   const defaultAvatar = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
 
   useEffect(() => {
@@ -95,6 +96,21 @@ export default function HomeScreen() {
     }
   };
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      if (session) {
+        const room = await apiGetRoom(session);
+        setRoomData(room);
+        await fetchRoommates();
+      }
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   if (sessionLoading) {
     return (
       <View style={styles.container}>
@@ -104,7 +120,7 @@ export default function HomeScreen() {
   }
 
   const renderHeader = () => (
-    <>
+    <View style={styles.container}>
       {/* Welcome Message */}
       {roomData && roomData.room_id ? (
         <View style={styles.welcomeContainer}>
@@ -124,51 +140,66 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* Roommates Header */}
-      <View style={styles.card}>
+      {/* Centered "Roommates" Title */}
+      <View style={styles.roommatesTitleContainer}>
         <Text style={styles.cardTitle}>Roommates</Text>
       </View>
-    </>
+    </View>
+  );
+
+  const renderRoommate = ({ item }: { item: Roommate }) => (
+    <View style={styles.roommateContainer}>
+      <View style={styles.avatarContainer}>
+        <Image
+          source={{ uri: item.avatar || defaultAvatar }} //use default avatar if avatar is null
+          style={styles.avatar}
+          onError={(e) => {
+            console.log("Image loading error:", e.nativeEvent.error);
+            //fallback to default avatar if the image fails to load
+            item.avatar = defaultAvatar;
+          }}
+        />
+      </View>
+      <Text style={styles.roommate}>
+        {item.first_name} {item.last_name}
+      </Text>
+    </View>
   );
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        ListHeaderComponent={renderHeader}
-        data={roommates}
-        keyExtractor={(item) => item.id.toString()}
-        numColumns={2}
-        contentContainerStyle={styles.roommateList}
-        renderItem={({ item }) => (
-          <View style={styles.roommateContainer}>
-            <Image
-              source={{ uri: item.avatar || defaultAvatar }}
-              style={styles.avatar}
-              onError={(e) => {
-                console.log("Image loading error:", e.nativeEvent.error);
-                item.avatar = defaultAvatar;
-              }}
-            />
-            <Text style={styles.roommate}>
-              {item.first_name} {item.last_name}
-            </Text>
-          </View>
-        )}
-      />
-    </View>
+    <FlatList
+      data={roommates}
+      keyExtractor={(item) => item.id.toString()}
+      numColumns={2}
+      contentContainerStyle={styles.scrollContainer}
+      ListHeaderComponent={renderHeader}
+      renderItem={renderRoommate}
+      columnWrapperStyle={styles.columnWrapper}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={["#00D09E"]} // Customize the refresh spinner color
+          tintColor="#00D09E" // Customize the refresh spinner color (iOS)
+        />
+      }
+    />
   );
 }
 
 const styles = StyleSheet.create({
+  scrollContainer: {
+    flexGrow: 1,
+    backgroundColor: "#FFFFFF",
+    padding: 20,
+  },
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
   },
   welcomeContainer: {
-    marginTop: 20,
     marginBottom: 30,
     alignItems: "center",
-    paddingHorizontal: 20,
   },
   welcomeTitle: {
     fontSize: 22,
@@ -195,7 +226,6 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     textAlign: "center",
     marginVertical: 20,
-    paddingHorizontal: 20,
   },
   card: {
     backgroundColor: "#DFF7E280",
@@ -203,7 +233,7 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 20,
     alignItems: "center",
-    marginHorizontal: 20,
+    width: "100%",
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 5,
@@ -225,8 +255,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
     width: "100%",
   },
-  roommateList: {
-    paddingHorizontal: 10,
+  roommatesTitleContainer: {
+    alignItems: "center", // Center the "Roommates" title
+    marginBottom: 10, // Add some spacing below the title
   },
   roommateContainer: {
     alignItems: "center",
@@ -238,24 +269,27 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 3,
-    flex: 1,
-    maxWidth: "45%",
+    width: "45%", // Adjust width to fit two columns with spacing
+  },
+  avatarContainer: {
+    width: 80, // Set a fixed width for the square container
+    height: 80, // Set a fixed height for the square container
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 10,
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginBottom: 10,
+    width: 60, // Adjust avatar size
+    height: 60, // Adjust avatar size
+    borderRadius: 30, // Make it circular
   },
   roommate: {
     fontSize: 16,
+    fontWeight: "bold",
     color: "#333",
     textAlign: "center",
-    fontWeight: "500",
   },
-  title: {
-    fontSize: 18,
-    color: "#333",
-    textAlign: "center",
+  columnWrapper: {
+    justifyContent: "center", // Center the columns horizontally
   },
 });

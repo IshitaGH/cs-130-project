@@ -37,7 +37,6 @@ export default function SettingsScreen() {
   
           setProfileImage(base64Image);
         } else {
-          console.log('No profile picture found or invalid data:', response);
           setProfileImage(null); //use default avatar
         }
       } catch (error) {
@@ -105,7 +104,6 @@ export default function SettingsScreen() {
   
       try {
         const response = await apiUpdateProfilePicture(session, base64Image); // Send base64 instead of URI
-        console.log("API Response:", response);
         Toast.show({
           type: 'success',
           text1: 'Success',
