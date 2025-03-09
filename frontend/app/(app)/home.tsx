@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, FlatList, Image, ScrollView } from "react-native";
+import { View, Text, StyleSheet, FlatList, Image } from "react-native";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { apiGetRoom, apiGetRoommates, apiGetProfilePicture } from "@/utils/api/apiClient";
 import Toast from "react-native-toast-message";
@@ -98,13 +98,13 @@ export default function HomeScreen() {
   if (sessionLoading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Loading...</Text>
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContainer}>
+    <View style={styles.mainContainer}>
       <View style={styles.container}>
         {/* Welcome Message */}
         {roomData && roomData.room_id ? (
@@ -136,11 +136,10 @@ export default function HomeScreen() {
             renderItem={({ item }) => (
               <View style={styles.roommateContainer}>
                 <Image
-                  source={{ uri: item.avatar || defaultAvatar }} //use default avatar if avatar is null
+                  source={{ uri: item.avatar || defaultAvatar }}
                   style={styles.avatar}
                   onError={(e) => {
                     console.log("Image loading error:", e.nativeEvent.error);
-                    //fallback to default avatar if the image fails to load
                     item.avatar = defaultAvatar;
                   }}
                 />
@@ -152,13 +151,13 @@ export default function HomeScreen() {
           />
         </View>
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flexGrow: 1,
+  mainContainer: {
+    flex: 1,
     backgroundColor: "#FFFFFF",
   },
   container: {
@@ -250,6 +249,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     color: "#333",
+    textAlign: "center",
+  },
+  loadingText: {
+    fontSize: 18,
+    color: "#666",
     textAlign: "center",
   },
 });
