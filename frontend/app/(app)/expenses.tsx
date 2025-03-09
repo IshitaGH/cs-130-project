@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
     marginBottom: 5
   },
   sectionHeaderText: { 
-    fontSize: 18, 
+    fontSize: 20, 
     fontWeight: "bold", 
     color: "#007F5F" 
   },
@@ -490,8 +490,8 @@ const styles = StyleSheet.create({
   card: { 
     backgroundColor: "#FFFFFF", 
     borderRadius: 12, 
-    padding: 15, 
-    marginBottom: 15,
+    padding: 12, 
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: "#EEE",
     elevation: 1,
@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   cardTitle: { 
-    fontSize: 18, 
+    fontSize: 17, 
     fontWeight: "bold", 
     color: "#007F5F"
   },
@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
     flexDirection: "row", 
     justifyContent: "space-between", 
     alignItems: "center", 
-    paddingVertical: 10 
+    paddingVertical: 8 
   },
   balancesContainer: { 
     marginTop: 10 
