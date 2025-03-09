@@ -32,7 +32,7 @@ export default function NotificationsScreen() {
         const filteredNotifications = data.filter(
           (notification: Notification) => notification.notification_recipient === userId
         );
-        
+
         setNotifications(filteredNotifications);
       } catch (error: any) {
         Toast.show({ type: "error", text1: "Error", text2: error.message || "Failed to fetch notifications" });
@@ -74,6 +74,8 @@ export default function NotificationsScreen() {
             if (item.notification_time) {
               const dateObj = new Date(item.notification_time);
               if (!isNaN(dateObj.getTime())) {
+                // Subtract 5 hours (5 * 60 * 60 * 1000 milliseconds)
+                dateObj.setTime(dateObj.getTime() - (7 * 60 * 60 * 1000));
                 formattedDate = dateObj.toLocaleString();
               }
             }
