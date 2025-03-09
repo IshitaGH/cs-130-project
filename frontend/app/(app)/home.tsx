@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Image, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Image, ScrollView, RefreshControl } from "react-native";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { apiGetRoom, apiGetRoommates, apiGetProfilePicture } from "@/utils/api/apiClient";
 import Toast from "react-native-toast-message";
@@ -22,26 +22,38 @@ export default function HomeScreen() {
   const { session, sessionLoading, userId } = useAuthContext();
   const [roomData, setRoomData] = useState<RoomData | null>(null);
   const [roommates, setRoommates] = useState<Roommate[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
   const defaultAvatar = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!session) return;
-
-      try {
-        //fetch room data
-        const room = await apiGetRoom(session);
-        setRoomData(room);
-
-        //fetch roommates
-        await fetchRoommates();
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-
     fetchData();
   }, [session]);
+
+  const fetchData = async () => {
+    if (!session) return;
+
+    try {
+      //fetch room data
+      const room = await apiGetRoom(session);
+      setRoomData(room);
+
+      //fetch roommates
+      await fetchRoommates();
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Failed to fetch roommate data"
+      });
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
+  };
 
   const fetchRoommates = async () => {
     if (!session) return;
@@ -129,7 +141,7 @@ export default function HomeScreen() {
             <Text style={styles.roomName}>{roomData.name}</Text>
             <View style={styles.divider} />
             <View style={styles.codeContainer}>
-              <Text style={styles.codeLabel}>Share code with roommates:</Text>
+              <Text style={styles.codeLabel}>Invite Code:</Text>
               <Text style={styles.joinCode}>{roomData.invite_code}</Text>
             </View>
           </View>
@@ -146,7 +158,19 @@ export default function HomeScreen() {
             <View style={styles.roommatesContainer}>
               <ScrollView 
                 style={styles.roommatesScrollView}
-                contentContainerStyle={styles.roommatesScrollContent}
+                contentContainerStyle={[
+                  styles.roommatesScrollContent,
+                  { paddingTop: 10 } // Add some padding at the top for the refresh control
+                ]}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    tintColor="#00D09E"
+                    colors={["#00D09E"]}
+                    progressViewOffset={10} // Add some offset for better visibility
+                  />
+                }
               >
                 <View style={styles.roommatesGrid}>
                   {roommates.map(item => (
