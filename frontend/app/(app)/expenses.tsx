@@ -398,7 +398,7 @@ export default function ExpensesScreen() {
                 <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
                   <Text style={styles.modalTitle}>Add Expense</Text>
                   <TextInput style={styles.input} placeholder="Description" value={description} onChangeText={setDescription} />
-                  <TextInput style={styles.input} placeholder="Amount" keyboardType="numeric" value={amount} onChangeText={setAmount} />
+                  <TextInput style={styles.input} placeholder="Cost" keyboardType="numeric" value={amount} onChangeText={setAmount} />
                   <Text style={styles.label}>Roommate Responsible</Text>
                   <ScrollView
                     horizontal={true}
