@@ -19,7 +19,7 @@ export default function SettingsScreen() {
   
       setIsLoading(true);
       try {
-        const response = await apiGetProfilePicture(session, userId);
+        const response = await apiGetProfilePicture(session, userId.toString());
   
         if (typeof response === 'string') {
           let base64Image = response;
@@ -39,7 +39,7 @@ export default function SettingsScreen() {
           console.log('No profile picture found or invalid data:', response);
           setProfileImage(null); //use default avatar
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching profile picture:", error);
         Toast.show({
           type: 'error',
@@ -71,7 +71,7 @@ export default function SettingsScreen() {
             try {
               await apiLeaveRoom(session);
               router.replace("/room-landing");
-            } catch (error) {
+            } catch (error: any) {
               Toast.show({
                 type: 'error',
                 text1: 'Error',
