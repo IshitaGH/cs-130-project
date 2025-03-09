@@ -23,6 +23,7 @@ This command will:
 ### Test Files
 
 - `test_chores.py`: Tests for chore-related functionality including API endpoints and rotation logic
+- `test_notifications.py`: Tests for notification API endpoints
 - `test_utils.py`: Utility functions to support testing
 
 ### Key Components
@@ -33,3 +34,4 @@ The test suite uses pytest fixtures to set up test data, including:
 - Test rooms
 - Test roommates
 - Test chores
+- Test notifications
