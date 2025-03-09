@@ -17,7 +17,7 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { apiGetChores, apiUpdateChore, apiCreateChore, apiDeleteChore, apiGetRoommates } from "@/utils/api/apiClient";
+import { apiGetChores, apiUpdateChore, apiCreateChore, apiDeleteChore, apiGetRoommates, apiCreateNotification, apiGetNotifications } from "@/utils/api/apiClient";
 import Toast from "react-native-toast-message";
 import Swipeable from "react-native-gesture-handler/Swipeable";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -347,13 +347,42 @@ export default function ChoresScreen() {
     }
   };
 
-  const remindChore = (chore: Chore) => {
-    Toast.show({
-      type: 'success',
-      text1: 'Success',
-      text2: `Reminder sent to ${chore.assigned_roommate.first_name}!`
-    });
+
+  const remindChore = async (chore: Chore) => {
+    if (!session || userId === null) return;
+    
+    try {
+      const createdNotification = await apiCreateNotification(session, {
+        title: "Chore Reminder",
+        description: `Reminder: ${chore.description} is due soon!`,
+        notification_sender: userId as number,
+        notification_recipient: chore.assigned_roommate.id,
+      });
+      
+      const confirmation = await apiGetNotifications(session, {
+        notification_id: createdNotification.id,
+      });
+  
+      console.log("Notification Confirmation Response:", confirmation);
+  
+      if (Array.isArray(confirmation) && confirmation.length > 0) {
+        Toast.show({
+          type: 'success',
+          text1: 'Reminder Confirmed',
+          text2: `Reminder successfully sent to ${chore.assigned_roommate.first_name}!`
+        });
+      } else {
+        throw new Error("Notification creation could not be confirmed.");
+      }
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'Failed to send or confirm reminder'
+      });
+    }
   };
+  
 
   const renderChoreRow = ({ item }: { item: Chore }) => {
     const swipeableRef = React.useRef<Swipeable | null>(null);

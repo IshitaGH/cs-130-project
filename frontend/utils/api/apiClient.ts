@@ -362,52 +362,132 @@ const blobToBase64 = (blob: Blob): Promise<string> => {
   });
 };
 
-
 export async function apiUpdateProfilePicture(session: any, profilePicture: string | File) {
   let body;
   let headers;
 
   if (typeof profilePicture === 'string') {
-    // If profilePicture is a base64 string, send it as JSON
+    //if profilePicture is base64 string, send it as JSON
     body = JSON.stringify({ profile_picture: profilePicture });
     headers = {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${session}`,
     };
   } else {
-    // If profilePicture is a file, use FormData
+    //if profilePicture file, use FormData
     const formData = new FormData();
-
-    // Append the file to FormData
     formData.append('profile_picture', {
-      uri: profilePicture.uri, // Use the URI from expo-image-picker
-      name: 'profile.jpg', // File name
-      type: 'image/jpeg', // Adjust the MIME type based on the image
+      uri: profilePicture.uri,
+      name: 'profile.jpg', //file name
+      type: 'image/jpeg', //adjust the MIME type based on the image
     });
 
     body = formData;
     headers = {
+      'Content-Type': 'multipart/form-data',
       Authorization: `Bearer ${session}`,
-      // Do not set 'Content-Type' manually for FormData
     };
   }
 
-  try {
-    const response = await fetch(`${API_URL}/profile_picture`, {
-      method: 'PUT',
-      headers,
-      body,
+  const response = await fetch(`${API_URL}/profile_picture`, {
+    method: 'PUT',
+    headers,
+    body,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to update profile picture');
+  }
+
+  return await response.json();
+}
+
+//Notifications API
+export async function apiCreateNotification(session: any, notification: {
+  title?: string;
+  description?: string;
+  notification_sender: number;
+  notification_recipient: number;
+}) {
+  const response = await fetch(`${API_URL}/notifications`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session}`
+    },
+    body: JSON.stringify(notification),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message);
+  }
+  return response.json();
+}
+
+export async function apiGetNotifications(session: any, query?: {
+  notification_id?: number;
+  notification_sender?: number;
+  notification_recipient?: number;
+}) {
+  const url = new URL(`${API_URL}/notifications`);
+  if (query) {
+    Object.entries(query).forEach(([key, value]) => {
+      if (value !== undefined) {
+        url.searchParams.append(key, value.toString());
+      }
     });
+  }
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${session}`
+    },
+  });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.log('Error Response:', errorData);
-      throw new Error(errorData.message || 'Failed to update profile picture');
-    }
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message);
+  }
+  return response.json();
+}
 
-    return await response.json();
-  } catch (error) {
-    console.error('Error uploading file:', error);
-    throw error;
+
+export async function apiUpdateNotification(session: any, notification: {
+  notification_id: number;
+  title?: string;
+  notification_sender?: number;
+  notification_recipient?: number;
+}) {
+  const response = await fetch(`${API_URL}/notifications`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session}`
+    },
+    body: JSON.stringify(notification),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message);
+  }
+  return response.json();
+}
+
+export async function apiDeleteNotification(session: any, notification_id: number) {
+  const response = await fetch(`${API_URL}/notifications`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session}`
+    },
+    body: JSON.stringify({ notification_id }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message);
   }
 }

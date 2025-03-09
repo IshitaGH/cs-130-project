@@ -71,7 +71,9 @@ const alertPolyfill = (title: string, description: string, options: any[], extra
 
 const alert = Platform.OS === 'web' ? alertPolyfill : Alert.alert;
 
-const dateFormat = new Intl.DateTimeFormat('en-US').format;
+const dateFormat = (date: Date) => {
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+};
 
 const calculatePersonalBalances = (expenses: Expense[], setBalances: any, roommates: Roommate[], currentUser: number) => {
   let balanceSheet: BalanceMap = {};
@@ -101,7 +103,7 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
   const { roommates, currentUser, session, refresh } = sessionState;
 
   const title = current
-    ? "Current period expenses"
+    ? "Current Expense Period"
     : `${dateFormat(new Date(start_date))} to ${dateFormat(new Date(end_date))}`;
 
   const [expanded, setExpanded] = useState<boolean>(current);
@@ -159,20 +161,24 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
 
       {expanded && (
         <>
-          {expenses.map(item => (
-            <View key={item.id} style={styles.expenseRow}>
-              <View style={styles.expenseInfo}>
-                <Text style={styles.expenseDescription}>{item.description}: ${item.cost.toFixed(2)}</Text>
-                <Text style={styles.expensePayer}>Paid by {(() => {
-                    let roommate = roommates.find(roommate => roommate.id === item.roommate_fkey);
-                    return roommate ? `${roommate.first_name} ${roommate.last_name}` : 'Unknown'
-                  })()} on {dateFormat(new Date(item.created_at))}</Text>
+          {expenses.length === 0 ? (
+            <Text style={styles.emptyText}>There are no expenses in the current period</Text>
+          ) : (
+            expenses.map(item => (
+              <View key={item.id} style={styles.expenseRow}>
+                <View style={styles.expenseInfo}>
+                  <Text style={styles.expenseDescription}>{item.description}: ${item.cost.toFixed(2)}</Text>
+                  <Text style={styles.expensePayer}>Paid by {(() => {
+                      let roommate = roommates.find(roommate => roommate.id === item.roommate_fkey);
+                      return roommate ? `${roommate.first_name} ${roommate.last_name}` : 'Unknown'
+                    })()} on {dateFormat(new Date(item.created_at))}</Text>
+                </View>
+                { current && <TouchableOpacity onPress={() => handleDeleteExpense(item.id)}>
+                  <MaterialIcons name="delete" size={24} color="#E57373" />
+                </TouchableOpacity> }
               </View>
-              { current && <TouchableOpacity onPress={() => handleDeleteExpense(item.id)}>
-                <MaterialIcons name="delete" size={24} color="#E57373" />
-              </TouchableOpacity> }
-            </View>
-          ))}
+            ))
+          )}
           
           {!current && Object.keys(balances).length > 0 && (
             <Text style={styles.balanceTitle}>Balances</Text>
@@ -351,7 +357,7 @@ export default function ExpensesScreen() {
           tintColor="#00D09E" colors={["#00D09E"]} />}
       >
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Current period balances</Text>
+          <Text style={styles.cardTitle}>Your Current Balance</Text>
           {roommates
             .filter((roommate) => roommate.id !== userId) // Exclude the current user
             .map((roommate) => (
@@ -471,4 +477,10 @@ const styles = StyleSheet.create({
   roommateAvatarText: { fontSize: 16, fontWeight: 'bold', color: '#007F5F' },
   roommateSelectName: { fontSize: 14, color: '#333', textAlign: 'center' },
   selectedRoommateName: { color: '#FFFFFF' },
+  emptyText: {
+    textAlign: 'center',
+    color: '#999',
+    fontSize: 14,
+    paddingVertical: 10,
+  },
 });
