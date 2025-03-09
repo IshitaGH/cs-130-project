@@ -20,6 +20,7 @@ export default function NotificationsScreen() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showOnlyUnread, setShowOnlyUnread] = useState(false);
   const router = useRouter();
   const { session, userId } = useAuthContext();
 
@@ -91,19 +92,83 @@ export default function NotificationsScreen() {
     }
   };
 
+  // Mark all notifications as read
+  const markAllAsRead = async () => {
+    if (!session) return;
+    
+    const unreadNotifications = notifications.filter(notification => !notification.is_read);
+    if (unreadNotifications.length === 0) {
+      Toast.show({ type: "info", text1: "Info", text2: "No unread notifications to mark" });
+      return;
+    }
+    
+    try {
+      // Create an array of promises for each notification update
+      const updatePromises = unreadNotifications.map(notification => 
+        apiUpdateNotification(session, {
+          notification_id: notification.id,
+          is_read: true
+        })
+      );
+      
+      // Wait for all updates to complete
+      await Promise.all(updatePromises);
+      
+      // Update local state
+      setNotifications(prevNotifications => 
+        prevNotifications.map(notification => ({ ...notification, is_read: true }))
+      );
+      
+      Toast.show({ type: "success", text1: "Success", text2: "All notifications marked as read" });
+    } catch (error: any) {
+      Toast.show({ type: "error", text1: "Error", text2: error.message || "Failed to mark all as read" });
+    }
+  };
+
+  // Filter notifications based on the showOnlyUnread state
+  const filteredNotifications = showOnlyUnread 
+    ? notifications.filter(notification => !notification.is_read)
+    : notifications;
+
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <Ionicons name="arrow-back" size={24} color="#00D09E" />
-        <Text style={styles.backText}>Back</Text>
-      </TouchableOpacity>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color="#00D09E" />
+          <Text style={styles.backText}>Back</Text>
+        </TouchableOpacity>
+        
+        {notifications.some(notification => !notification.is_read) && (
+          <TouchableOpacity style={styles.markAllButton} onPress={markAllAsRead}>
+            <Text style={styles.markAllText}>Mark All as Read</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+      
+      <View style={styles.filterContainer}>
+        <TouchableOpacity
+          style={[styles.filterButton, !showOnlyUnread && styles.activeFilter]}
+          onPress={() => setShowOnlyUnread(false)}
+        >
+          <Text style={[styles.filterText, !showOnlyUnread && styles.activeFilterText]}>All</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterButton, showOnlyUnread && styles.activeFilter]}
+          onPress={() => setShowOnlyUnread(true)}
+        >
+          <Text style={[styles.filterText, showOnlyUnread && styles.activeFilterText]}>Unread</Text>
+        </TouchableOpacity>
+      </View>
+      
       {loading ? (
         <ActivityIndicator size="large" color="#00D09E" />
-      ) : notifications.length === 0 ? (
-        <Text style={styles.noNotifications}>No notifications yet!</Text>
+      ) : filteredNotifications.length === 0 ? (
+        <Text style={styles.noNotifications}>
+          {showOnlyUnread ? "No unread notifications!" : "No notifications yet!"}
+        </Text>
       ) : (
         <FlatList
-          data={notifications}
+          data={filteredNotifications}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => {
             let formattedDate = "Invalid Date";
@@ -156,15 +221,52 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: "#FFFFFF",
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
   backButton: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10,
   },
   backText: {
     fontSize: 16,
     color: "#00D09E",
     marginLeft: 5,
+  },
+  markAllButton: {
+    padding: 8,
+    backgroundColor: "#E8F4F1",
+    borderRadius: 8,
+  },
+  markAllText: {
+    color: "#00D09E",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    marginBottom: 15,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#F0F0F0',
+  },
+  filterButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  activeFilter: {
+    backgroundColor: '#00D09E',
+  },
+  filterText: {
+    fontWeight: '600',
+    color: '#555',
+  },
+  activeFilterText: {
+    color: 'white',
   },
   noNotifications: {
     fontSize: 16,
