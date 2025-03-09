@@ -34,6 +34,7 @@ export default function AppLayout() {
             <Ionicons name="home" color={color} size={size} />
           ),
           title: "Home",
+          headerTitle: "",
         }}
       />
       <Tabs.Screen
@@ -61,6 +62,7 @@ export default function AppLayout() {
             <Ionicons name="settings" color={color} size={size} />
           ),
           title: "Settings",
+          headerTitle: "",
         }}
       />
     </Tabs>

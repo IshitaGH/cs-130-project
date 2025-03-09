@@ -128,11 +128,6 @@ export default function SettingsScreen() {
       try {
         const response = await apiUpdateProfilePicture(session, base64Image); // Send base64 instead of URI
         console.log("API Response:", response);
-        Toast.show({
-          type: 'success',
-          text1: 'Success',
-          text2: 'Profile picture updated successfully.'
-        });
       } catch (error: any) {
         console.error("API error:", error);
         Toast.show({
@@ -246,7 +241,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#00D09E",
+    color: "#000000",
     marginBottom: 5,
   },
   spacer: {

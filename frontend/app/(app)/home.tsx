@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, FlatList, Image } from "react-native";
+import { View, Text, StyleSheet, Image, ScrollView } from "react-native";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { apiGetRoom, apiGetRoommates, apiGetProfilePicture } from "@/utils/api/apiClient";
 import Toast from "react-native-toast-message";
+import { Ionicons } from "@expo/vector-icons";
 
 interface RoomData {
   room_id: number | null;
@@ -18,7 +19,7 @@ interface Roommate {
 }
 
 export default function HomeScreen() {
-  const { session, sessionLoading } = useAuthContext();
+  const { session, sessionLoading, userId } = useAuthContext();
   const [roomData, setRoomData] = useState<RoomData | null>(null);
   const [roommates, setRoommates] = useState<Roommate[]>([]);
   const defaultAvatar = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
@@ -50,39 +51,41 @@ export default function HomeScreen() {
 
       //fetch profile pictures for each roommate
       const roommatesWithAvatars = await Promise.all(
-        roommatesData.map(async (roommate: any) => {
-          let avatar = defaultAvatar; // Default avatar as fallback
+        roommatesData
+          .filter((roommate: any) => roommate.id !== userId) // Filter out the current user
+          .map(async (roommate: any) => {
+            let avatar = defaultAvatar; // Default avatar as fallback
 
-          try {
-            const profilePicture = await apiGetProfilePicture(session, roommate.id);
+            try {
+              const profilePicture = await apiGetProfilePicture(session, roommate.id);
 
-            //format the base64 string if it's valid
-            if (typeof profilePicture === "string") {
-              let base64Image = profilePicture;
+              //format the base64 string if it's valid
+              if (typeof profilePicture === "string") {
+                let base64Image = profilePicture;
 
-              //remove redundant prefixes like "dataimage/jpegbase64"
-              if (base64Image.includes("dataimage/jpegbase64")) {
-                base64Image = base64Image.replace("dataimage/jpegbase64", "");
+                //remove redundant prefixes like "dataimage/jpegbase64"
+                if (base64Image.includes("dataimage/jpegbase64")) {
+                  base64Image = base64Image.replace("dataimage/jpegbase64", "");
+                }
+
+                //add the correct prefix if missing
+                if (!base64Image.startsWith("data:image/jpeg;base64,")) {
+                  base64Image = `data:image/jpeg;base64,${base64Image}`;
+                }
+
+                avatar = base64Image;
               }
-
-              //add the correct prefix if missing
-              if (!base64Image.startsWith("data:image/jpeg;base64,")) {
-                base64Image = `data:image/jpeg;base64,${base64Image}`;
-              }
-
-              avatar = base64Image;
+            } catch (error) {
+              console.error("Error fetching profile picture for roommate:", roommate.id, error);
             }
-          } catch (error) {
-            console.error("Error fetching profile picture for roommate:", roommate.id, error);
-          }
 
-          return {
-            id: roommate.id,
-            first_name: roommate.first_name,
-            last_name: roommate.last_name,
-            avatar: avatar, //set the avatar (either base64 or default)
-          };
-        })
+            return {
+              id: roommate.id,
+              first_name: roommate.first_name,
+              last_name: roommate.last_name,
+              avatar: avatar, //set the avatar (either base64 or default)
+            };
+          })
       );
 
       setRoommates(roommatesWithAvatars);
@@ -103,58 +106,75 @@ export default function HomeScreen() {
     );
   }
 
-  const renderHeader = () => (
-    <>
-      {/* Welcome Message */}
-      {roomData && roomData.room_id ? (
-        <View style={styles.welcomeContainer}>
-          <Text style={styles.welcomeTitle}>Welcome to</Text>
-          <Text style={styles.roomName}>{roomData.name}</Text>
-          <Text style={styles.welcomeSubtitle}>Your shared living space</Text>
-        </View>
-      ) : (
-        <Text style={styles.noRoom}>You are not in a room yet</Text>
-      )}
-
-      {/* Room Code */}
-      {roomData?.invite_code && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Room Code</Text>
-          <Text style={styles.joinCode}>{roomData.invite_code}</Text>
-        </View>
-      )}
-
-      {/* Roommates Header */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Roommates</Text>
-      </View>
-    </>
-  );
-
   return (
     <View style={styles.container}>
-      <FlatList
-        ListHeaderComponent={renderHeader}
-        data={roommates}
-        keyExtractor={(item) => item.id.toString()}
-        numColumns={2}
-        contentContainerStyle={styles.roommateList}
-        renderItem={({ item }) => (
-          <View style={styles.roommateContainer}>
-            <Image
-              source={{ uri: item.avatar || defaultAvatar }}
-              style={styles.avatar}
-              onError={(e) => {
-                console.log("Image loading error:", e.nativeEvent.error);
-                item.avatar = defaultAvatar;
-              }}
-            />
-            <Text style={styles.roommate}>
-              {item.first_name} {item.last_name}
-            </Text>
+      {/* Welcome Message */}
+      <View style={styles.headerContainer}>
+        <View style={styles.welcomeContainer}>
+          <Text style={styles.welcomeTitle}>Welcome to Roomies!</Text>
+          <Text style={styles.welcomeSubtitle}>
+            {roomData && roomData.room_id 
+              ? "Your shared living space" 
+              : "You are not in a room yet"}
+          </Text>
+        </View>
+
+        {/* Room Card */}
+        {roomData?.invite_code && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="home" size={22} color="#007F5F" />
+              <Text style={styles.cardTitle}>Your Room</Text>
+            </View>
+            <Text style={styles.roomName}>{roomData.name}</Text>
+            <View style={styles.divider} />
+            <View style={styles.codeContainer}>
+              <Text style={styles.codeLabel}>Share code with roommates:</Text>
+              <Text style={styles.joinCode}>{roomData.invite_code}</Text>
+            </View>
           </View>
         )}
-      />
+
+        {/* Roommates Section */}
+        <View style={[styles.card, styles.roommatesCard]}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="people" size={22} color="#007F5F" />
+            <Text style={styles.cardTitle}>Your Roommates</Text>
+          </View>
+          
+          {roommates.length > 0 ? (
+            <View style={styles.roommatesContainer}>
+              <ScrollView 
+                style={styles.roommatesScrollView}
+                contentContainerStyle={styles.roommatesScrollContent}
+              >
+                <View style={styles.roommatesGrid}>
+                  {roommates.map(item => (
+                    <View key={item.id.toString()} style={styles.roommateContainer}>
+                      <View style={styles.avatarContainer}>
+                        <Image
+                          source={{ uri: item.avatar || defaultAvatar }}
+                          style={styles.avatar}
+                          onError={(e) => {
+                            console.log("Image loading error:", e.nativeEvent.error);
+                          }}
+                        />
+                      </View>
+                      <Text style={styles.roommate} numberOfLines={1} ellipsizeMode="tail">
+                        {item.first_name} {item.last_name}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No roommates found</Text>
+            </View>
+          )}
+        </View>
+      </View>
     </View>
   );
 }
@@ -164,24 +184,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFFFFF",
   },
+  headerContainer: {
+    paddingTop: 16,
+    paddingBottom: 10,
+    height: '100%',
+  },
   welcomeContainer: {
-    marginTop: 20,
-    marginBottom: 30,
+    marginBottom: 44,
     alignItems: "center",
     paddingHorizontal: 20,
   },
   welcomeTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#00D09E",
-    textAlign: "center",
-  },
-  roomName: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "bold",
     color: "#007F5F",
     textAlign: "center",
-    marginVertical: 10,
+    marginBottom: 6,
+  },
+  roomName: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+    textAlign: "center",
+    marginVertical: 8,
   },
   welcomeSubtitle: {
     fontSize: 16,
@@ -189,63 +214,95 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontStyle: "italic",
   },
-  noRoom: {
-    fontSize: 16,
-    color: "#666",
-    fontStyle: "italic",
-    textAlign: "center",
-    marginVertical: 20,
-    paddingHorizontal: 20,
-  },
   card: {
     backgroundColor: "#DFF7E280",
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 20,
-    alignItems: "center",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
     marginHorizontal: 20,
     shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  roommatesCard: {
+    flex: 1,
+    marginBottom: 20,
+    maxHeight: '50%',
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
   },
   cardTitle: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#007F5F",
-    marginBottom: 10,
+    marginLeft: 8,
+  },
+  codeContainer: {
+    alignItems: "center",
+    textAlign: "center",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#D0E8D5",
+    width: "80%",
+    alignSelf: "center",
+    marginVertical: 8,
   },
   joinCode: {
-    fontSize: 22,
+    fontSize: 16,
     fontWeight: "bold",
-    color: "#333",
-    backgroundColor: "#E0F7F5",
-    padding: 10,
-    borderRadius: 8,
+    color: "#666",
     textAlign: "center",
-    width: "100%",
   },
-  roommateList: {
-    paddingHorizontal: 10,
+  roommatesContainer: {
+    flex: 1,
+  },
+  roommatesScrollView: {
+    flex: 1,
+  },
+  roommatesScrollContent: {
+    paddingVertical: 5,
+  },
+  roommatesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: 5,
   },
   roommateContainer: {
     alignItems: "center",
-    margin: 10,
+    margin: 5,
     backgroundColor: "#FFFFFF",
-    padding: 15,
-    borderRadius: 10,
+    padding: 10,
+    borderRadius: 14,
     shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
     elevation: 3,
-    flex: 1,
-    maxWidth: "45%",
+    width: '45%',
+    marginBottom: 10,
+  },
+  avatarContainer: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    borderRadius: 30,
+    marginBottom: 8,
   },
   avatar: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    marginBottom: 10,
+    borderWidth: 2,
+    borderColor: "#DFF7E2",
   },
   roommate: {
     fontSize: 16,
@@ -257,5 +314,22 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#333",
     textAlign: "center",
+  },
+  emptyContainer: {
+    padding: 30,
+    alignItems: "center",
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#666",
+    fontStyle: "italic",
+  },
+  noRoom: {
+    fontSize: 16,
+    color: "#666",
+    fontStyle: "italic",
+    textAlign: "center",
+    marginVertical: 20,
+    paddingHorizontal: 20,
   },
 });
