@@ -3,16 +3,17 @@ import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import { useState, useEffect } from "react";
 import { useAuthContext } from '@/contexts/AuthContext';
-import { apiLeaveRoom, apiGetProfilePicture, apiUpdateProfilePicture } from "@/utils/api/apiClient";
+import { apiLeaveRoom, apiGetProfilePicture, apiUpdateProfilePicture, apiGetRoommates } from "@/utils/api/apiClient";
 import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
 import defaultAvatar from "@/assets/images/default_profile.png"; //default avatar
 
 export default function SettingsScreen() {
-  const { session, signOut, userId } = useAuthContext(); //assuming userId is available in the AuthContext
+  const { session, signOut, userId } = useAuthContext();
   const router = useRouter();
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [name, setName] = useState<string>("");
 
   useEffect(() => {
     const fetchProfileImage = async () => {
@@ -45,7 +46,7 @@ export default function SettingsScreen() {
         Toast.show({
           type: 'error',
           text1: 'Error',
-          text2: 'Failed to fetch profile picture. Please try again later.'
+          text2: 'Failed to fetch profile picture.'
         });
         setProfileImage(null); //set to null on error
       } finally {
@@ -54,7 +55,28 @@ export default function SettingsScreen() {
     };
   
     fetchProfileImage();
-  }, [session, userId]);
+  }, [session]);
+
+  useEffect(() => {
+    const fetchRoommates = async () => {
+      if (!session) return;
+      try {
+        const roommatesData = await apiGetRoommates(session);
+        const currentUser = roommatesData.find((roommate: any) => roommate.id === userId);
+        if (currentUser) {
+          setName(`${currentUser.first_name} ${currentUser.last_name}`);
+        }
+      } catch (error: any) {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: error.message
+        });
+      }
+    };
+  
+    fetchRoommates();
+  }, [session]);
 
   const handleLeaveRoom = async () => {
     Alert.alert(
@@ -134,6 +156,8 @@ export default function SettingsScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.topSection}>
+        <Text style={styles.name}>{name}</Text>
+        <View style={styles.spacer} />
         <TouchableOpacity onPress={pickImage} style={styles.profileButton}>
           <Image
             source={profileImage ? { uri: profileImage } : defaultAvatar}
@@ -144,7 +168,6 @@ export default function SettingsScreen() {
             }}
           />
         </TouchableOpacity>
-        <Text style={styles.profileLabel}>Your Profile</Text>
         <Text style={styles.tapHint}>Tap to change</Text>
       </View>
       
@@ -196,10 +219,10 @@ const styles = StyleSheet.create({
     borderRadius: 50,
   },
   profileLabel: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333333",
-    marginBottom: 5,
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#666666",
+    marginBottom: 15,
   },
   tapHint: {
     fontSize: 14,
@@ -219,5 +242,14 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "600",
+  },
+  name: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#00D09E",
+    marginBottom: 5,
+  },
+  spacer: {
+    height: 20,
   },
 });
