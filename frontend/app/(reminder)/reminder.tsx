@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { apiGetNotifications, apiDeleteNotification } from "@/utils/api/apiClient"; // Import the delete function
+import { apiGetNotifications, apiDeleteNotification } from "@/utils/api/apiClient";
 import Toast from "react-native-toast-message";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -19,39 +19,53 @@ export default function NotificationsScreen() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const { session, userId } = useAuthContext();  // Get session from AuthContext
+  const { session, userId } = useAuthContext();
+
+  const fetchNotifications = async () => {
+    if (!session) return;
+    setLoading(true);
+    try {
+      const data = await apiGetNotifications(session);
+      
+      // Filter notifications for the current user
+      const userNotifications = data.filter(
+        (notification: Notification) => notification.notification_recipient === userId
+      );
+      
+      setNotifications(userNotifications);
+    } catch (error: any) {
+      Toast.show({ 
+        type: "error", 
+        text1: "Error", 
+        text2: error.message || "Failed to fetch notifications" 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchNotifications = async () => {
-      if (!session) return;
-      try {
-        const data = await apiGetNotifications(session);
-
-
-        //filter notifications based on the current user (session.userId)
-        const filteredNotifications = data.filter(
-          (notification: Notification) => notification.notification_recipient === userId
-        );
-
-        setNotifications(filteredNotifications);
-      } catch (error: any) {
-        Toast.show({ type: "error", text1: "Error", text2: error.message || "Failed to fetch notifications" });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchNotifications();
   }, [session]);
 
   const handleDeleteNotification = async (notificationId: number) => {
     try {
       await apiDeleteNotification(session, notificationId);
-      // Remove the deleted notification from the state
-      setNotifications(prevNotifications => prevNotifications.filter(notification => notification.id !== notificationId));
-      Toast.show({ type: "success", text1: "Success", text2: "Notification deleted successfully" });
+      // Remove the notification from the list
+      setNotifications(prevNotifications => 
+        prevNotifications.filter(notification => notification.id !== notificationId)
+      );
+      Toast.show({ 
+        type: "success", 
+        text1: "Success", 
+        text2: "Notification deleted successfully" 
+      });
     } catch (error: any) {
-      Toast.show({ type: "error", text1: "Error", text2: error.message || "Failed to delete notification" });
+      Toast.show({ 
+        type: "error", 
+        text1: "Error", 
+        text2: error.message || "Failed to delete notification" 
+      });
     }
   };
 
@@ -74,7 +88,7 @@ export default function NotificationsScreen() {
             if (item.notification_time) {
               const dateObj = new Date(item.notification_time);
               if (!isNaN(dateObj.getTime())) {
-                // Subtract 5 hours (5 * 60 * 60 * 1000 milliseconds)
+                // Subtract 7 hours (7 * 60 * 60 * 1000 milliseconds)
                 dateObj.setTime(dateObj.getTime() - (7 * 60 * 60 * 1000));
                 formattedDate = dateObj.toLocaleString();
               }
