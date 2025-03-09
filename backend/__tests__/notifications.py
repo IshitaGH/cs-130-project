@@ -60,21 +60,43 @@ def test_data(client):
         db.session.flush()
 
         # Create notifications
-        notification = Notification(
+        notification1 = Notification(
             sender_id=roommate1.id,
-            recipient_id=roommate2.id,
-            message="Test notification",
+            recipient_id=roommate1.id,
+            title="Test Notification 1",
+            description=None,
             read=False,
             created_at=datetime.utcnow(),
         )
-        db.session.add(notification)
+        
+        notification2 = Notification(
+            sender_id=roommate1.id,
+            recipient_id=roommate2.id,
+            title="Test Notification 2",
+            description="with description",
+            read=False,
+            created_at=datetime.utcnow(),
+        )
+        
+        notification3 = Notification(
+            sender_id=roommate2.id,
+            recipient_id=roommate1.id,
+            title=None,
+            description="test notification 3 without title",
+            read=False,
+            created_at=datetime.utcnow(),
+        )
+        
+        db.session.add(notification1)
+        db.session.add(notification2)
+        db.session.add(notification3)
         db.session.commit()
 
         return {
             "room_id": room.id,
             "roommate1_id": roommate1.id,
             "roommate2_id": roommate2.id,
-            "notification_id": notification.id,
+            "notification_id": notification1.id,
         }
 
 
