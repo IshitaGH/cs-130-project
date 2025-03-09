@@ -155,6 +155,10 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
     );
   };
 
+  const getInitials = (firstName: string, lastName: string): string => {
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`;
+  };
+
   return (
     <View style={styles.card}>
       <TouchableOpacity style={styles.cardHeader} onPress={() => setExpanded(!expanded)}>
@@ -167,23 +171,37 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
           {expenses.length === 0 ? (
             <Text style={styles.emptyText}>There are no expenses in the current period</Text>
           ) : (
-            expenses.map(item => (
-              <View key={item.id} style={styles.expenseRow}>
-                <View style={styles.expenseInfo}>
-                  <Text style={styles.expenseDescription}>{item.description}: ${item.cost.toFixed(2)}</Text>
-                  <Text style={styles.expensePayer}>Paid by {(() => {
-                      let roommate = roommates.find(roommate => roommate.id === item.roommate_fkey);
-                      return roommate ? `${roommate.first_name} ${roommate.last_name}` : 'Unknown'
-                    })()} on {dateFormat(new Date(item.created_at))}</Text>
+            expenses.map(item => {
+              const payer = roommates.find(roommate => roommate.id === item.roommate_fkey);
+              const payerName = payer ? `${payer.first_name} ${payer.last_name}` : 'Unknown';
+              
+              return (
+                <View key={item.id} style={styles.expenseRow}>
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>
+                      {payer ? getInitials(payer.first_name, payer.last_name) : "??"}
+                    </Text>
+                  </View>
+                  <View style={styles.expenseInfo}>
+                    <View style={styles.choreNameRow}>
+                      <Text style={styles.expenseDescription}>{item.description}</Text>
+                      <Text style={styles.expenseDate}>
+                        {dateFormat(new Date(item.created_at))}
+                      </Text>
+                    </View>
+                    <Text style={styles.expensePayer}>
+                      ${item.cost.toFixed(2)} • Paid by {payerName}
+                    </Text>
+                  </View>
+                  { current && <TouchableOpacity 
+                    onPress={() => handleDeleteExpense(item.id)}
+                    style={styles.deleteButton}
+                  >
+                    <MaterialIcons name="delete" size={24} color="#E57373" />
+                  </TouchableOpacity> }
                 </View>
-                { current && <TouchableOpacity 
-                  onPress={() => handleDeleteExpense(item.id)}
-                  style={styles.deleteButton}
-                >
-                  <MaterialIcons name="delete" size={24} color="#E57373" />
-                </TouchableOpacity> }
-              </View>
-            ))
+              );
+            })
           )}
           
           {!current && Object.keys(balances).length > 0 && (
@@ -539,24 +557,26 @@ const styles = StyleSheet.create({
   },
   expenseRow: { 
     flexDirection: "row", 
-    justifyContent: "space-between", 
+    alignItems: "center", 
     padding: 12, 
     borderBottomWidth: 1, 
-    borderColor: "#F0F0F0",
-    alignItems: "center"
+    borderColor: "#F0F0F0"
   },
   expenseInfo: { 
-    flex: 1 
+    flex: 1,
+    marginLeft: 10,
   },
   expenseDescription: { 
     fontSize: 16, 
     fontWeight: "bold", 
     color: "#333",
-    marginBottom: 4
+    flex: 1,
+    marginRight: 8,
   },
   expensePayer: { 
     fontSize: 14, 
-    color: "#666" 
+    color: "#666",
+    marginTop: 2,
   },
   deleteButton: {
     padding: 8,
@@ -694,5 +714,27 @@ const styles = StyleSheet.create({
     color: '#999',
     fontSize: 14,
     paddingVertical: 15,
+  },
+  avatar: { 
+    width: 40, 
+    height: 40, 
+    borderRadius: 20, 
+    backgroundColor: "#CDEEEE", 
+    justifyContent: "center", 
+    alignItems: "center" 
+  },
+  avatarText: { 
+    fontSize: 16, 
+    fontWeight: "bold", 
+    color: "#007F5F" 
+  },
+  choreNameRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  expenseDate: { 
+    fontSize: 14, 
+    color: '#666',
   },
 });
