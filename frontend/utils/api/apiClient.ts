@@ -207,6 +207,7 @@ export async function apiGetRoommates(session: any) {
     },
   });
 
+  
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message);
@@ -312,4 +313,51 @@ export async function apiCloseExpensePeriod(session: any) {
   }
 
   return data;
+}
+
+export async function apiGetProfilePicture(session: any, userId?: string) {
+  const url = userId 
+    ? `${API_URL}/profile-picture?user_id=${userId}` 
+    : `${API_URL}/profile-picture`;
+
+  try {
+    console.log('Fetching profile picture from:', url);
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${session}`,
+      },
+    });
+
+    // Check if the response is OK (status code 200-299)
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch profile picture');
+    }
+
+    // Parse and return the response data
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    // Handle network errors or other exceptions
+    console.error('Error fetching profile picture:', error);
+    throw new Error('Network error or failed to fetch profile picture');
+  }
+}
+
+export async function apiUpdateProfilePicture(session: any, profilePicture: string) {
+  const response = await fetch(`${API_URL}/profile-picture`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session}`,
+    },
+    body: JSON.stringify({ profile_picture: profilePicture }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to update profile picture');
+  }
+
+  return await response.json();
 }
