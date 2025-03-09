@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, FlatList, Image, Dimensions } from "react-native";
+import { RefreshControl, View, Text, StyleSheet, FlatList, Image, Dimensions } from "react-native";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { apiGetRoom, apiGetRoommates, apiGetProfilePicture } from "@/utils/api/apiClient";
 import Toast from "react-native-toast-message";
@@ -21,6 +21,7 @@ export default function HomeScreen() {
   const { session, sessionLoading } = useAuthContext();
   const [roomData, setRoomData] = useState<RoomData | null>(null);
   const [roommates, setRoommates] = useState<Roommate[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
   const defaultAvatar = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
 
   useEffect(() => {
@@ -95,6 +96,21 @@ export default function HomeScreen() {
     }
   };
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      if (session) {
+        const room = await apiGetRoom(session);
+        setRoomData(room);
+        await fetchRoommates();
+      }
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   if (sessionLoading) {
     return (
       <View style={styles.container}>
@@ -158,7 +174,15 @@ export default function HomeScreen() {
       contentContainerStyle={styles.scrollContainer}
       ListHeaderComponent={renderHeader}
       renderItem={renderRoommate}
-      columnWrapperStyle={styles.columnWrapper} // Add this to center the columns
+      columnWrapperStyle={styles.columnWrapper}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={["#00D09E"]} // Customize the refresh spinner color
+          tintColor="#00D09E" // Customize the refresh spinner color (iOS)
+        />
+      }
     />
   );
 }

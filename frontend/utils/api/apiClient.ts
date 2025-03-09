@@ -329,7 +329,6 @@ export async function apiGetProfilePicture(session: any, userId?: string) {
 
     //handle 404 error specifically
     if (response.status === 404) {
-      console.log('No profile picture found, returning null.');
       return null; //return null to indicate no profile picture
     }
 
