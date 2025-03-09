@@ -56,21 +56,6 @@ type Roommate = {
   username: string;
 };
 
-// credit to https://stackoverflow.com/a/72554509
-const alertPolyfill = (title: string, description: string, options: any[], extra?: any) => {
-  const result = window.confirm([title, description].filter(Boolean).join('\n'))
-
-  if (result) {
-      const confirmOption = options.find(({ style }) => style !== 'cancel')
-      confirmOption && confirmOption.onPress && confirmOption.onPress()
-  } else {
-      const cancelOption = options.find(({ style }) => style === 'cancel')
-      cancelOption && cancelOption.onPress && cancelOption.onPress()
-  }
-};
-
-const alert = Platform.OS === 'web' ? alertPolyfill : Alert.alert;
-
 const dateFormat = (date: Date) => {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 };
@@ -113,6 +98,12 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
     apiDeleteExpense(session, expenseId).then(() => {
       const updatedExpenses = expenses.filter((exp) => exp.id !== expenseId);
       updateExpenses(id, updatedExpenses);
+      
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: 'Expense deleted successfully'
+      });
     }).catch(error => {
       Toast.show({
         type: 'error',
@@ -127,30 +118,38 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
   useEffect(() => calculatePersonalBalances(expenses, setBalances, roommates, currentUser), [expenses]);
 
   const closeCurrentPeriod = () => {
-    alert('Close expense period',
-      'Are you sure you would like to close the current expense period? This cannot be undone.', [
-      {
-        text: 'Cancel',
-        style: 'cancel',
-      },
-      {
-        text: 'Close period',
-        onPress: () => {
-          apiCloseExpensePeriod(session).then(() => {
-            refresh();
-          }).catch(error => {
-            Toast.show({
-              type: 'error',
-              text1: 'Error Closing Period',
-              text2: error.message || 'Failed to close expense period'
+    Alert.alert(
+      'Close expense period',
+      'Are you sure you would like to close the current expense period? This cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Close period',
+          onPress: () => {
+            apiCloseExpensePeriod(session).then(() => {
+              refresh();
+              Toast.show({
+                type: 'success',
+                text1: 'Success',
+                text2: 'Expense period closed successfully'
+              });
+            }).catch(error => {
+              Toast.show({
+                type: 'error',
+                text1: 'Error Closing Period',
+                text2: error.message || 'Failed to close expense period'
+              });
+        
+              console.error(error);
             });
-      
-            console.error(error);
-          });
+          }
         }
-      }
-    ]);
-  }
+      ]
+    );
+  };
 
   return (
     <View style={styles.card}>
@@ -294,26 +293,20 @@ export default function ExpensesScreen() {
 
   const addExpense = () => {
     if (!description || !amount || !payerId) {
-      alert(
-        'Error adding expense',
-        'Must include expense description, amount, and payer',
-        [{
-          text: 'OK',
-        }]
-      );
-
+      Toast.show({
+        type: 'error',
+        text1: 'Error adding expense',
+        text2: 'Must include description, cost, and responsible roommate'
+      });
       return;
     }
 
     if (!RegExp(/^[0-9]+\.?[0-9]{0,2}$/).test(amount)) {
-      alert(
-        'Error adding expense',
-        'Expense amount must be numeric',
-        [{
-          text: 'OK',
-        }]
-      );
-
+      Toast.show({
+        type: 'error',
+        text1: 'Error adding expense',
+        text2: 'Expense amount must be numeric'
+      });
       return;
     }
 
