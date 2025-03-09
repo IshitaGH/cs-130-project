@@ -23,7 +23,10 @@ This command will:
 ### Test Files
 
 - `test_chores.py`: Tests for chore-related functionality including API endpoints and rotation logic
+- `test_expense_periods_api.py`: Tests API endpoints for expense periods
+- `test_expenses_api.py`: Tests API endpoints for expenses
 - `test_notifications.py`: Tests for notification API endpoints
+- `test_roommate_expenses_api.py`: Tests roommate expenses API endpoints
 - `test_utils.py`: Utility functions to support testing
 
 ### Key Components
