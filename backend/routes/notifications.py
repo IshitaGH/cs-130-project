@@ -42,6 +42,7 @@ def create_notification():
         notification_sender=notification_sender.id,
         notification_recipient=notification_recipient.id,
         room_fkey=room.id,
+        is_read=False,
     )
 
     db.session.add(new_notification)
@@ -57,6 +58,7 @@ def create_notification():
                 "notification_sender": new_notification.notification_sender,
                 "notification_recipient": new_notification.notification_recipient,
                 "room_fkey": new_notification.room_fkey,
+                "is_read": new_notification.is_read,
             }
         ),
         201,
@@ -91,6 +93,7 @@ def get_notification():
                     "notification_sender": notification.notification_sender,
                     "notification_recipient": notification.notification_recipient,
                     "room_fkey": notification.room_fkey,
+                    "is_read": notification.is_read,
                 }
             ),
             200,
@@ -124,6 +127,7 @@ def get_notification():
                 "notification_sender": n.notification_sender,
                 "notification_recipient": n.notification_recipient,
                 "room_fkey": n.room_fkey,
+                "is_read": n.is_read,
             }
         )
     return jsonify(result), 200
@@ -169,6 +173,8 @@ def update_notification():
             if "notification_recipient" in data
             else notification.notification_recipient
         )
+        if "is_read" in data:
+            notification.is_read = data.get("is_read")
 
     db.session.commit()
 
@@ -182,6 +188,7 @@ def update_notification():
                 "notification_sender": notification.notification_sender,
                 "notification_recipient": notification.notification_recipient,
                 "room_fkey": notification.room_fkey,
+                "is_read": notification.is_read,
             }
         ),
         200,
