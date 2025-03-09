@@ -98,76 +98,77 @@ export default function HomeScreen() {
   if (sessionLoading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.loadingText}>Loading...</Text>
+        <Text style={styles.title}>Loading...</Text>
       </View>
     );
   }
 
-  return (
-    <View style={styles.mainContainer}>
-      <View style={styles.container}>
-        {/* Welcome Message */}
-        {roomData && roomData.room_id ? (
-          <View style={styles.welcomeContainer}>
-            <Text style={styles.welcomeTitle}>Welcome to</Text>
-            <Text style={styles.roomName}>{roomData.name}</Text>
-            <Text style={styles.welcomeSubtitle}>Your shared living space</Text>
-          </View>
-        ) : (
-          <Text style={styles.noRoom}>You are not in a room yet</Text>
-        )}
-
-        {/* Room Code */}
-        {roomData?.invite_code && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Room Code</Text>
-            <Text style={styles.joinCode}>{roomData.invite_code}</Text>
-          </View>
-        )}
-
-        {/* Roommates */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Roommates</Text>
-          <FlatList
-            data={roommates}
-            keyExtractor={(item) => item.id.toString()}
-            numColumns={2}
-            contentContainerStyle={styles.roommateList}
-            renderItem={({ item }) => (
-              <View style={styles.roommateContainer}>
-                <Image
-                  source={{ uri: item.avatar || defaultAvatar }}
-                  style={styles.avatar}
-                  onError={(e) => {
-                    console.log("Image loading error:", e.nativeEvent.error);
-                    item.avatar = defaultAvatar;
-                  }}
-                />
-                <Text style={styles.roommate}>
-                  {item.first_name} {item.last_name}
-                </Text>
-              </View>
-            )}
-          />
+  const renderHeader = () => (
+    <>
+      {/* Welcome Message */}
+      {roomData && roomData.room_id ? (
+        <View style={styles.welcomeContainer}>
+          <Text style={styles.welcomeTitle}>Welcome to</Text>
+          <Text style={styles.roomName}>{roomData.name}</Text>
+          <Text style={styles.welcomeSubtitle}>Your shared living space</Text>
         </View>
+      ) : (
+        <Text style={styles.noRoom}>You are not in a room yet</Text>
+      )}
+
+      {/* Room Code */}
+      {roomData?.invite_code && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Room Code</Text>
+          <Text style={styles.joinCode}>{roomData.invite_code}</Text>
+        </View>
+      )}
+
+      {/* Roommates Header */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Roommates</Text>
       </View>
+    </>
+  );
+
+  return (
+    <View style={styles.container}>
+      <FlatList
+        ListHeaderComponent={renderHeader}
+        data={roommates}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={2}
+        contentContainerStyle={styles.roommateList}
+        renderItem={({ item }) => (
+          <View style={styles.roommateContainer}>
+            <Image
+              source={{ uri: item.avatar || defaultAvatar }}
+              style={styles.avatar}
+              onError={(e) => {
+                console.log("Image loading error:", e.nativeEvent.error);
+                item.avatar = defaultAvatar;
+              }}
+            />
+            <Text style={styles.roommate}>
+              {item.first_name} {item.last_name}
+            </Text>
+          </View>
+        )}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  mainContainer: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: "#FFFFFF",
   },
   welcomeContainer: {
+    marginTop: 20,
     marginBottom: 30,
     alignItems: "center",
+    paddingHorizontal: 20,
   },
   welcomeTitle: {
     fontSize: 22,
@@ -194,6 +195,7 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     textAlign: "center",
     marginVertical: 20,
+    paddingHorizontal: 20,
   },
   card: {
     backgroundColor: "#DFF7E280",
@@ -201,7 +203,7 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 20,
     alignItems: "center",
-    width: "100%",
+    marginHorizontal: 20,
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 5,
@@ -224,8 +226,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   roommateList: {
-    justifyContent: "center",
-    alignItems: "center",
+    paddingHorizontal: 10,
   },
   roommateContainer: {
     alignItems: "center",
@@ -237,7 +238,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 3,
-    width: 120,
+    flex: 1,
+    maxWidth: "45%",
   },
   avatar: {
     width: 60,
@@ -247,13 +249,13 @@ const styles = StyleSheet.create({
   },
   roommate: {
     fontSize: 16,
-    fontWeight: "bold",
     color: "#333",
     textAlign: "center",
+    fontWeight: "500",
   },
-  loadingText: {
+  title: {
     fontSize: 18,
-    color: "#666",
+    color: "#333",
     textAlign: "center",
   },
 });
