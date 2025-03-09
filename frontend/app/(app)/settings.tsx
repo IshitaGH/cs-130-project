@@ -5,23 +5,40 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { apiLeaveRoom, apiGetProfilePicture, apiUpdateProfilePicture } from "@/utils/api/apiClient";
 import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
+import defaultAvatar from "@/assets/images/default_profile.png"; //default avatar
 
 export default function SettingsScreen() {
-  const { session, signOut, userId } = useAuthContext(); // Assuming userId is available in the AuthContext
+  const { session, signOut, userId } = useAuthContext(); //assuming userId is available in the AuthContext
   const router = useRouter();
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const defaultAvatar = require("@/assets/images/default_profile.png"); // Fallback image
 
   useEffect(() => {
     const fetchProfileImage = async () => {
       if (!session || !userId) return;
-
+  
       setIsLoading(true);
       try {
-        const blob = await apiGetProfilePicture(session, userId); // Pass userId as a parameter
-        const imageUrl = URL.createObjectURL(blob);
-        setProfileImage(imageUrl);
+        const response = await apiGetProfilePicture(session, userId);
+  
+        if (typeof response === 'string') {
+          let base64Image = response;
+  
+          //remove redundant prefixes like "dataimage/jpegbase64"
+          if (base64Image.includes('dataimage/jpegbase64')) {
+            base64Image = base64Image.replace('dataimage/jpegbase64', '');
+          }
+  
+          //add the correct prefix if missing
+          if (!base64Image.startsWith('data:image/jpeg;base64,')) {
+            base64Image = `data:image/jpeg;base64,${base64Image}`;
+          }
+  
+          setProfileImage(base64Image);
+        } else {
+          console.log('No profile picture found or invalid data:', response);
+          setProfileImage(null); //use default avatar
+        }
       } catch (error) {
         console.error("Error fetching profile picture:", error);
         Toast.show({
@@ -29,11 +46,12 @@ export default function SettingsScreen() {
           text1: 'Error',
           text2: 'Failed to fetch profile picture. Please try again later.'
         });
+        setProfileImage(null); //set to null on error
       } finally {
         setIsLoading(false);
       }
     };
-
+  
     fetchProfileImage();
   }, [session, userId]);
 
@@ -77,7 +95,7 @@ export default function SettingsScreen() {
     if (!result.canceled) {
       const imageUri = result.assets[0].uri;
       setProfileImage(imageUri);
-      
+
       try {
         await apiUpdateProfilePicture(session, imageUri);
         Toast.show({
@@ -106,10 +124,14 @@ export default function SettingsScreen() {
   return (
     <View style={styles.container}>
       <TouchableOpacity onPress={pickImage} style={styles.profileButton}>
-        <Image 
-          source={profileImage ? { uri: profileImage } : defaultAvatar} 
-          style={styles.profileImage} 
-        />
+      <Image
+        source={profileImage ? { uri: profileImage } : defaultAvatar}
+        style={styles.profileImage}
+        onError={(e) => {
+          console.log('Image loading error:', e.nativeEvent.error);
+          setProfileImage(null); // Fallback to default avatar
+        }}
+      />
       </TouchableOpacity>
       <TouchableOpacity style={styles.button} onPress={handleLeaveRoom}>
         <Text style={styles.buttonText}>Leave Room</Text>

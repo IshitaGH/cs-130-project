@@ -317,16 +317,21 @@ export async function apiCloseExpensePeriod(session: any) {
 
 export async function apiGetProfilePicture(session: any, userId?: string) {
   const url = userId 
-    ? `${API_URL}/profile-picture?user_id=${userId}` 
-    : `${API_URL}/profile-picture`;
+    ? `${API_URL}/profile_picture?user_id=${userId}` 
+    : `${API_URL}/profile_picture`;
 
   try {
-    console.log('Fetching profile picture from:', url);
     const response = await fetch(url, {
       headers: {
         Authorization: `Bearer ${session}`,
       },
     });
+
+    //handle 404 error specifically
+    if (response.status === 404) {
+      console.log('No profile picture found, returning null.');
+      return null; //return null to indicate no profile picture
+    }
 
     // Check if the response is OK (status code 200-299)
     if (!response.ok) {
@@ -334,24 +339,60 @@ export async function apiGetProfilePicture(session: any, userId?: string) {
       throw new Error(errorData.message || 'Failed to fetch profile picture');
     }
 
-    // Parse and return the response data
-    const data = await response.json();
-    return data;
+    //convert the Blob to a base64-encoded string
+    const blob = await response.blob();
+    const base64 = await blobToBase64(blob);
+    return `data:image/jpeg;base64,${base64}`; //prepend the data URI scheme
   } catch (error) {
-    // Handle network errors or other exceptions
     console.error('Error fetching profile picture:', error);
     throw new Error('Network error or failed to fetch profile picture');
   }
 }
 
-export async function apiUpdateProfilePicture(session: any, profilePicture: string) {
-  const response = await fetch(`${API_URL}/profile-picture`, {
-    method: 'PUT',
-    headers: {
+//convert Blob to base64
+const blobToBase64 = (blob: Blob): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      resolve(base64String.split(',')[1]);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
+
+export async function apiUpdateProfilePicture(session: any, profilePicture: string | File) {
+  let body;
+  let headers;
+
+  if (typeof profilePicture === 'string') {
+    //if profilePicture is base64 string, send it as JSON
+    body = JSON.stringify({ profile_picture: profilePicture });
+    headers = {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${session}`,
-    },
-    body: JSON.stringify({ profile_picture: profilePicture }),
+    };
+  } else {
+    //if profilePicture file, use FormData
+    const formData = new FormData();
+    formData.append('profile_picture', {
+      uri: profilePicture.uri,
+      name: 'profile.jpg', //file name
+      type: 'image/jpeg', //adjust the MIME type based on the image
+    });
+
+    body = formData;
+    headers = {
+      'Content-Type': 'multipart/form-data',
+      Authorization: `Bearer ${session}`,
+    };
+  }
+
+  const response = await fetch(`${API_URL}/profile_picture`, {
+    method: 'PUT',
+    headers,
+    body,
   });
 
   if (!response.ok) {

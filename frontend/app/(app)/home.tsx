@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, FlatList, Image, ScrollView } from "react-native";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { apiGetRoom, apiGetRoommates } from "@/utils/api/apiClient";
+import { apiGetRoom, apiGetRoommates, apiGetProfilePicture } from "@/utils/api/apiClient";
 import Toast from "react-native-toast-message";
 
 interface RoomData {
@@ -14,7 +14,7 @@ interface Roommate {
   id: number;
   first_name: string;
   last_name: string;
-  avatar: string;
+  avatar: string | null; //updated to include avatar
 }
 
 export default function HomeScreen() {
@@ -28,12 +28,11 @@ export default function HomeScreen() {
       if (!session) return;
 
       try {
-        // Fetch room data
+        //fetch room data
         const room = await apiGetRoom(session);
         setRoomData(room);
 
-
-        // Fetch roommates
+        //fetch roommates
         await fetchRoommates();
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -48,14 +47,45 @@ export default function HomeScreen() {
 
     try {
       const roommatesData = await apiGetRoommates(session);
-      // Map the fetched data to the expected Roommate structure
-      const formattedRoommates = roommatesData.map((roommate: any) => ({
-        id: roommate.id,
-        first_name: roommate.first_name,
-        last_name: roommate.last_name,
-        avatar: roommate.avatar || defaultAvatar, // Fallback to default avatar if none is provided
-      }));
-      setRoommates(formattedRoommates);
+
+      //fetch profile pictures for each roommate
+      const roommatesWithAvatars = await Promise.all(
+        roommatesData.map(async (roommate: any) => {
+          let avatar = defaultAvatar; // Default avatar as fallback
+
+          try {
+            const profilePicture = await apiGetProfilePicture(session, roommate.id);
+
+            //format the base64 string if it's valid
+            if (typeof profilePicture === "string") {
+              let base64Image = profilePicture;
+
+              //remove redundant prefixes like "dataimage/jpegbase64"
+              if (base64Image.includes("dataimage/jpegbase64")) {
+                base64Image = base64Image.replace("dataimage/jpegbase64", "");
+              }
+
+              //add the correct prefix if missing
+              if (!base64Image.startsWith("data:image/jpeg;base64,")) {
+                base64Image = `data:image/jpeg;base64,${base64Image}`;
+              }
+
+              avatar = base64Image;
+            }
+          } catch (error) {
+            console.error("Error fetching profile picture for roommate:", roommate.id, error);
+          }
+
+          return {
+            id: roommate.id,
+            first_name: roommate.first_name,
+            last_name: roommate.last_name,
+            avatar: avatar, //set the avatar (either base64 or default)
+          };
+        })
+      );
+
+      setRoommates(roommatesWithAvatars);
     } catch (error: any) {
       Toast.show({
         type: "error",
@@ -105,7 +135,15 @@ export default function HomeScreen() {
             contentContainerStyle={styles.roommateList}
             renderItem={({ item }) => (
               <View style={styles.roommateContainer}>
-                <Image source={{ uri: item.avatar }} style={styles.avatar} />
+                <Image
+                  source={{ uri: item.avatar || defaultAvatar }} //use default avatar if avatar is null
+                  style={styles.avatar}
+                  onError={(e) => {
+                    console.log("Image loading error:", e.nativeEvent.error);
+                    //fallback to default avatar if the image fails to load
+                    item.avatar = defaultAvatar;
+                  }}
+                />
                 <Text style={styles.roommate}>
                   {item.first_name} {item.last_name}
                 </Text>
@@ -113,7 +151,6 @@ export default function HomeScreen() {
             )}
           />
         </View>
-
       </View>
     </ScrollView>
   );
