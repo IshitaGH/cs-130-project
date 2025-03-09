@@ -23,6 +23,7 @@ This command will:
 ### Test Files
 
 - `test_chores.py`: Tests for chore-related functionality including API endpoints and rotation logic
+- `test_expenses_api.py`: Tests expenses API endpoints
 - `test_notifications.py`: Tests for notification API endpoints
 - `test_utils.py`: Utility functions to support testing
 

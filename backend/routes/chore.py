@@ -11,7 +11,11 @@ from models.roommate import Roommate
 # Rotates the chore to the next roommate in the rotation if the end_date has passed
 # NOTE: This relies on the caller to commit the changes to the database
 def rotate_chore(chore):
-    if chore.recurrence != "none" and chore.end_date < datetime.now() and chore.rotation_order:
+    if (
+        chore.recurrence != "none"
+        and chore.end_date < datetime.now()
+        and chore.rotation_order
+    ):
         # Update the assignee_fkey to the next roommate in the rotation
         current_index = chore.rotation_order.index(chore.assignee_fkey)
         next_index = (current_index + 1) % len(chore.rotation_order)
@@ -31,14 +35,18 @@ def rotate_chore(chore):
             # Add a couple days to ensure we're in the right month regardless of timezone
             reference_date1 = chore.start_date + timedelta(days=2)
             first_day_of_month = reference_date1.replace(day=1)
-            last_day_of_month = (first_day_of_month + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+            last_day_of_month = (first_day_of_month + timedelta(days=32)).replace(
+                day=1
+            ) - timedelta(days=1)
             duration1 = timedelta(days=last_day_of_month.day)
             new_start_date = chore.start_date + duration1
 
             # Get the number of days in the next month (using end_date)
             reference_date2 = chore.end_date + timedelta(days=2)
             first_day_of_month = reference_date2.replace(day=1)
-            last_day_of_month = (first_day_of_month + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+            last_day_of_month = (first_day_of_month + timedelta(days=32)).replace(
+                day=1
+            ) - timedelta(days=1)
             duration2 = timedelta(days=last_day_of_month.day)
             new_end_date = chore.end_date + duration2
 
@@ -72,13 +80,13 @@ def get_chores():
     active_chores = Chore.query.filter(
         Chore.assignee_fkey.in_(roommate_ids),
         Chore.start_date <= now_utc,
-        now_utc <= Chore.end_date
+        now_utc <= Chore.end_date,
     ).all()
 
     # Rotate chores that have ended
     for chore in active_chores:
         rotate_chore(chore)
-    db.session.commit() # Commit the changes to the database
+    db.session.commit()  # Commit the changes to the database
 
     data = []
     for chore in active_chores:
@@ -93,11 +101,19 @@ def get_chores():
         chore_data = {
             "id": chore.id,
             # times in DB do not have timezone info, so we need to add it back before sending to FE
-            "created_at": chore.created_at.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
-            "updated_at": chore.updated_at.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
+            "created_at": chore.created_at.replace(tzinfo=timezone.utc)
+            .isoformat()
+            .replace("+00:00", "Z"),
+            "updated_at": chore.updated_at.replace(tzinfo=timezone.utc)
+            .isoformat()
+            .replace("+00:00", "Z"),
             "description": chore.description,
-            "start_date": chore.start_date.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
-            "end_date": chore.end_date.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
+            "start_date": chore.start_date.replace(tzinfo=timezone.utc)
+            .isoformat()
+            .replace("+00:00", "Z"),
+            "end_date": chore.end_date.replace(tzinfo=timezone.utc)
+            .isoformat()
+            .replace("+00:00", "Z"),
             "is_task": chore.is_task,
             "completed": chore.completed,
             "room_id": current_roommate.room_fkey,
@@ -134,23 +150,42 @@ def create_chore():
     assigned_roommate_id = data.get("assigned_roommate_id")
     rotation_order = data.get("rotation_order")
 
-    if not all([description, start_date_str, end_date_str, is_task is not None, recurrence, assigned_roommate_id]):
+    if not all(
+        [
+            description,
+            start_date_str,
+            end_date_str,
+            is_task is not None,
+            recurrence,
+            assigned_roommate_id,
+        ]
+    ):
         return jsonify({"message": "Missing required fields"}), 400
-    
+
     assigned_roommate = Roommate.query.get(assigned_roommate_id)
     if not assigned_roommate:
         return jsonify({"message": "Assigned roommate not found"}), 404
 
     if assigned_roommate.room_fkey != current_roommate.room_fkey:
         return jsonify({"message": "Assigned roommate is not in the same room"}), 400
-    
+
     if recurrence != "none" and rotation_order is not None:
         for roommate_id in rotation_order:
             roommate = Roommate.query.get(roommate_id)
             if not roommate:
-                return jsonify({"message": "Rotation order contains invalid roommate id"}), 400
+                return (
+                    jsonify({"message": "Rotation order contains invalid roommate id"}),
+                    400,
+                )
             if roommate.room_fkey != current_roommate.room_fkey:
-                return jsonify({"message": "Rotation order contains roommate not in the same room"}), 400
+                return (
+                    jsonify(
+                        {
+                            "message": "Rotation order contains roommate not in the same room"
+                        }
+                    ),
+                    400,
+                )
 
     # Parse start and end date strings
     try:
@@ -168,7 +203,7 @@ def create_chore():
         assignor_fkey=current_roommate_id,  # using the current user as assignor
         assignee_fkey=assigned_roommate_id,
         recurrence=recurrence,
-        rotation_order=rotation_order
+        rotation_order=rotation_order,
     )
 
     db.session.add(new_chore)
@@ -184,11 +219,19 @@ def create_chore():
 
     chore_data = {
         "id": new_chore.id,
-        "created_at": new_chore.created_at.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
-        "updated_at": new_chore.updated_at.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
+        "created_at": new_chore.created_at.replace(tzinfo=timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
+        "updated_at": new_chore.updated_at.replace(tzinfo=timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
         "description": new_chore.description,
-        "start_date": new_chore.start_date.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
-        "end_date": new_chore.end_date.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
+        "start_date": new_chore.start_date.replace(tzinfo=timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
+        "end_date": new_chore.end_date.replace(tzinfo=timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
         "is_task": new_chore.is_task,
         "completed": new_chore.completed,
         "assigned_roommate": assigned_roommate_data,
@@ -217,7 +260,7 @@ def update_chore(chore_id):
     chore = Chore.query.get(chore_id)
     if not chore:
         return jsonify({"message": "Chore not found"}), 404
-    
+
     current_assigned_roommate = Roommate.query.get(chore.assignee_fkey)
     if current_assigned_roommate.room_fkey != current_roommate.room_fkey:
         return jsonify({"message": "This chore does not belong to the same room"}), 400
@@ -238,9 +281,19 @@ def update_chore(chore_id):
         for roommate_id in rotation_order:
             roommate = Roommate.query.get(roommate_id)
             if not roommate:
-                return jsonify({"message": "Rotation order contains invalid roommate id"}), 400
+                return (
+                    jsonify({"message": "Rotation order contains invalid roommate id"}),
+                    400,
+                )
             if roommate.room_fkey != current_roommate.room_fkey:
-                return jsonify({"message": "Rotation order contains roommate not in the same room"}), 400
+                return (
+                    jsonify(
+                        {
+                            "message": "Rotation order contains roommate not in the same room"
+                        }
+                    ),
+                    400,
+                )
 
         chore.rotation_order = rotation_order
         # If rotation_order is not empty, set assignee_fkey to the first person in the list
@@ -252,14 +305,19 @@ def update_chore(chore_id):
         if not roommate:
             return jsonify({"message": "Assigned roommate not found"}), 404
         if roommate.room_fkey != current_roommate.room_fkey:
-            return jsonify({"message": "Assigned roommate is not in the same room"}), 400
+            return (
+                jsonify({"message": "Assigned roommate is not in the same room"}),
+                400,
+            )
         chore.assignee_fkey = assigned_roommate_id
 
     if description:
         chore.description = description
     if start_date_str:
         try:
-            chore.start_date = datetime.fromisoformat(start_date_str).replace(tzinfo=None)
+            chore.start_date = datetime.fromisoformat(start_date_str).replace(
+                tzinfo=None
+            )
         except Exception:
             return jsonify({"message": "Invalid start_date format"}), 400
     if end_date_str:
@@ -287,11 +345,19 @@ def update_chore(chore_id):
 
     chore_data = {
         "id": chore.id,
-        "created_at": chore.created_at.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
-        "updated_at": chore.updated_at.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
+        "created_at": chore.created_at.replace(tzinfo=timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
+        "updated_at": chore.updated_at.replace(tzinfo=timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
         "description": chore.description,
-        "start_date": chore.start_date.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
-        "end_date": chore.end_date.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
+        "start_date": chore.start_date.replace(tzinfo=timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
+        "end_date": chore.end_date.replace(tzinfo=timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
         "is_task": chore.is_task,
         "completed": chore.completed,
         "assigned_roommate": assigned_roommate_data,

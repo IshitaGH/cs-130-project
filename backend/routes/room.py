@@ -6,6 +6,7 @@ from flask import jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from database import db
+from models.chore import Chore
 from models.roommate import Room, Roommate
 from models.chore import Chore
 from models.expense import Expense, Roommate_Expense, Expense_Period
@@ -153,21 +154,25 @@ def leave_room():
                 expenses = Expense.query.filter_by(expense_period_fkey=period.id).all()
                 for expense in expenses:
                     # Delete associated roommate expenses first
-                    roommate_expenses = Roommate_Expense.query.filter_by(expense_fkey=expense.id).all()
+                    roommate_expenses = Roommate_Expense.query.filter_by(
+                        expense_fkey=expense.id
+                    ).all()
                     for re in roommate_expenses:
                         db.session.delete(re)
                     db.session.commit()  # Commit roommate expenses deletion
-                    
+
                     # Then delete the expense itself
                     db.session.delete(expense)
                 db.session.commit()  # Commit expenses deletion
-                
+
                 # Finally delete the expense period
                 db.session.delete(period)
             db.session.commit()  # Commit expense period deletion
 
             # Delete all chores in the room
-            chores_in_room = Chore.query.filter(Chore.assignee_fkey.in_(roommate_ids)).all()
+            chores_in_room = Chore.query.filter(
+                Chore.assignee_fkey.in_(roommate_ids)
+            ).all()
             for chore in chores_in_room:
                 db.session.delete(chore)
             db.session.commit()  # Commit chores deletion
@@ -186,7 +191,11 @@ def leave_room():
     assigned_chores = Chore.query.filter(Chore.assignee_fkey == roommate_id).all()
     for chore in assigned_chores:
         # If the chore is recurring and the leaving roommate is in the rotation_order
-        if chore.recurrence != "none" and chore.rotation_order and roommate_id in chore.rotation_order:
+        if (
+            chore.recurrence != "none"
+            and chore.rotation_order
+            and roommate_id in chore.rotation_order
+        ):
             # Remove the leaving roommate from rotation_order
             chore.rotation_order = [r for r in chore.rotation_order if r != roommate_id]
 
@@ -205,7 +214,11 @@ def leave_room():
     remaining_chores = Chore.query.filter(Chore.assignee_fkey.in_(roommate_ids)).all()
     for chore in remaining_chores:
         # If the chore is recurring, remove the leaving roommate from the rotation_order
-        if chore.recurrence != "none" and chore.rotation_order and roommate_id in chore.rotation_order:
+        if (
+            chore.recurrence != "none"
+            and chore.rotation_order
+            and roommate_id in chore.rotation_order
+        ):
             chore.rotation_order = [r for r in chore.rotation_order if r != roommate_id]
 
     roommate.room_fkey = None

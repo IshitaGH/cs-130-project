@@ -21,7 +21,7 @@ def get_profile_picture():
     else:
         roommate_id = get_jwt_identity()
         roommate = Roommate.query.get_or_404(roommate_id)
-    
+
     if not roommate.profile_picture:
         return jsonify({"message": "No profile picture found"}), 404
 
