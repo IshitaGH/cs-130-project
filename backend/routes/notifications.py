@@ -1,14 +1,9 @@
 from datetime import datetime
 
-from flask import jsonify, request
-from flask_jwt_extended import (
-    JWTManager,
-    create_access_token,
-    get_jwt_identity,
-    jwt_required,
-)
-
 from database import db
+from flask import jsonify, request
+from flask_jwt_extended import (JWTManager, create_access_token,
+                                get_jwt_identity, jwt_required)
 from models.notifications import Notification
 from models.roommate import Room, Roommate
 
@@ -79,6 +74,9 @@ def get_notification():
     if not data is None and "notification_id" in data:
         notification = Notification.query.get(data["notification_id"])
 
+        if not notification:
+            return jsonify({"message": "Notification not found"}), 404
+
         return (
             jsonify(
                 {
@@ -91,7 +89,7 @@ def get_notification():
                     "room_fkey": notification.room_fkey,
                 }
             ),
-            201,
+            200,
         )
 
     elif not data is None:
@@ -182,7 +180,7 @@ def update_notification():
                 "room_fkey": notification.room_fkey,
             }
         ),
-        201,
+        200,
     )
 
 
@@ -194,6 +192,6 @@ def delete_notification():
     if notification:
         db.session.delete(notification)
         db.session.commit()
-        return jsonify({"message": "Notification deleted successfully"}), 200
+        return jsonify({"message": "Notification deleted successfully"}), 204
     else:
         return jsonify({"message": "Notification not found"}), 404

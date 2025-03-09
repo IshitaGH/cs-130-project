@@ -1,7 +1,6 @@
 # Backend Test Suite
 
 The test suite includes:
-
 - Unit tests for core functionality (e.g., chore rotation logic)
 - Integration tests for API endpoints
 - Fixtures for setting up test data
