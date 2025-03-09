@@ -124,7 +124,7 @@ class ExpensesTestCase(unittest.TestCase):
         self.assertEqual(data["title"], "vacuum")
         self.assertEqual(data["cost"], 500)
         self.assertEqual(data["description"], "need to clean")
-    
+
     def test_get_roommmate_expense(self):
         headers = self.handle_roommate_set_up()
 

@@ -154,21 +154,25 @@ def leave_room():
                 expenses = Expense.query.filter_by(expense_period_fkey=period.id).all()
                 for expense in expenses:
                     # Delete associated roommate expenses first
-                    roommate_expenses = Roommate_Expense.query.filter_by(expense_fkey=expense.id).all()
+                    roommate_expenses = Roommate_Expense.query.filter_by(
+                        expense_fkey=expense.id
+                    ).all()
                     for re in roommate_expenses:
                         db.session.delete(re)
                     db.session.commit()  # Commit roommate expenses deletion
-                    
+
                     # Then delete the expense itself
                     db.session.delete(expense)
                 db.session.commit()  # Commit expenses deletion
-                
+
                 # Finally delete the expense period
                 db.session.delete(period)
             db.session.commit()  # Commit expense period deletion
 
             # Delete all chores in the room
-            chores_in_room = Chore.query.filter(Chore.assignee_fkey.in_(roommate_ids)).all()
+            chores_in_room = Chore.query.filter(
+                Chore.assignee_fkey.in_(roommate_ids)
+            ).all()
             for chore in chores_in_room:
                 db.session.delete(chore)
             db.session.commit()  # Commit chores deletion

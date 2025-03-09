@@ -53,10 +53,12 @@ migrate.init_app(app, db)
 # Set up logging
 logger = setup_logging()
 
+
 # Log request details and set user info
 @app.before_request
 def before_request():
     log_request_info(logger)
+
 
 # Log response details
 @app.after_request
