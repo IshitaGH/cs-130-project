@@ -119,8 +119,8 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
 
   const closeCurrentPeriod = () => {
     Alert.alert(
-      'Close expense period',
-      'Are you sure you would like to close the current expense period? This cannot be undone.',
+      'Close Expense Period',
+      'Are you sure? This cannot be undone.',
       [
         {
           text: 'Cancel',
