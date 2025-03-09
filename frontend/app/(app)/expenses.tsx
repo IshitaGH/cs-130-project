@@ -187,7 +187,7 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
           )}
           
           {!current && Object.keys(balances).length > 0 && (
-            <Text style={styles.balanceTitle}>Balances</Text>
+            <Text style={styles.balanceTitle}>Your Balance</Text>
           )}
 
           {!current && Object.keys(balances).length > 0 && (
