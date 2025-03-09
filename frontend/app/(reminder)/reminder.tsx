@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { RefreshControl, View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { apiGetNotifications, apiDeleteNotification } from "@/utils/api/apiClient";
+import { apiGetNotifications, apiDeleteNotification, apiUpdateNotification } from "@/utils/api/apiClient";
 import Toast from "react-native-toast-message";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -13,6 +13,7 @@ interface Notification {
   notification_recipient: number;
   notification_sender: number;
   notification_time: string;
+  is_read: boolean;
 }
 
 export default function NotificationsScreen() {
@@ -70,6 +71,26 @@ export default function NotificationsScreen() {
     }
   };
 
+  // Mark notification as read
+  const markAsRead = async (notificationId: number) => {
+    try {
+      await apiUpdateNotification(session, {
+        notification_id: notificationId,
+        is_read: true
+      });
+      // Update the local list
+      setNotifications(prevNotifications => 
+        prevNotifications.map(notification => 
+          notification.id === notificationId 
+            ? { ...notification, is_read: true } 
+            : notification
+        )
+      );
+    } catch (error: any) {
+      Toast.show({ type: "error", text1: "Error", text2: error.message || "Failed to mark notification as read" });
+    }
+  };
+
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
@@ -94,19 +115,25 @@ export default function NotificationsScreen() {
               }
             }
             return (
-              <View style={styles.notificationItem}>
+              <TouchableOpacity 
+                style={[styles.notificationItem, item.is_read ? styles.readNotification : null]} 
+                onPress={() => !item.is_read && markAsRead(item.id)}
+              >
                 <View style={styles.notificationIconContainer}>
                   <Ionicons name="notifications" size={24} color="#FFF" />
                 </View>
                 <View style={styles.notificationContent}>
-                  <Text style={styles.notificationTitle}>{item.title || "Notification"}</Text>
+                  <View style={styles.notificationHeader}>
+                    <Text style={styles.notificationTitle}>{item.title || "Notification"}</Text>
+                    {!item.is_read && <View style={styles.unreadIndicator} />}
+                  </View>
                   <Text style={styles.message}>{item.description || "No message"}</Text>
                   <Text style={styles.timestamp}>{formattedDate}</Text>
                 </View>
                 <TouchableOpacity onPress={() => handleDeleteNotification(item.id)} style={styles.deleteButton}>
                   <Ionicons name="trash" size={20} color="#FF0000" />
                 </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             );
           }}
           refreshControl={
@@ -157,6 +184,10 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 3,
   },
+  readNotification: {
+    backgroundColor: "#F8F8F8",
+    opacity: 0.8,
+  },
   notificationIconContainer: {
     width: 40,
     height: 40,
@@ -169,10 +200,23 @@ const styles = StyleSheet.create({
   notificationContent: {
     flex: 1,
   },
+  notificationHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   notificationTitle: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#333",
+    flex: 1,
+  },
+  unreadIndicator: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#00D09E",
+    marginLeft: 5,
   },
   message: {
     fontSize: 14,
