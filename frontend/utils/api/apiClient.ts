@@ -1,4 +1,3 @@
-// @ts-ignore
 import { API_URL } from '@/config';
 
 // NOTE: should only be called via AuthContext
@@ -375,11 +374,7 @@ export async function apiUpdateProfilePicture(session: any, profilePicture: stri
   } else {
     //if profilePicture file, use FormData
     const formData = new FormData();
-    formData.append('profile_picture', {
-      uri: profilePicture.uri,
-      name: 'profile.jpg', //file name
-      type: 'image/jpeg', //adjust the MIME type based on the image
-    });
+    formData.append('profile_picture', profilePicture, 'profile.jpg');
 
     body = formData;
     headers = {
