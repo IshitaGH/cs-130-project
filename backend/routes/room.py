@@ -8,6 +8,7 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 from database import db
 from models.roommate import Room, Roommate
 from models.chore import Chore
+from models.expense import Expense, Roommate_Expense, Expense_Period
 
 
 # TODO: Increase length to be more secure. Keeping it short for now for development.
@@ -145,16 +146,41 @@ def leave_room():
 
     # If this is the last roommate in the room
     if len(roommate_ids) == 1 and roommate_ids[0] == roommate_id:
-        # Delete all chores in the room
-        chores_in_room = Chore.query.filter(Chore.assignee_fkey.in_(roommate_ids)).all()
-        for chore in chores_in_room:
-            db.session.delete(chore)
+        try:
+            # First delete all roommate expenses
+            expense_periods = Expense_Period.query.filter_by(room_fkey=room.id).all()
+            for period in expense_periods:
+                expenses = Expense.query.filter_by(expense_period_fkey=period.id).all()
+                for expense in expenses:
+                    # Delete associated roommate expenses first
+                    roommate_expenses = Roommate_Expense.query.filter_by(expense_fkey=expense.id).all()
+                    for re in roommate_expenses:
+                        db.session.delete(re)
+                    db.session.commit()  # Commit roommate expenses deletion
+                    
+                    # Then delete the expense itself
+                    db.session.delete(expense)
+                db.session.commit()  # Commit expenses deletion
+                
+                # Finally delete the expense period
+                db.session.delete(period)
+            db.session.commit()  # Commit expense period deletion
 
-        roommate.room_fkey = None
-        db.session.delete(room)
+            # Delete all chores in the room
+            chores_in_room = Chore.query.filter(Chore.assignee_fkey.in_(roommate_ids)).all()
+            for chore in chores_in_room:
+                db.session.delete(chore)
+            db.session.commit()  # Commit chores deletion
 
-        db.session.commit()
-        return {}, 200
+            # Finally update roommate and delete room
+            roommate.room_fkey = None
+            db.session.delete(room)
+            db.session.commit()
+
+            return {}, 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"message": f"Error deleting room: {str(e)}"}), 500
 
     # All chores where the leaving roommate is the assignee
     assigned_chores = Chore.query.filter(Chore.assignee_fkey == roommate_id).all()
@@ -183,7 +209,6 @@ def leave_room():
             chore.rotation_order = [r for r in chore.rotation_order if r != roommate_id]
 
     roommate.room_fkey = None
-
     db.session.commit()
 
     return {}, 200

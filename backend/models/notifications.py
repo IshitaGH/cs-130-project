@@ -1,9 +1,8 @@
 from datetime import datetime
 
+from database import db
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
-
-from database import db
 
 # from models.chore import Chore
 

@@ -6,7 +6,7 @@ export default function IndexScreen() {
 
   return (
     <View style={styles.container}>
-      <Image source={require("@/assets/images/icon.png")} style={styles.logo} />
+      <Image source={require("@/assets/images/icon.png")} style={styles.logo} testID="app-logo"/>
 
       <Text style={styles.title}>Roomies</Text>
 

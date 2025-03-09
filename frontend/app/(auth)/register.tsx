@@ -59,6 +59,7 @@ export default function LoginScreen() {
           style={styles.input}
           placeholderTextColor="#aaa"
           onSubmitEditing={() => lastNameInputRef.current?.focus()}
+          autoCapitalize="words"
         />
 
         <TextInput
@@ -69,6 +70,7 @@ export default function LoginScreen() {
           style={styles.input}
           placeholderTextColor="#aaa"
           onSubmitEditing={() => usernameInputRef.current?.focus()}
+          autoCapitalize="words"
         />
 
         <TextInput
@@ -79,6 +81,7 @@ export default function LoginScreen() {
           style={styles.input}
           placeholderTextColor="#aaa"
           onSubmitEditing={() => passwordInputRef.current?.focus()}
+          autoCapitalize="none"
         />
 
         <TextInput
@@ -90,9 +93,14 @@ export default function LoginScreen() {
           style={styles.input}
           placeholderTextColor="#aaa"
           onSubmitEditing={() => {}}
+          autoCapitalize="none"
         />
 
-        <TouchableOpacity style={styles.button} onPress={handleRegister}>
+        <TouchableOpacity 
+          style={styles.button} 
+          onPress={handleRegister}
+          testID="register-button"
+        >
           <Text style={styles.buttonText}>Register</Text>
         </TouchableOpacity>
 
