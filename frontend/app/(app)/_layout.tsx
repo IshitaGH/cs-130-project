@@ -35,6 +35,7 @@ export default function AppLayout() {
             <Ionicons name="home" color={color} size={size} />
           ),
           title: "Home",
+          headerTitle: "",
           headerRight: () => (
             <TouchableOpacity
               onPress={() => router.push("/(reminder)/reminder")} // Navigate to the reminder page
@@ -86,14 +87,7 @@ export default function AppLayout() {
             <Ionicons name="settings" color={color} size={size} />
           ),
           title: "Settings",
-          headerRight: () => (
-            <TouchableOpacity
-              onPress={() => router.push("/(reminder)/reminder")} // Navigate to the reminder page
-              style={{ marginRight: 15 }}
-            >
-              <Ionicons name="notifications" size={24} color="#555" />
-            </TouchableOpacity>
-          ),
+          headerTitle: ""
         }}
       />
     </Tabs>

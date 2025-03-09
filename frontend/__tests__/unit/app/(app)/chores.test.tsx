@@ -150,7 +150,7 @@ describe('ChoresScreen', () => {
     const { getByText } = render(<ChoresScreen />);
 
     await act(async () => {
-      fireEvent.press(getByText('Assign'));
+      fireEvent.press(getByText('Add Chore'));
       await waitForAnimations();
     });
 
@@ -161,7 +161,7 @@ describe('ChoresScreen', () => {
     const { getByText } = render(<ChoresScreen />);
 
     await act(async () => {
-      fireEvent.press(getByText('Assign'));
+      fireEvent.press(getByText('Add Chore'));
       await waitForAnimations();
     });
 
@@ -198,7 +198,7 @@ describe('ChoresScreen', () => {
     const { getByText, getByPlaceholderText, getByTestId } = render(<ChoresScreen />);
 
     await act(async () => {
-      fireEvent.press(getByText('Assign'));
+      fireEvent.press(getByText('Add Chore'));
       await waitForAnimations();
     });
 

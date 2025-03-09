@@ -632,8 +632,8 @@ export default function ChoresScreen() {
         />
 
         <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
-          <MaterialIcons name="edit" size={24} color="#FFFFFF" />
-          <Text style={styles.fabText}>Assign</Text>
+          <MaterialIcons name="add" size={24} color="#FFFFFF" />
+          <Text style={styles.fabText}>Add Chore</Text>
         </TouchableOpacity>
 
         <Modal

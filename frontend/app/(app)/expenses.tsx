@@ -56,21 +56,6 @@ type Roommate = {
   username: string;
 };
 
-// credit to https://stackoverflow.com/a/72554509
-const alertPolyfill = (title: string, description: string, options: any[], extra?: any) => {
-  const result = window.confirm([title, description].filter(Boolean).join('\n'))
-
-  if (result) {
-      const confirmOption = options.find(({ style }) => style !== 'cancel')
-      confirmOption && confirmOption.onPress && confirmOption.onPress()
-  } else {
-      const cancelOption = options.find(({ style }) => style === 'cancel')
-      cancelOption && cancelOption.onPress && cancelOption.onPress()
-  }
-};
-
-const alert = Platform.OS === 'web' ? alertPolyfill : Alert.alert;
-
 const dateFormat = (date: Date) => {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 };
@@ -103,60 +88,82 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
   const { roommates, currentUser, session, refresh } = sessionState;
 
   const title = current
-    ? "Current Expense Period"
+    ? "Current"
     : `${dateFormat(new Date(start_date))} to ${dateFormat(new Date(end_date))}`;
 
   const [expanded, setExpanded] = useState<boolean>(current);
   const [balances, setBalances] = useState<BalanceMap>({});
 
   const handleDeleteExpense = (expenseId: number) => {
-    apiDeleteExpense(session, expenseId).then(() => {
-      const updatedExpenses = expenses.filter((exp) => exp.id !== expenseId);
-      updateExpenses(id, updatedExpenses);
-    }).catch(error => {
-      Toast.show({
-        type: 'error',
-        text1: 'Error Deleting Expense',
-        text2: error.message || 'Failed to delete expense'
-      });
+    Alert.alert(
+      'Delete Expense',
+      'Are you sure you want to delete this expense?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          onPress: () => {
+            apiDeleteExpense(session, expenseId).then(() => {
+              const updatedExpenses = expenses.filter((exp) => exp.id !== expenseId);
+              updateExpenses(id, updatedExpenses);
+            }).catch(error => {
+              Toast.show({
+                type: 'error',
+                text1: 'Error Deleting Expense',
+                text2: error.message || 'Failed to delete expense'
+              });
 
-      console.error(error);
-    });
+              console.error(error);
+            });
+          }
+        }
+      ]
+    );
   };
 
   useEffect(() => calculatePersonalBalances(expenses, setBalances, roommates, currentUser), [expenses]);
 
   const closeCurrentPeriod = () => {
-    alert('Close expense period',
-      'Are you sure you would like to close the current expense period? This cannot be undone.', [
-      {
-        text: 'Cancel',
-        style: 'cancel',
-      },
-      {
-        text: 'Close period',
-        onPress: () => {
-          apiCloseExpensePeriod(session).then(() => {
-            refresh();
-          }).catch(error => {
-            Toast.show({
-              type: 'error',
-              text1: 'Error Closing Period',
-              text2: error.message || 'Failed to close expense period'
+    Alert.alert(
+      'Close Expense Period',
+      'Are you sure? This cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Close period',
+          onPress: () => {
+            apiCloseExpensePeriod(session).then(() => {
+              refresh();
+            }).catch(error => {
+              Toast.show({
+                type: 'error',
+                text1: 'Error Closing Period',
+                text2: error.message || 'Failed to close expense period'
+              });
+        
+              console.error(error);
             });
-      
-            console.error(error);
-          });
+          }
         }
-      }
-    ]);
-  }
+      ]
+    );
+  };
+
+  const getInitials = (firstName: string, lastName: string): string => {
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`;
+  };
 
   return (
     <View style={styles.card}>
       <TouchableOpacity style={styles.cardHeader} onPress={() => setExpanded(!expanded)}>
         <Text style={styles.cardTitle}>{title}</Text>
-        <MaterialIcons name={expanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={24} color="black" />
+        <MaterialIcons name={expanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={24} color="#007F5F" />
       </TouchableOpacity>
 
       {expanded && (
@@ -164,24 +171,41 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
           {expenses.length === 0 ? (
             <Text style={styles.emptyText}>There are no expenses in the current period</Text>
           ) : (
-            expenses.map(item => (
-              <View key={item.id} style={styles.expenseRow}>
-                <View style={styles.expenseInfo}>
-                  <Text style={styles.expenseDescription}>{item.description}: ${item.cost.toFixed(2)}</Text>
-                  <Text style={styles.expensePayer}>Paid by {(() => {
-                      let roommate = roommates.find(roommate => roommate.id === item.roommate_fkey);
-                      return roommate ? `${roommate.first_name} ${roommate.last_name}` : 'Unknown'
-                    })()} on {dateFormat(new Date(item.created_at))}</Text>
+            expenses.map(item => {
+              const payer = roommates.find(roommate => roommate.id === item.roommate_fkey);
+              const payerName = payer ? `${payer.first_name} ${payer.last_name}` : 'Unknown';
+              
+              return (
+                <View key={item.id} style={styles.expenseRow}>
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>
+                      {payer ? getInitials(payer.first_name, payer.last_name) : "??"}
+                    </Text>
+                  </View>
+                  <View style={styles.expenseInfo}>
+                    <View style={styles.choreNameRow}>
+                      <Text style={styles.expenseDescription}>{item.description}</Text>
+                      <Text style={styles.expenseDate}>
+                        {dateFormat(new Date(item.created_at))}
+                      </Text>
+                    </View>
+                    <Text style={styles.expensePayer}>
+                      ${item.cost.toFixed(2)} • Paid by {payerName}
+                    </Text>
+                  </View>
+                  { current && <TouchableOpacity 
+                    onPress={() => handleDeleteExpense(item.id)}
+                    style={styles.deleteButton}
+                  >
+                    <MaterialIcons name="delete" size={24} color="#E57373" />
+                  </TouchableOpacity> }
                 </View>
-                { current && <TouchableOpacity onPress={() => handleDeleteExpense(item.id)}>
-                  <MaterialIcons name="delete" size={24} color="#E57373" />
-                </TouchableOpacity> }
-              </View>
-            ))
+              );
+            })
           )}
           
           {!current && Object.keys(balances).length > 0 && (
-            <Text style={styles.balanceTitle}>Balances</Text>
+            <Text style={styles.balanceTitle}>Your Balance</Text>
           )}
 
           {!current && Object.keys(balances).length > 0 && (
@@ -294,26 +318,20 @@ export default function ExpensesScreen() {
 
   const addExpense = () => {
     if (!description || !amount || !payerId) {
-      alert(
-        'Error adding expense',
-        'Must include expense description, amount, and payer',
-        [{
-          text: 'OK',
-        }]
-      );
-
+      Toast.show({
+        type: 'error',
+        text1: 'Error adding expense',
+        text2: 'Must include description, cost, and responsible roommate'
+      });
       return;
     }
 
     if (!RegExp(/^[0-9]+\.?[0-9]{0,2}$/).test(amount)) {
-      alert(
-        'Error adding expense',
-        'Expense amount must be numeric',
-        [{
-          text: 'OK',
-        }]
-      );
-
+      Toast.show({
+        type: 'error',
+        text1: 'Error adding expense',
+        text2: 'Expense amount must be numeric'
+      });
       return;
     }
 
@@ -349,15 +367,18 @@ export default function ExpensesScreen() {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={{ paddingBottom: 80 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh}
           tintColor="#00D09E" colors={["#00D09E"]} />}
       >
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Your Current Balance</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionHeaderText}>Your Current Balance</Text>
+        </View>
+        
+        <View style={styles.balanceCard}>
           {roommates
             .filter((roommate) => roommate.id !== userId) // Exclude the current user
             .map((roommate) => (
@@ -375,6 +396,10 @@ export default function ExpensesScreen() {
             ))}
         </View>
 
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionHeaderText}>Expense Periods</Text>
+        </View>
+
         {expensePeriods.map((period) => (
           <ExpenseCard key={period.id} id={period.id} open={period.open} start_date={period.start_date}
             end_date={period.end_date} expenses={period.expenses} updateExpenses={updateExpenses}
@@ -382,55 +407,69 @@ export default function ExpensesScreen() {
         ))}
 
         <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalContainer}>
-            <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
-              <Text style={styles.modalTitle}>Add Expense</Text>
-              <TextInput style={styles.input} placeholder="Description" value={description} onChangeText={setDescription} />
-              <TextInput style={styles.input} placeholder="Amount" keyboardType="numeric" value={amount} onChangeText={setAmount} />
-              <Text style={styles.label}>Roommate Responsible</Text>
-              <ScrollView
-                horizontal={true}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.roommateScrollContainer}
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === "ios" ? "padding" : "height"} 
+            style={{ flex: 1 }}
+          >
+            <TouchableOpacity 
+              style={styles.modalContainer} 
+              activeOpacity={1} 
+              onPress={() => setModalVisible(false)}
+            >
+              <TouchableOpacity 
+                activeOpacity={1} 
+                onPress={(e) => e.stopPropagation()}
               >
-                {roommates
-                  .sort((a, b) => {
-                    if (a.id === userId) return -1;
-                    if (b.id === userId) return 1;
-                    return 0;
-                  })
-                  .map((roommate) => (
-                  <TouchableOpacity
-                    key={roommate.id}
-                    onPress={() => setPayerId(roommate.id)}
-                    style={[
-                      styles.roommateOption,
-                      payerId === roommate.id && styles.selectedRoommateOption
-                    ]}
+                <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
+                  <Text style={styles.modalTitle}>Add Expense</Text>
+                  <TextInput style={styles.input} placeholder="Description" value={description} onChangeText={setDescription} />
+                  <TextInput style={styles.input} placeholder="Cost" keyboardType="numeric" value={amount} onChangeText={setAmount} />
+                  <Text style={styles.label}>Roommate Responsible</Text>
+                  <ScrollView
+                    horizontal={true}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.roommateScrollContainer}
                   >
-                    <View style={styles.roommateAvatar}>
-                      <Text style={styles.roommateAvatarText}>
-                        {`${roommate.first_name.charAt(0)}${roommate.last_name.charAt(0)}`}
-                      </Text>
-                    </View>
-                    <Text
-                      style={[
-                        styles.roommateSelectName,
-                        payerId === roommate.id && styles.selectedRoommateName
-                      ]}
-                    >
-                      {roommate.id === userId ? "You" : roommate.first_name}
-                    </Text>
+                    {roommates
+                      .sort((a, b) => {
+                        if (a.id === userId) return -1;
+                        if (b.id === userId) return 1;
+                        return 0;
+                      })
+                      .map((roommate) => (
+                      <TouchableOpacity
+                        key={roommate.id}
+                        onPress={() => setPayerId(roommate.id)}
+                        style={[
+                          styles.roommateOption,
+                          payerId === roommate.id && styles.selectedRoommateOption
+                        ]}
+                      >
+                        <View style={styles.roommateAvatar}>
+                          <Text style={styles.roommateAvatarText}>
+                            {`${roommate.first_name.charAt(0)}${roommate.last_name.charAt(0)}`}
+                          </Text>
+                        </View>
+                        <Text
+                          style={[
+                            styles.roommateSelectName,
+                            payerId === roommate.id && styles.selectedRoommateName
+                          ]}
+                        >
+                          {roommate.id === userId ? "You" : roommate.first_name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                  <TouchableOpacity style={styles.submitButton} onPress={addExpense}>
+                    <Text style={styles.submitButtonText}>Save Expense</Text>
                   </TouchableOpacity>
-                ))}
-              </ScrollView>
-              <TouchableOpacity style={styles.submitButton} onPress={addExpense}>
-                <Text style={styles.submitButtonText}>Save Expense</Text>
+                  <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+                    <Text style={styles.closeButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                </Animated.View>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-                <Text style={styles.closeButtonText}>Cancel</Text>
-              </TouchableOpacity>
-            </Animated.View>
+            </TouchableOpacity>
           </KeyboardAvoidingView>
         </Modal>
       </ScrollView>
@@ -444,43 +483,257 @@ export default function ExpensesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, flexGrow: 1, overflow: 'scroll', padding: 20, backgroundColor: "#FFFFFF" },
-  card: { backgroundColor: "#DFF7E280", borderRadius: 12, padding: 15, marginBottom: 20 },
-  cardTitle: { fontSize: 18, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
-  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 10 },
-  balancesContainer: { margin: 15 },
-  balanceTitle: { fontSize: 18, fontWeight: "bold", color: "#007F5F", marginTop: 25 },
-  balanceRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 5 },
-  roommateName: { fontSize: 16, fontWeight: "bold", color: "#333" },
-  balanceAmount: { fontSize: 16, fontWeight: "bold" },
-  expenseRow: { flexDirection: "row", justifyContent: "space-between", padding: 10, borderBottomWidth: 1, borderColor: "#DDD" },
-  expenseInfo: { flex: 1 },
-  expenseDescription: { fontSize: 16, fontWeight: "bold", color: "#333" },
-  expensePayer: { fontSize: 14, color: "#666" },
-  modalTitle: { fontSize: 20, fontWeight: "bold", color: "#007F5F", marginBottom: 10 },
-  modalContainer: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0, 0, 0, 0.5)" },
-  modalContent: { backgroundColor: "#FFFFFF", padding: 20, borderTopLeftRadius: 16, borderTopRightRadius: 16 },
-  input: { borderWidth: 1, borderColor: "#CCC", borderRadius: 8, padding: 10, marginBottom: 15 },
-  submitButton: { backgroundColor: "#00D09E", padding: 10, borderRadius: 8, alignItems: "center" },
-  submitButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
-  closeButton: { alignItems: "center", paddingVertical: 10 },
-  closeButtonText: { fontSize: 16, color: "#007FFF", fontWeight: "bold" },
-  expenseCloseButton: { alignSelf: "center", marginTop: 30, paddingVertical: 10, paddingHorizontal: 20, backgroundColor: "#00D09E", padding: 10, borderRadius: 12 },
-  expenseCloseButtonText: { color: "#FFFFFF", fontWeight: "bold" },
-  fab: { position: "absolute", bottom: 20, right: 20, flexDirection: "row", backgroundColor: "#00D09E", padding: 10, borderRadius: 12 },
-  fabText: { color: "#FFFFFF", fontWeight: "bold", marginLeft: 8, alignSelf: "center" },
-  label: { fontSize: 16, fontWeight: "bold", color: "#007F5F", marginBottom: 5 },
-  roommateScrollContainer: { paddingBottom: 10, },
-  roommateOption: { alignItems: 'center', marginRight: 15, padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#EEE', minWidth: 100 },
-  selectedRoommateOption: { backgroundColor: '#00D09E', borderColor: '#00D09E' },
-  roommateAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#CDEEEE', justifyContent: 'center', alignItems: 'center', marginBottom: 5 },
-  roommateAvatarText: { fontSize: 16, fontWeight: 'bold', color: '#007F5F' },
-  roommateSelectName: { fontSize: 14, color: '#333', textAlign: 'center' },
-  selectedRoommateName: { color: '#FFFFFF' },
+  container: { 
+    flex: 1, 
+    padding: 20, 
+    backgroundColor: "#FFFFFF" 
+  },
+  sectionHeader: { 
+    backgroundColor: "#FFFFFF", 
+    paddingVertical: 10, 
+    paddingHorizontal: 0,
+    marginBottom: 5
+  },
+  sectionHeaderText: { 
+    fontSize: 20, 
+    fontWeight: "bold", 
+    color: "#007F5F" 
+  },
+  balanceCard: { 
+    backgroundColor: "#DFF7E280", 
+    borderRadius: 12, 
+    padding: 15, 
+    marginBottom: 20 
+  },
+  card: { 
+    backgroundColor: "#FFFFFF", 
+    borderRadius: 12, 
+    padding: 12, 
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#EEE",
+    elevation: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  cardTitle: { 
+    fontSize: 17, 
+    fontWeight: "bold", 
+    color: "#007F5F"
+  },
+  cardHeader: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    alignItems: "center", 
+    paddingVertical: 8 
+  },
+  balancesContainer: { 
+    marginTop: 10 
+  },
+  balanceTitle: { 
+    fontSize: 16, 
+    fontWeight: "bold", 
+    color: "#007F5F", 
+    marginTop: 15,
+    marginBottom: 5
+  },
+  balanceRow: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0"
+  },
+  roommateName: { 
+    fontSize: 16, 
+    fontWeight: "600", 
+    color: "#333" 
+  },
+  balanceAmount: { 
+    fontSize: 16, 
+    fontWeight: "bold" 
+  },
+  expenseRow: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    padding: 12, 
+    borderBottomWidth: 1, 
+    borderColor: "#F0F0F0"
+  },
+  expenseInfo: { 
+    flex: 1,
+    marginLeft: 10,
+  },
+  expenseDescription: { 
+    fontSize: 16, 
+    fontWeight: "bold", 
+    color: "#333",
+    flex: 1,
+    marginRight: 8,
+  },
+  expensePayer: { 
+    fontSize: 14, 
+    color: "#666",
+    marginTop: 2,
+  },
+  deleteButton: {
+    padding: 8,
+  },
+  modalTitle: { 
+    fontSize: 20, 
+    fontWeight: "bold", 
+    color: "#007F5F", 
+    marginBottom: 15 
+  },
+  modalContainer: { 
+    flex: 1, 
+    justifyContent: "flex-end", 
+    backgroundColor: "rgba(0, 0, 0, 0.5)" 
+  },
+  modalContent: { 
+    backgroundColor: "#FFFFFF", 
+    padding: 20, 
+    borderTopLeftRadius: 16, 
+    borderTopRightRadius: 16 
+  },
+  input: { 
+    borderWidth: 1, 
+    borderColor: "#CCC", 
+    borderRadius: 8, 
+    padding: 12,
+    marginBottom: 15,
+    fontSize: 16,
+    color: "#333"
+  },
+  submitButton: { 
+    backgroundColor: "#00D09E", 
+    paddingVertical: 15,
+    paddingHorizontal: 10, 
+    borderRadius: 8, 
+    alignItems: "center",
+    marginTop: 5
+  },
+  submitButtonText: { 
+    color: "#FFFFFF", 
+    fontSize: 16, 
+    fontWeight: "bold" 
+  },
+  closeButton: { 
+    alignItems: "center", 
+    paddingVertical: 12,
+    marginTop: 5
+  },
+  closeButtonText: { 
+    fontSize: 16, 
+    color: "#007FFF", 
+    fontWeight: "bold" 
+  },
+  expenseCloseButton: { 
+    alignSelf: "center", 
+    marginTop: 20, 
+    marginBottom: 10,
+    paddingVertical: 8, 
+    paddingHorizontal: 16, 
+    backgroundColor: "#757575", 
+    borderRadius: 8 
+  },
+  expenseCloseButtonText: { 
+    color: "#FFFFFF", 
+    fontSize: 14,
+    fontWeight: "bold" 
+  },
+  fab: { 
+    position: "absolute", 
+    bottom: 20, 
+    right: 20, 
+    flexDirection: "row", 
+    backgroundColor: "#00D09E", 
+    padding: 10,
+    borderRadius: 12,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  fabText: { 
+    color: "#FFFFFF", 
+    fontWeight: "bold", 
+    marginLeft: 8, 
+    alignSelf: "center" 
+  },
+  label: { 
+    fontSize: 16, 
+    fontWeight: "bold", 
+    color: "#007F5F", 
+    marginBottom: 8 
+  },
+  roommateScrollContainer: { 
+    paddingBottom: 15,
+  },
+  roommateOption: { 
+    alignItems: 'center', 
+    marginRight: 15, 
+    padding: 12, 
+    borderRadius: 8, 
+    borderWidth: 1, 
+    borderColor: '#EEE', 
+    minWidth: 100 
+  },
+  selectedRoommateOption: { 
+    backgroundColor: '#00D09E', 
+    borderColor: '#00D09E' 
+  },
+  roommateAvatar: { 
+    width: 40, 
+    height: 40, 
+    borderRadius: 20, 
+    backgroundColor: '#CDEEEE', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    marginBottom: 8 
+  },
+  roommateAvatarText: { 
+    fontSize: 16, 
+    fontWeight: 'bold', 
+    color: '#007F5F' 
+  },
+  roommateSelectName: { 
+    fontSize: 14, 
+    color: '#333', 
+    textAlign: 'center' 
+  },
+  selectedRoommateName: { 
+    color: '#FFFFFF' 
+  },
   emptyText: {
     textAlign: 'center',
     color: '#999',
     fontSize: 14,
-    paddingVertical: 10,
+    paddingVertical: 15,
+  },
+  avatar: { 
+    width: 40, 
+    height: 40, 
+    borderRadius: 20, 
+    backgroundColor: "#CDEEEE", 
+    justifyContent: "center", 
+    alignItems: "center" 
+  },
+  avatarText: { 
+    fontSize: 16, 
+    fontWeight: "bold", 
+    color: "#007F5F" 
+  },
+  choreNameRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  expenseDate: { 
+    fontSize: 14, 
+    color: '#666',
   },
 });
