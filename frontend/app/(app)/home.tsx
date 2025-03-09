@@ -259,6 +259,12 @@ const styles = StyleSheet.create({
     color: "#666",
     textAlign: "center",
   },
+  codeLabel: {
+    fontSize: 14,
+    color: "#555",
+    marginBottom: 4,
+    textAlign: "center",
+  },
   roommatesContainer: {
     flex: 1,
   },
