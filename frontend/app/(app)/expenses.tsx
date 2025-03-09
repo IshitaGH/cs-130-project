@@ -650,8 +650,7 @@ const styles = StyleSheet.create({
     right: 20, 
     flexDirection: "row", 
     backgroundColor: "#00D09E", 
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    padding: 10,
     borderRadius: 12,
     elevation: 4,
     shadowColor: "#000",
@@ -663,7 +662,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF", 
     fontWeight: "bold", 
     marginLeft: 8, 
-    fontSize: 16
+    alignSelf: "center" 
   },
   label: { 
     fontSize: 16, 
