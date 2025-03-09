@@ -382,55 +382,69 @@ export default function ExpensesScreen() {
         ))}
 
         <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalContainer}>
-            <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
-              <Text style={styles.modalTitle}>Add Expense</Text>
-              <TextInput style={styles.input} placeholder="Description" value={description} onChangeText={setDescription} />
-              <TextInput style={styles.input} placeholder="Amount" keyboardType="numeric" value={amount} onChangeText={setAmount} />
-              <Text style={styles.label}>Roommate Responsible</Text>
-              <ScrollView
-                horizontal={true}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.roommateScrollContainer}
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === "ios" ? "padding" : "height"} 
+            style={{ flex: 1 }}
+          >
+            <TouchableOpacity 
+              style={styles.modalContainer} 
+              activeOpacity={1} 
+              onPress={() => setModalVisible(false)}
+            >
+              <TouchableOpacity 
+                activeOpacity={1} 
+                onPress={(e) => e.stopPropagation()}
               >
-                {roommates
-                  .sort((a, b) => {
-                    if (a.id === userId) return -1;
-                    if (b.id === userId) return 1;
-                    return 0;
-                  })
-                  .map((roommate) => (
-                  <TouchableOpacity
-                    key={roommate.id}
-                    onPress={() => setPayerId(roommate.id)}
-                    style={[
-                      styles.roommateOption,
-                      payerId === roommate.id && styles.selectedRoommateOption
-                    ]}
+                <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
+                  <Text style={styles.modalTitle}>Add Expense</Text>
+                  <TextInput style={styles.input} placeholder="Description" value={description} onChangeText={setDescription} />
+                  <TextInput style={styles.input} placeholder="Amount" keyboardType="numeric" value={amount} onChangeText={setAmount} />
+                  <Text style={styles.label}>Roommate Responsible</Text>
+                  <ScrollView
+                    horizontal={true}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.roommateScrollContainer}
                   >
-                    <View style={styles.roommateAvatar}>
-                      <Text style={styles.roommateAvatarText}>
-                        {`${roommate.first_name.charAt(0)}${roommate.last_name.charAt(0)}`}
-                      </Text>
-                    </View>
-                    <Text
-                      style={[
-                        styles.roommateSelectName,
-                        payerId === roommate.id && styles.selectedRoommateName
-                      ]}
-                    >
-                      {roommate.id === userId ? "You" : roommate.first_name}
-                    </Text>
+                    {roommates
+                      .sort((a, b) => {
+                        if (a.id === userId) return -1;
+                        if (b.id === userId) return 1;
+                        return 0;
+                      })
+                      .map((roommate) => (
+                      <TouchableOpacity
+                        key={roommate.id}
+                        onPress={() => setPayerId(roommate.id)}
+                        style={[
+                          styles.roommateOption,
+                          payerId === roommate.id && styles.selectedRoommateOption
+                        ]}
+                      >
+                        <View style={styles.roommateAvatar}>
+                          <Text style={styles.roommateAvatarText}>
+                            {`${roommate.first_name.charAt(0)}${roommate.last_name.charAt(0)}`}
+                          </Text>
+                        </View>
+                        <Text
+                          style={[
+                            styles.roommateSelectName,
+                            payerId === roommate.id && styles.selectedRoommateName
+                          ]}
+                        >
+                          {roommate.id === userId ? "You" : roommate.first_name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                  <TouchableOpacity style={styles.submitButton} onPress={addExpense}>
+                    <Text style={styles.submitButtonText}>Save Expense</Text>
                   </TouchableOpacity>
-                ))}
-              </ScrollView>
-              <TouchableOpacity style={styles.submitButton} onPress={addExpense}>
-                <Text style={styles.submitButtonText}>Save Expense</Text>
+                  <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+                    <Text style={styles.closeButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                </Animated.View>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-                <Text style={styles.closeButtonText}>Cancel</Text>
-              </TouchableOpacity>
-            </Animated.View>
+            </TouchableOpacity>
           </KeyboardAvoidingView>
         </Modal>
       </ScrollView>
