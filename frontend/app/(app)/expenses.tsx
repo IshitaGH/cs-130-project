@@ -634,14 +634,14 @@ const styles = StyleSheet.create({
     alignSelf: "center", 
     marginTop: 20, 
     marginBottom: 10,
-    paddingVertical: 12, 
-    paddingHorizontal: 20, 
-    backgroundColor: "#00D09E", 
-    borderRadius: 12 
+    paddingVertical: 8, 
+    paddingHorizontal: 16, 
+    backgroundColor: "#757575", 
+    borderRadius: 8 
   },
   expenseCloseButtonText: { 
     color: "#FFFFFF", 
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "bold" 
   },
   fab: { 
