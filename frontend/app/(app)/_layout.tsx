@@ -14,6 +14,7 @@ interface Notification {
   notification_time: string;
   title?: string;
   description?: string;
+  is_read: boolean;
 }
 
 export default function AppLayout() {
@@ -36,12 +37,14 @@ export default function AppLayout() {
       try {
         const data = await apiGetNotifications(session);
         
-        // Only count notifications for the current user
-        const userNotifications = data.filter(
-          (notification: Notification) => notification.notification_recipient === userId
+        // Only count unread notifications for the current user
+        const unreadUserNotifications = data.filter(
+          (notification: Notification) => 
+            notification.notification_recipient === userId && 
+            !notification.is_read
         );
         
-        setNotificationCount(userNotifications.length);
+        setNotificationCount(unreadUserNotifications.length);
       } catch (error) {
         console.error('Failed to fetch notifications:', error);
       }
