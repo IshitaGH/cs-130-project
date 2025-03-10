@@ -228,7 +228,7 @@ export default function SettingsScreen() {
       <Modal
         visible={showEditNameModal}
         transparent={true}
-        animationType="slide"
+        animationType="none"
         onRequestClose={() => setShowEditNameModal(false)}
       >
         <View style={styles.modalContainer}>
