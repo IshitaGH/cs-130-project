@@ -485,3 +485,23 @@ export async function apiDeleteNotification(session: any, notification_id: numbe
     throw new Error(errorData.message);
   }
 }
+
+export async function apiUpdateUserInfo(session: any, updates: {
+  first_name?: string;
+  last_name?: string;
+}) {
+  const response = await fetch(`${API_URL}/user`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session}`
+    },
+    body: JSON.stringify(updates),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to update user information');
+  }
+  return response.json();
+}

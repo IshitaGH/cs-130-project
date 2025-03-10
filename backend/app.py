@@ -30,6 +30,7 @@ from routes.roommate import (
     get_profile_picture,
     get_roommates_in_room,
     update_profile_picture,
+    update_user_info,
 )
 from routes.roommate_expense import get_roommate_expense
 from logs.logging_config import setup_logging, log_request_info, log_response_info
@@ -172,6 +173,11 @@ def get_profile_picture_route():
 def update_profile_picture_route():
     logger.info("Update profile picture endpoint called")
     return update_profile_picture()
+
+@app.route("/user", methods=["PUT"])
+def update_user_info_route():
+    logger.info("Update user info endpoint called")
+    return update_user_info()
 
 
 # EXPENSE ROUTES
