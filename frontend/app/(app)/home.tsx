@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { RefreshControl, View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Modal, Pressable, Animated } from "react-native";
+import React, { useEffect, useState, useCallback } from "react";
+import { RefreshControl, View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Modal, Pressable, Animated, ActivityIndicator } from "react-native";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { apiGetRoom, apiGetRoommates, apiGetProfilePicture } from "@/utils/api/apiClient";
+import { apiGetRoom, apiGetRoommates, apiGetProfilePicture, apiGetRoommatesWithProfiles } from "@/utils/api/apiClient";
+import { formatBase64Image } from "@/utils/imageCache";
 import Toast from "react-native-toast-message";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -27,11 +28,8 @@ export default function HomeScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [scaleAnim] = useState(new Animated.Value(0.5));
   const [opacityAnim] = useState(new Animated.Value(0));
+  const [loadingRoommates, setLoadingRoommates] = useState(true);
   const defaultAvatar = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
-
-  useEffect(() => {
-    fetchData();
-  }, [session]);
 
   useEffect(() => {
     if (modalVisible) {
@@ -54,6 +52,10 @@ export default function HomeScreen() {
       opacityAnim.setValue(0);
     }
   }, [modalVisible]);
+
+  useEffect(() => {
+    fetchData();
+  }, [session]);
 
   const fetchData = async () => {
     if (!session) return;
@@ -78,56 +80,34 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  const fetchRoommates = async () => {
+  const fetchRoommates = useCallback(async () => {
     if (!session) return;
-
+    
+    setLoadingRoommates(true);
+    
     try {
-      const roommatesData = await apiGetRoommates(session);
-
-      const roommatesWithAvatars = await Promise.all(
-        roommatesData
-          .filter((roommate: any) => roommate.id !== userId)
-          .map(async (roommate: any) => {
-            let avatar = defaultAvatar;
-
-            try {
-              const profilePicture = await apiGetProfilePicture(session, roommate.id);
-
-              if (typeof profilePicture === "string") {
-                let base64Image = profilePicture;
-
-                if (base64Image.includes("dataimage/jpegbase64")) {
-                  base64Image = base64Image.replace("dataimage/jpegbase64", "");
-                }
-
-                if (!base64Image.startsWith("data:image/jpeg;base64,")) {
-                  base64Image = `data:image/jpeg;base64,${base64Image}`;
-                }
-
-                avatar = base64Image;
-              }
-            } catch (error) {
-              console.error("Error fetching profile picture for roommate:", roommate.id, error);
-            }
-
-            return {
-              id: roommate.id,
-              first_name: roommate.first_name,
-              last_name: roommate.last_name,
-              avatar: avatar,
-            };
-          })
-      );
-
-      setRoommates(roommatesWithAvatars);
+      const roommatesWithProfiles = await apiGetRoommatesWithProfiles(session);
+      
+      const formattedRoommates = roommatesWithProfiles
+        .filter((roommate: any) => roommate.id !== userId)
+        .map((roommate: any) => ({
+          id: roommate.id,
+          first_name: roommate.first_name,
+          last_name: roommate.last_name,
+          avatar: roommate.profilePicture,
+        }));
+        
+      setRoommates(formattedRoommates);
     } catch (error: any) {
       Toast.show({
         type: "error",
         text1: "Error Fetching Roommates",
         text2: error.message || "Failed to fetch roommates",
       });
+    } finally {
+      setLoadingRoommates(false);
     }
-  };
+  }, [session, userId]);
 
   const handleRoommatePress = (roommate: Roommate) => {
     setSelectedRoommate(roommate);
@@ -175,7 +155,12 @@ export default function HomeScreen() {
             <Text style={styles.cardTitle}>Your Roommates</Text>
           </View>
           
-          {roommates.length > 0 ? (
+          {loadingRoommates ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#007F5F" />
+              <Text style={styles.loadingText}>Loading roommates...</Text>
+            </View>
+          ) : roommates.length > 0 ? (
             <View style={styles.roommatesContainer}>
               <ScrollView 
                 style={styles.roommatesScrollView}
@@ -205,6 +190,7 @@ export default function HomeScreen() {
                         <Image
                           source={{ uri: item.avatar || defaultAvatar }}
                           style={styles.avatar}
+                          fadeDuration={100}
                           onError={(e) => {
                             console.log("Image loading error:", e.nativeEvent.error);
                           }}
@@ -263,6 +249,7 @@ export default function HomeScreen() {
                     <Image
                       source={{ uri: selectedRoommate.avatar || defaultAvatar }}
                       style={styles.profileImage}
+                      fadeDuration={100}
                       onError={(e) => {
                         console.log("Image loading error:", e.nativeEvent.error);
                       }}
@@ -527,5 +514,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     marginLeft: 10,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
 });
