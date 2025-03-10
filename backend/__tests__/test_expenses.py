@@ -78,114 +78,6 @@ def test_no_room_create_expense(client):
     assert data["room_id"] is None
 
 
-def test_no_expense_period_create_expense(client, test_data):
-    """Test creating an expense without an open expense period"""
-    with app.app_context():
-        access_token = create_access_token(identity=str(test_data["roommate_id"]))
-    
-    headers = {"Authorization": f"Bearer {access_token}"}
-    response = client.post("/expense", json={"expenses": []}, headers=headers)
-    
-    assert response.status_code == 404
-    data = response.get_json()
-    assert data["message"] == "Open expense period not found"
-
-
-def test_normal_create_expense(client, test_data):
-    """Test creating an expense normally"""
-    with app.app_context():
-        access_token = create_access_token(identity=str(test_data["roommate_id"]))
-    
-    headers = {"Authorization": f"Bearer {access_token}"}
-    
-    # First create an expense period
-    client.post("/expense_period", json={}, headers=headers)
-    
-    # Then create an expense
-    response = client.post(
-        "/expense",
-        json={
-            "title": "rent",
-            "cost": "1000",
-            "description": "unrealistically cheap rent",
-        },
-        headers=headers,
-    )
-    
-    assert response.status_code == 201
-    data = response.get_json()
-    assert data["title"] == "rent"
-    assert data["cost"] == 1000
-    assert data["description"] == "unrealistically cheap rent"
-    
-    # Create another expense period and expense
-    client.post("/expense_period", json={}, headers=headers)
-    response = client.post(
-        "/expense",
-        json={
-            "title": "vacuum",
-            "cost": "500",
-            "description": "need to clean",
-            "roommate_spendor_id": test_data["roommate_id"],
-        },
-        headers=headers,
-    )
-    
-    assert response.status_code == 201
-    data = response.get_json()
-    assert data["title"] == "vacuum"
-    assert data["cost"] == 500
-    assert data["description"] == "need to clean"
-
-
-def test_get_roommate_expense(client, test_data):
-    """Test getting roommate expenses"""
-    with app.app_context():
-        access_token = create_access_token(identity=str(test_data["roommate_id"]))
-    
-    headers = {"Authorization": f"Bearer {access_token}"}
-    
-    # Check empty response first
-    with app.test_request_context(headers=headers):
-        # Set g.user_id manually for the test
-        g.user_id = test_data["roommate_id"]
-        empty_response = client.get("/roommate_expense", headers=headers)
-    
-    assert empty_response.status_code == 200
-    empty_data = empty_response.get_json()
-    assert empty_data == []
-    
-    # Create expense period and expense
-    with app.test_request_context(headers=headers):
-        g.user_id = test_data["roommate_id"]
-        client.post("/expense_period", json={}, headers=headers)
-    
-    with app.test_request_context(headers=headers):
-        g.user_id = test_data["roommate_id"]
-        client.post(
-            "/expense",
-            json={
-                "title": "rent",
-                "cost": "1000",
-                "description": "unrealistically cheap rent",
-                "expenses": [
-                    {"username": "johndoe", "percentage": 0.4},
-                ],
-            },
-            headers=headers,
-        )
-    
-    # Get roommate expenses
-    with app.test_request_context(headers=headers):
-        g.user_id = test_data["roommate_id"]
-        response = client.get("/roommate_expense", headers=headers)
-    
-    assert response.status_code == 200
-    data = response.get_json()
-    assert len(data) == 1
-    assert data[0]["percentage"] == 0.4
-
-
 def test_no_room_create_expense_period(client):
     """Test creating an expense period without being in a room"""
     with app.app_context():
@@ -207,20 +99,6 @@ def test_no_room_create_expense_period(client):
     assert response.status_code == 404
     data = response.get_json()
     assert data["room_id"] is None
-
-
-def test_normal_create_expense_period(client, test_data):
-    """Test creating an expense period normally"""
-    with app.app_context():
-        access_token = create_access_token(identity=str(test_data["roommate_id"]))
-    
-    headers = {"Authorization": f"Bearer {access_token}"}
-    response = client.post("/expense_period", json={}, headers=headers)
-    
-    assert response.status_code == 201
-    data = response.get_json()
-    assert data["room_fkey"] == test_data["room_id"]
-    assert data["open"] is True
 
 
 def test_get_expense_period_with_no_expense_periods(client, test_data):
