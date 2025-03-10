@@ -28,4 +28,4 @@ services:
       PYTHONPATH: /backend
     # Run the tests once the DB is ready
     command: >
-      bash -c "flask db upgrade && pytest __tests__/ -v --maxfail=1 --disable-warnings"
+      bash -c "flask db upgrade && pytest __tests__/ -v --disable-warnings"
