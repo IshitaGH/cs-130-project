@@ -1,10 +1,27 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { RefreshControl, View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Modal, Pressable, Animated, ActivityIndicator } from "react-native";
-import { useAuthContext } from "@/contexts/AuthContext";
-import { apiGetRoom, apiGetRoommates, apiGetProfilePicture, apiGetRoommatesWithProfiles } from "@/utils/api/apiClient";
-import { formatBase64Image } from "@/utils/imageCache";
-import Toast from "react-native-toast-message";
-import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+  RefreshControl,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+  Modal,
+  Pressable,
+  Animated,
+  ActivityIndicator,
+} from 'react-native';
+import { useAuthContext } from '@/contexts/AuthContext';
+import {
+  apiGetRoom,
+  apiGetRoommates,
+  apiGetProfilePicture,
+  apiGetRoommatesWithProfiles,
+} from '@/utils/api/apiClient';
+import { formatBase64Image } from '@/utils/imageCache';
+import Toast from 'react-native-toast-message';
+import { Ionicons } from '@expo/vector-icons';
 
 interface RoomData {
   room_id: number | null;
@@ -25,12 +42,14 @@ export default function HomeScreen() {
   const [roomData, setRoomData] = useState<RoomData | null>(null);
   const [roommates, setRoommates] = useState<Roommate[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedRoommate, setSelectedRoommate] = useState<Roommate | null>(null);
+  const [selectedRoommate, setSelectedRoommate] = useState<Roommate | null>(
+    null,
+  );
   const [modalVisible, setModalVisible] = useState(false);
   const [scaleAnim] = useState(new Animated.Value(0.5));
   const [opacityAnim] = useState(new Animated.Value(0));
   const [loadingRoommates, setLoadingRoommates] = useState(true);
-  const defaultAvatar = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
+  const defaultAvatar = 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
 
   useEffect(() => {
     if (modalVisible) {
@@ -66,11 +85,11 @@ export default function HomeScreen() {
       setRoomData(room);
       await fetchRoommates();
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error('Error fetching data:', error);
       Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to fetch roommate data"
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to fetch roommate data',
       });
     }
   };
@@ -84,49 +103,51 @@ export default function HomeScreen() {
   // Memoized function to fetch roommates data optimally
   const fetchRoommates = useCallback(async () => {
     if (!session) return;
-    
+
     setLoadingRoommates(true);
-    
+
     try {
       // Use the optimized function to get roommates with their profile pictures
       const roommatesWithProfiles = await apiGetRoommatesWithProfiles(session);
-      
+
       // Find current user
-      const currentUser = roommatesWithProfiles.find(roommate => roommate.id === userId);
-      
+      const currentUser = roommatesWithProfiles.find(
+        (roommate) => roommate.id === userId,
+      );
+
       // Format roommates data - separate current user from other roommates
       const otherRoommates = roommatesWithProfiles
-        .filter(roommate => roommate.id !== userId)
-        .map(roommate => ({
+        .filter((roommate) => roommate.id !== userId)
+        .map((roommate) => ({
           id: roommate.id,
           first_name: roommate.first_name,
           last_name: roommate.last_name,
           avatar: roommate.profilePicture,
         }));
-      
+
       // Create array with current user first (if found), then other roommates
       const formattedRoommates = [];
-      
+
       // Add current user first if found
       if (currentUser) {
         formattedRoommates.push({
           id: currentUser.id,
-          first_name: "You",
-          last_name: "",
+          first_name: 'You',
+          last_name: '',
           avatar: currentUser.profilePicture,
-          isCurrentUser: true
+          isCurrentUser: true,
         });
       }
-      
+
       // Add other roommates
       formattedRoommates.push(...otherRoommates);
-      
+
       setRoommates(formattedRoommates);
     } catch (error: any) {
       Toast.show({
-        type: "error",
-        text1: "Error Fetching Roommates",
-        text2: error.message || "Failed to fetch roommates",
+        type: 'error',
+        text1: 'Error Fetching Roommates',
+        text2: error.message || 'Failed to fetch roommates',
       });
     } finally {
       setLoadingRoommates(false);
@@ -152,9 +173,9 @@ export default function HomeScreen() {
         <View style={styles.welcomeContainer}>
           <Text style={styles.welcomeTitle}>Welcome to Roomies!</Text>
           <Text style={styles.welcomeSubtitle}>
-            {roomData?.room_id 
-              ? "Your shared living space" 
-              : "You are not in a room yet"}
+            {roomData?.room_id
+              ? 'Your shared living space'
+              : 'You are not in a room yet'}
           </Text>
         </View>
 
@@ -178,7 +199,7 @@ export default function HomeScreen() {
             <Ionicons name="people" size={22} color="#007F5F" />
             <Text style={styles.cardTitle}>Your Roommates</Text>
           </View>
-          
+
           {loadingRoommates ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#007F5F" />
@@ -186,26 +207,26 @@ export default function HomeScreen() {
             </View>
           ) : roommates.length > 0 ? (
             <View style={styles.roommatesContainer}>
-              <ScrollView 
+              <ScrollView
                 style={styles.roommatesScrollView}
                 contentContainerStyle={[
                   styles.roommatesScrollContent,
-                  { paddingTop: 10 }
+                  { paddingTop: 10 },
                 ]}
                 refreshControl={
                   <RefreshControl
                     refreshing={refreshing}
                     onRefresh={onRefresh}
                     tintColor="#00D09E"
-                    colors={["#00D09E"]}
+                    colors={['#00D09E']}
                     progressViewOffset={10}
                   />
                 }
               >
                 <View style={styles.roommatesGrid}>
-                  {roommates.map(item => (
-                    <TouchableOpacity 
-                      key={item.id.toString()} 
+                  {roommates.map((item) => (
+                    <TouchableOpacity
+                      key={item.id.toString()}
                       style={styles.roommateContainer}
                       onPress={() => handleRoommatePress(item)}
                       activeOpacity={0.7}
@@ -216,12 +237,21 @@ export default function HomeScreen() {
                           style={styles.avatar}
                           fadeDuration={100}
                           onError={(e) => {
-                            console.log("Image loading error:", e.nativeEvent.error);
+                            console.log(
+                              'Image loading error:',
+                              e.nativeEvent.error,
+                            );
                           }}
                         />
                       </View>
-                      <Text style={styles.roommate} numberOfLines={1} ellipsizeMode="tail">
-                        {item.isCurrentUser ? "You" : `${item.first_name} ${item.last_name}`}
+                      <Text
+                        style={styles.roommate}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        {item.isCurrentUser
+                          ? 'You'
+                          : `${item.first_name} ${item.last_name}`}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -243,68 +273,78 @@ export default function HomeScreen() {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <Pressable 
-          style={styles.modalOverlay} 
+        <Pressable
+          style={styles.modalOverlay}
           onPress={() => setModalVisible(false)}
         >
-          <Animated.View 
+          <Animated.View
             style={[
               styles.modalContent,
               {
                 transform: [{ scale: scaleAnim }],
                 opacity: opacityAnim,
-              }
-            ]} 
+              },
+            ]}
           >
-            <Pressable onPress={e => e.stopPropagation()}>
+            <Pressable onPress={(e) => e.stopPropagation()}>
               {selectedRoommate && (
                 <View style={styles.roommateDetailContent}>
                   <View style={styles.modalHeader}>
                     <Text style={styles.modalTitle}>
-                      {selectedRoommate.isCurrentUser ? "Your Profile" : "Roommate Profile"}
+                      {selectedRoommate.isCurrentUser
+                        ? 'Your Profile'
+                        : 'Roommate Profile'}
                     </Text>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       onPress={() => setModalVisible(false)}
                       style={styles.closeButton}
                     >
                       <Ionicons name="close" size={24} color="#666" />
                     </TouchableOpacity>
                   </View>
-                  
+
                   <View style={styles.profileImageContainer}>
                     <Image
                       source={{ uri: selectedRoommate.avatar || defaultAvatar }}
                       style={styles.profileImage}
                       fadeDuration={100}
                       onError={(e) => {
-                        console.log("Image loading error:", e.nativeEvent.error);
+                        console.log(
+                          'Image loading error:',
+                          e.nativeEvent.error,
+                        );
                       }}
                     />
                   </View>
-                  
+
                   <Text style={styles.profileName}>
-                    {selectedRoommate.isCurrentUser ? 
-                      "You" : 
-                      `${selectedRoommate.first_name} ${selectedRoommate.last_name}`
-                    }
+                    {selectedRoommate.isCurrentUser
+                      ? 'You'
+                      : `${selectedRoommate.first_name} ${selectedRoommate.last_name}`}
                   </Text>
-                  
+
                   <View style={styles.profileInfoContainer}>
                     <View style={styles.profileInfoItem}>
-                      <Ionicons 
-                        name={selectedRoommate.isCurrentUser ? "person-circle" : "person"} 
-                        size={20} 
-                        color="#007F5F" 
+                      <Ionicons
+                        name={
+                          selectedRoommate.isCurrentUser
+                            ? 'person-circle'
+                            : 'person'
+                        }
+                        size={20}
+                        color="#007F5F"
                       />
                       <Text style={styles.profileInfoText}>
-                        {selectedRoommate.isCurrentUser ? "You (Current User)" : "Roommate"}
+                        {selectedRoommate.isCurrentUser
+                          ? 'You (Current User)'
+                          : 'Roommate'}
                       </Text>
                     </View>
-                    
+
                     <View style={styles.profileInfoItem}>
                       <Ionicons name="home" size={20} color="#007F5F" />
                       <Text style={styles.profileInfoText}>
-                        {roomData?.name || "Shared Room"}
+                        {roomData?.name || 'Shared Room'}
                       </Text>
                     </View>
                   </View>
@@ -321,7 +361,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: '#FFFFFF',
   },
   headerContainer: {
     paddingTop: 16,
@@ -330,41 +370,41 @@ const styles = StyleSheet.create({
   },
   welcomeContainer: {
     marginBottom: 44,
-    alignItems: "center",
+    alignItems: 'center',
   },
   welcomeTitle: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#007F5F",
-    textAlign: "center",
+    fontWeight: 'bold',
+    color: '#007F5F',
+    textAlign: 'center',
     marginBottom: 6,
   },
   loadingText: {
     fontSize: 18,
-    textAlign: "center",
+    textAlign: 'center',
     marginTop: 20,
-    color: "#007F5F",
+    color: '#007F5F',
   },
   roomName: {
     fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-    textAlign: "center",
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
     marginVertical: 8,
   },
   welcomeSubtitle: {
     fontSize: 16,
-    color: "#666",
-    textAlign: "center",
-    fontStyle: "italic",
+    color: '#666',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   card: {
-    backgroundColor: "#DFF7E280",
+    backgroundColor: '#DFF7E280',
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     marginHorizontal: 20,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -376,38 +416,38 @@ const styles = StyleSheet.create({
     maxHeight: '50%',
   },
   cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 8,
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#007F5F",
+    fontWeight: 'bold',
+    color: '#007F5F',
     marginLeft: 8,
   },
   codeContainer: {
-    alignItems: "center",
-    textAlign: "center",
+    alignItems: 'center',
+    textAlign: 'center',
   },
   divider: {
     height: 1,
-    backgroundColor: "#D0E8D5",
-    width: "80%",
-    alignSelf: "center",
+    backgroundColor: '#D0E8D5',
+    width: '80%',
+    alignSelf: 'center',
     marginVertical: 8,
   },
   joinCode: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: "#666",
-    textAlign: "center",
+    fontWeight: 'bold',
+    color: '#666',
+    textAlign: 'center',
   },
   codeLabel: {
     fontSize: 14,
-    color: "#555",
+    color: '#555',
     marginBottom: 4,
-    textAlign: "center",
+    textAlign: 'center',
   },
   roommatesContainer: {
     flex: 1,
@@ -425,12 +465,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
   },
   roommateContainer: {
-    alignItems: "center",
+    alignItems: 'center',
     margin: 5,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: '#FFFFFF',
     padding: 10,
     borderRadius: 14,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 6,
@@ -439,7 +479,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   avatarContainer: {
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -452,22 +492,22 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     borderWidth: 2,
-    borderColor: "#DFF7E2",
+    borderColor: '#DFF7E2',
   },
   roommate: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    textAlign: "center",
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
   },
   emptyContainer: {
     padding: 30,
-    alignItems: "center",
+    alignItems: 'center',
   },
   emptyText: {
     fontSize: 16,
-    color: "#666",
-    fontStyle: "italic",
+    color: '#666',
+    fontStyle: 'italic',
   },
   // Modal styles
   modalOverlay: {
@@ -512,7 +552,7 @@ const styles = StyleSheet.create({
   },
   profileImageContainer: {
     marginBottom: 20,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -524,7 +564,7 @@ const styles = StyleSheet.create({
     height: 150,
     borderRadius: 75,
     borderWidth: 3,
-    borderColor: "#DFF7E2",
+    borderColor: '#DFF7E2',
   },
   profileName: {
     fontSize: 24,

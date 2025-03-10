@@ -9,11 +9,9 @@ export default function RoomLayout() {
 
   useEffect(() => {
     if (!sessionLoading && !session) {
-      router.replace("/");
+      router.replace('/');
     }
   }, [session, sessionLoading]);
 
-  return (
-    <Stack screenOptions={{ headerShown: false }} />
-  );
+  return <Stack screenOptions={{ headerShown: false }} />;
 }

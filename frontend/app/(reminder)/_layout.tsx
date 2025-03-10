@@ -9,11 +9,11 @@ export default function NotificationsLayout() {
 
   useEffect(() => {
     if (!sessionLoading && !session) {
-      router.replace("/");
+      router.replace('/');
     }
   }, [session, sessionLoading]);
 
   return (
-    <Stack screenOptions={{ headerShown: true, title: "Notifications" }} />
+    <Stack screenOptions={{ headerShown: true, title: 'Notifications' }} />
   );
 }
