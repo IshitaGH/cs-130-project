@@ -7,9 +7,8 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from database import db
 from models.chore import Chore
+from models.expense import Expense, Expense_Period, Roommate_Expense
 from models.roommate import Room, Roommate
-from models.chore import Chore
-from models.expense import Expense, Roommate_Expense, Expense_Period
 
 
 # TODO: Increase length to be more secure. Keeping it short for now for development.

@@ -1,7 +1,8 @@
-import pytest
 from datetime import datetime
-from flask_jwt_extended import create_access_token
+
+import pytest
 from flask import g
+from flask_jwt_extended import create_access_token
 
 from app import app
 from database import db

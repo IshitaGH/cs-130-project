@@ -1,6 +1,6 @@
 import pytest
-from flask_jwt_extended import create_access_token
 from flask import g
+from flask_jwt_extended import create_access_token
 
 from app import app
 from database import db
