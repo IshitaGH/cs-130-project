@@ -1,4 +1,6 @@
 import { API_URL } from '@/config';
+import { cacheImage, getCachedImage, formatBase64Image } from '../imageCache';
+
 
 // NOTE: should only be called via AuthContext
 export async function apiSignIn(username: string, password: string) {
@@ -315,35 +317,87 @@ export async function apiCloseExpensePeriod(session: any) {
 }
 
 export async function apiGetProfilePicture(session: any, userId?: string) {
-  const url = userId 
-    ? `${API_URL}/profile_picture?user_id=${userId}` 
-    : `${API_URL}/profile_picture`;
+  // Check cache first
+  const cacheKey = `profile_${userId || 'self'}`;
+  const cachedImage = getCachedImage(cacheKey);
+  
+  if (cachedImage) {
+    return cachedImage;
+  }
+  
+  // If not in cache, fetch from API
+  let url = `${API_URL}/profile_picture`;
+  if (userId) {
+    url += `?user_id=${userId}`;
+  }
 
   try {
     const response = await fetch(url, {
+      method: 'GET',
       headers: {
-        Authorization: `Bearer ${session}`,
+        'Authorization': `Bearer ${session}`
       },
     });
 
-    //handle 404 error specifically
-    if (response.status === 404) {
-      return null; //return null to indicate no profile picture
-    }
-
-    // Check if the response is OK (status code 200-299)
     if (!response.ok) {
+      if (response.status === 404) {
+        // Not found is expected for users without profile pictures
+        return null;
+      }
       const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to fetch profile picture');
     }
 
-    //convert the Blob to a base64-encoded string
+    // Convert the blob to base64
     const blob = await response.blob();
     const base64 = await blobToBase64(blob);
-    return `data:image/jpeg;base64,${base64}`; //prepend the data URI scheme
+    
+    // Format and cache the image
+    const formattedImage = formatBase64Image(base64);
+    cacheImage(cacheKey, formattedImage);
+    
+    return formattedImage;
   } catch (error) {
     console.error('Error fetching profile picture:', error);
-    throw new Error('Network error or failed to fetch profile picture');
+    throw error;
+  }
+}
+
+/**
+ * Optimized function to get roommates with their profile pictures in a batch
+ * This reduces the number of network requests and improves loading performance
+ */
+export async function apiGetRoommatesWithProfiles(session: any) {
+  try {
+    // First get all roommates
+    const roommatesData = await apiGetRoommates(session);
+    
+    // Prepare array for promises
+    const profileFetchPromises = roommatesData.map(async (roommate: any) => {
+      try {
+        // Fetch profile picture in parallel
+        const profilePicture = await apiGetProfilePicture(session, roommate.id.toString());
+        return {
+          ...roommate,
+          profilePicture
+        };
+      } catch (error) {
+        // If profile picture fetch fails, just return roommate without picture
+        console.error(`Failed to fetch profile for roommate ${roommate.id}:`, error);
+        return {
+          ...roommate,
+          profilePicture: null
+        };
+      }
+    });
+    
+    // Wait for all profile picture requests to complete
+    const roommatesWithProfiles = await Promise.all(profileFetchPromises);
+    
+    return roommatesWithProfiles;
+  } catch (error) {
+    console.error('Error fetching roommates with profiles:', error);
+    throw error;
   }
 }
 
