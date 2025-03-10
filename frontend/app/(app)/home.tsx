@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { RefreshControl, View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Modal, Pressable, Animated } from "react-native";
+import React, { useEffect, useState, useCallback } from "react";
+import { RefreshControl, View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Modal, Pressable, Animated, ActivityIndicator } from "react-native";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { apiGetRoom, apiGetRoommates, apiGetProfilePicture } from "@/utils/api/apiClient";
+import { apiGetRoom, apiGetRoommates, apiGetProfilePicture, apiGetRoommatesWithProfiles } from "@/utils/api/apiClient";
+import { formatBase64Image } from "@/utils/imageCache";
 import Toast from "react-native-toast-message";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -28,11 +29,8 @@ export default function HomeScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [scaleAnim] = useState(new Animated.Value(0.5));
   const [opacityAnim] = useState(new Animated.Value(0));
+  const [loadingRoommates, setLoadingRoommates] = useState(true);
   const defaultAvatar = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
-
-  useEffect(() => {
-    fetchData();
-  }, [session]);
 
   useEffect(() => {
     if (modalVisible) {
@@ -55,6 +53,10 @@ export default function HomeScreen() {
       opacityAnim.setValue(0);
     }
   }, [modalVisible]);
+
+  useEffect(() => {
+    fetchData();
+  }, [session]);
 
   const fetchData = async () => {
     if (!session) return;
@@ -79,63 +81,57 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  const fetchRoommates = async () => {
+  // Memoized function to fetch roommates data optimally
+  const fetchRoommates = useCallback(async () => {
     if (!session) return;
-
+    
+    setLoadingRoommates(true);
+    
     try {
-      const roommatesData = await apiGetRoommates(session);
-
-      const roommatesWithAvatars = await Promise.all(
-        roommatesData.map(async (roommate: any) => {
-          let avatar = defaultAvatar;
-          const isCurrentUser = roommate.id === userId;
-
-          try {
-            const profilePicture = await apiGetProfilePicture(session, roommate.id);
-
-            if (typeof profilePicture === "string") {
-              let base64Image = profilePicture;
-
-              if (base64Image.includes("dataimage/jpegbase64")) {
-                base64Image = base64Image.replace("dataimage/jpegbase64", "");
-              }
-
-              if (!base64Image.startsWith("data:image/jpeg;base64,")) {
-                base64Image = `data:image/jpeg;base64,${base64Image}`;
-              }
-
-              avatar = base64Image;
-            }
-          } catch (error) {
-            console.error("Error fetching profile picture for roommate:", roommate.id, error);
-          }
-
-          return {
-            id: roommate.id,
-            first_name: roommate.first_name,
-            last_name: roommate.last_name,
-            avatar: avatar,
-            isCurrentUser: isCurrentUser,
-          };
-        })
-      );
-
-      // Sort the roommates array to put the current user first
-      const sortedRoommates = roommatesWithAvatars.sort((a, b) => {
-        if (a.isCurrentUser) return -1;
-        if (b.isCurrentUser) return 1;
-        return 0;
-      });
-
-      setRoommates(sortedRoommates);
+      // Use the optimized function to get roommates with their profile pictures
+      const roommatesWithProfiles = await apiGetRoommatesWithProfiles(session);
+      
+      // Find current user
+      const currentUser = roommatesWithProfiles.find(roommate => roommate.id === userId);
+      
+      // Format roommates data - separate current user from other roommates
+      const otherRoommates = roommatesWithProfiles
+        .filter(roommate => roommate.id !== userId)
+        .map(roommate => ({
+          id: roommate.id,
+          first_name: roommate.first_name,
+          last_name: roommate.last_name,
+          avatar: roommate.profilePicture,
+        }));
+      
+      // Create array with current user first (if found), then other roommates
+      const formattedRoommates = [];
+      
+      // Add current user first if found
+      if (currentUser) {
+        formattedRoommates.push({
+          id: currentUser.id,
+          first_name: "You",
+          last_name: "",
+          avatar: currentUser.profilePicture,
+          isCurrentUser: true
+        });
+      }
+      
+      // Add other roommates
+      formattedRoommates.push(...otherRoommates);
+      
+      setRoommates(formattedRoommates);
     } catch (error: any) {
       Toast.show({
         type: "error",
         text1: "Error Fetching Roommates",
         text2: error.message || "Failed to fetch roommates",
       });
+    } finally {
+      setLoadingRoommates(false);
     }
-  };
+  }, [session, userId]);
 
   const handleRoommatePress = (roommate: Roommate) => {
     setSelectedRoommate(roommate);
@@ -183,7 +179,12 @@ export default function HomeScreen() {
             <Text style={styles.cardTitle}>Your Roommates</Text>
           </View>
           
-          {roommates.length > 0 ? (
+          {loadingRoommates ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#007F5F" />
+              <Text style={styles.loadingText}>Loading roommates...</Text>
+            </View>
+          ) : roommates.length > 0 ? (
             <View style={styles.roommatesContainer}>
               <ScrollView 
                 style={styles.roommatesScrollView}
@@ -213,6 +214,7 @@ export default function HomeScreen() {
                         <Image
                           source={{ uri: item.avatar || defaultAvatar }}
                           style={styles.avatar}
+                          fadeDuration={100}
                           onError={(e) => {
                             console.log("Image loading error:", e.nativeEvent.error);
                           }}
@@ -258,7 +260,9 @@ export default function HomeScreen() {
               {selectedRoommate && (
                 <View style={styles.roommateDetailContent}>
                   <View style={styles.modalHeader}>
-                    <Text style={styles.modalTitle}>Roommate Profile</Text>
+                    <Text style={styles.modalTitle}>
+                      {selectedRoommate.isCurrentUser ? "Your Profile" : "Roommate Profile"}
+                    </Text>
                     <TouchableOpacity 
                       onPress={() => setModalVisible(false)}
                       style={styles.closeButton}
@@ -271,6 +275,7 @@ export default function HomeScreen() {
                     <Image
                       source={{ uri: selectedRoommate.avatar || defaultAvatar }}
                       style={styles.profileImage}
+                      fadeDuration={100}
                       onError={(e) => {
                         console.log("Image loading error:", e.nativeEvent.error);
                       }}
@@ -278,13 +283,22 @@ export default function HomeScreen() {
                   </View>
                   
                   <Text style={styles.profileName}>
-                    {selectedRoommate.first_name} {selectedRoommate.last_name}
+                    {selectedRoommate.isCurrentUser ? 
+                      "You" : 
+                      `${selectedRoommate.first_name} ${selectedRoommate.last_name}`
+                    }
                   </Text>
                   
                   <View style={styles.profileInfoContainer}>
                     <View style={styles.profileInfoItem}>
-                      <Ionicons name="person" size={20} color="#007F5F" />
-                      <Text style={styles.profileInfoText}>Roommate</Text>
+                      <Ionicons 
+                        name={selectedRoommate.isCurrentUser ? "person-circle" : "person"} 
+                        size={20} 
+                        color="#007F5F" 
+                      />
+                      <Text style={styles.profileInfoText}>
+                        {selectedRoommate.isCurrentUser ? "You (Current User)" : "Roommate"}
+                      </Text>
                     </View>
                     
                     <View style={styles.profileInfoItem}>
@@ -535,5 +549,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     marginLeft: 10,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
 });

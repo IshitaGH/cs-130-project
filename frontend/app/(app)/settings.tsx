@@ -1,7 +1,7 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, TextInput, Modal } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, TextInput, Modal, ActivityIndicator } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuthContext } from '@/contexts/AuthContext';
 import { apiLeaveRoom, apiGetProfilePicture, apiUpdateProfilePicture, apiGetRoommates, apiUpdateUserInfo } from "@/utils/api/apiClient";
 import { useRouter } from "expo-router";
@@ -14,74 +14,67 @@ export default function SettingsScreen() {
   const router = useRouter();
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isImageLoading, setIsImageLoading] = useState<boolean>(false);
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
   const [showEditNameModal, setShowEditNameModal] = useState<boolean>(false);
   const [editFirstName, setEditFirstName] = useState<string>("");
   const [editLastName, setEditLastName] = useState<string>("");
 
-  useEffect(() => {
-    const fetchProfileImage = async () => {
-      if (!session || !userId) return;
-  
-      setIsLoading(true);
-      try {
-        const response = await apiGetProfilePicture(session, userId.toString());
-  
-        if (typeof response === 'string') {
-          let base64Image = response;
-  
-          //remove redundant prefixes like "dataimage/jpegbase64"
-          if (base64Image.includes('dataimage/jpegbase64')) {
-            base64Image = base64Image.replace('dataimage/jpegbase64', '');
-          }
-  
-          //add the correct prefix if missing
-          if (!base64Image.startsWith('data:image/jpeg;base64,')) {
-            base64Image = `data:image/jpeg;base64,${base64Image}`;
-          }
-  
-          setProfileImage(base64Image);
-        } else {
-          setProfileImage(null); //use default avatar
-        }
-      } catch (error) {
-        console.error("Error fetching profile picture:", error);
-        Toast.show({
-          type: 'error',
-          text1: 'Error',
-          text2: 'Failed to fetch profile picture.'
-        });
-        setProfileImage(null); //set to null on error
-      } finally {
-        setIsLoading(false);
+  // Optimize profile image loading with useCallback
+  const fetchProfileImage = useCallback(async () => {
+    if (!session || !userId) return;
+
+    setIsImageLoading(true);
+    try {
+      const response = await apiGetProfilePicture(session, userId.toString());
+
+      if (typeof response === 'string') {
+        setProfileImage(response);
+      } else {
+        setProfileImage(null); //use default avatar
       }
-    };
-  
+    } catch (error) {
+      console.error("Error fetching profile picture:", error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to fetch profile picture.'
+      });
+      setProfileImage(null); //set to null on error
+    } finally {
+      setIsImageLoading(false);
+      setIsLoading(false);
+    }
+  }, [session, userId]);
+
+  // Optimize roommates data fetching with useCallback
+  const fetchRoommates = useCallback(async () => {
+    if (!session) return;
+    try {
+      const roommatesData = await apiGetRoommates(session);
+      const currentUser = roommatesData.find((roommate: any) => roommate.id === userId);
+      if (currentUser) {
+        setFirstName(currentUser.first_name);
+        setLastName(currentUser.last_name);
+      }
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message
+      });
+    }
+  }, [session, userId]);
+
+  // Effects to load data
+  useEffect(() => {
     fetchProfileImage();
-  }, [session]);
+  }, [fetchProfileImage]);
 
   useEffect(() => {
-    const fetchRoommates = async () => {
-      if (!session) return;
-      try {
-        const roommatesData = await apiGetRoommates(session);
-        const currentUser = roommatesData.find((roommate: any) => roommate.id === userId);
-        if (currentUser) {
-          setFirstName(currentUser.first_name);
-          setLastName(currentUser.last_name);
-        }
-      } catch (error: any) {
-        Toast.show({
-          type: 'error',
-          text1: 'Error',
-          text2: error.message
-        });
-      }
-    };
-  
     fetchRoommates();
-  }, [session]);
+  }, [fetchRoommates]);
 
   const handleLeaveRoom = async () => {
     Alert.alert(
@@ -110,38 +103,6 @@ export default function SettingsScreen() {
         }
       ]
     );
-  };
-
-  const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'], 
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-      base64: true, // Ensure the image is converted to base64
-    });
-  
-    if (!result.canceled) {
-      const imageUri = result.assets[0].uri;
-  
-      // Convert to base64 if needed by the API
-      const base64 = await FileSystem.readAsStringAsync(imageUri, { encoding: FileSystem.EncodingType.Base64 });
-      const base64Image = `data:image/jpeg;base64,${base64}`;
-  
-      setProfileImage(base64Image);
-  
-      try {
-        const response = await apiUpdateProfilePicture(session, base64Image); // Send base64 instead of URI
-        console.log("API Response:", response);
-      } catch (error: any) {
-        console.error("API error:", error);
-        Toast.show({
-          type: 'error',
-          text1: 'Error',
-          text2: 'Failed to update profile picture. Please try again later.'
-        });
-      }
-    }
   };
 
   const handleEditName = () => {
@@ -184,6 +145,48 @@ export default function SettingsScreen() {
     }
   };
 
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'], 
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+      base64: true, // Ensure the image is converted to base64
+    });
+  
+    if (!result.canceled) {
+      const imageUri = result.assets[0].uri;
+      setIsImageLoading(true);
+  
+      // Convert to base64 if needed by the API
+      try {
+        const base64 = await FileSystem.readAsStringAsync(imageUri, { encoding: FileSystem.EncodingType.Base64 });
+        const base64Image = `data:image/jpeg;base64,${base64}`;
+    
+        // Update UI immediately
+        setProfileImage(base64Image);
+    
+        // Update the server
+        await apiUpdateProfilePicture(session, base64Image);
+        
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'Profile picture updated successfully!'
+        });
+      } catch (error: any) {
+        console.error("API error:", error);
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Failed to update profile picture. Please try again later.'
+        });
+      } finally {
+        setIsImageLoading(false);
+      }
+    }
+  };
+
   if (isLoading) {
     return (
       <View style={styles.container}>
@@ -203,14 +206,21 @@ export default function SettingsScreen() {
         </View>
         <View style={styles.spacer} />
         <TouchableOpacity onPress={pickImage} style={styles.profileButton}>
-          <Image
-            source={profileImage ? { uri: profileImage } : defaultAvatar}
-            style={styles.profileImage}
-            onError={(e) => {
-              console.log('Image loading error:', e.nativeEvent.error);
-              setProfileImage(null); // Fallback to default avatar
-            }}
-          />
+          {isImageLoading ? (
+            <View style={[styles.profileImage, styles.loadingContainer]}>
+              <ActivityIndicator size="large" color="#00D09E" />
+            </View>
+          ) : (
+            <Image
+              source={profileImage ? { uri: profileImage } : defaultAvatar}
+              style={styles.profileImage}
+              fadeDuration={100}
+              onError={(e) => {
+                console.log('Image loading error:', e.nativeEvent.error);
+                setProfileImage(null); // Fallback to default avatar
+              }}
+            />
+          )}
         </TouchableOpacity>
         <Text style={styles.tapHint}>Tap to change</Text>
       </View>
@@ -412,5 +422,10 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: 'white',
     fontWeight: '600',
+  },
+  loadingContainer: {
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
