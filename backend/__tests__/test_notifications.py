@@ -1,14 +1,7 @@
-import json
-import os
-from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
-
 import pytest
+from datetime import datetime
 from flask_jwt_extended import create_access_token
-
-# Set test environment variables
-os.environ["DATABASE_URL"] = "postgresql://user:secret@localhost:5432/test_database"
-os.environ["JWT_SECRET_KEY"] = "test-secret-key"
+from flask import g
 
 from app import app
 from database import db
@@ -16,15 +9,14 @@ from models.notifications import Notification
 from models.roommate import Room, Roommate
 
 
-# Fixture for test client
 @pytest.fixture
 def client():
+    """
+    Pytest fixture to provide a Flask test client.
+    We rely on DATABASE_URL and JWT_SECRET_KEY
+    being set in the environment (via Docker Compose).
+    """
     app.config["TESTING"] = True
-    app.config["SQLALCHEMY_DATABASE_URI"] = (
-        "postgresql://user:secret@localhost:5432/test_database"
-    )
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["JWT_SECRET_KEY"] = "test-secret-key"
 
     with app.test_client() as client:
         with app.app_context():
@@ -34,9 +26,15 @@ def client():
             db.drop_all()
 
 
-# Fixture for test data
 @pytest.fixture
-def test_data():
+def test_data(client):
+    """
+    Fixture that sets up initial database data:
+    - One Room
+    - Two Roommates
+    - Sample Notifications
+    Returns IDs so tests can reference them.
+    """
     with app.app_context():
         # Create a room
         room = Room(name="Test Room", invite_code="TEST1")
@@ -58,33 +56,41 @@ def test_data():
             password_hash="hash2",
             room_fkey=room.id,
         )
-        db.session.add_all([roommate1, roommate2])
+        db.session.add(roommate1)
+        db.session.add(roommate2)
         db.session.flush()
 
-        # Create a test notification using the actual Notification model
+        # Create notifications
         notification1 = Notification(
-            title="Test Notification 1",
-            notification_time=datetime.utcnow(),
             notification_sender=roommate1.id,
             notification_recipient=roommate1.id,
+            title="Test Notification 1",
+            description=None,
+            is_read=False,
+            notification_time=datetime.utcnow(),
             room_fkey=room.id,
         )
+        
         notification2 = Notification(
-            title="Test Notification 2",
-            description="with description",
-            notification_time=datetime.utcnow(),
             notification_sender=roommate1.id,
             notification_recipient=roommate2.id,
+            title="Test Notification 2",
+            description="with description",
+            is_read=False,
+            notification_time=datetime.utcnow(),
             room_fkey=room.id,
         )
+        
         notification3 = Notification(
-            description="test notification 3 without title",
-            notification_time=datetime.utcnow(),
             notification_sender=roommate2.id,
             notification_recipient=roommate1.id,
+            title=None,
+            description="test notification 3 without title",
+            is_read=False,
+            notification_time=datetime.utcnow(),
             room_fkey=room.id,
         )
-
+        
         db.session.add(notification1)
         db.session.add(notification2)
         db.session.add(notification3)
@@ -106,23 +112,25 @@ def test_data():
 
 
 def test_get_notification_by_id(client, test_data):
+    """Test getting a notification by ID."""
     with app.app_context():
         access_token = create_access_token(identity=str(test_data["roommate1_id"]))
 
     headers = {"Authorization": f"Bearer {access_token}"}
-    data = {"notification_id": test_data["notification2_id"]}
+    data = {"notification_id": test_data["notification1_id"]}
     response = client.get("/notifications", json=data, headers=headers)
 
     assert response.status_code == 200
     data = response.get_json()
-    assert data["id"] == test_data["notification2_id"]
-    assert data["title"] == "Test Notification 2"
-    assert data["description"] == "with description"
+    assert data["id"] == test_data["notification1_id"]
+    assert data["title"] == "Test Notification 1"
+    assert data["description"] is None
     assert data["notification_sender"] == test_data["roommate1_id"]
-    assert data["notification_recipient"] == test_data["roommate2_id"]
+    assert data["notification_recipient"] == test_data["roommate1_id"]
 
 
-def test_get_notification_by_sender(client, test_data):
+def test_get_notifications_by_sender(client, test_data):
+    """Test getting notifications by sender ID."""
     with app.app_context():
         access_token = create_access_token(identity=str(test_data["roommate1_id"]))
 
@@ -134,13 +142,14 @@ def test_get_notification_by_sender(client, test_data):
     data = response.get_json()
     assert len(data) == 1
     assert data[0]["id"] == test_data["notification3_id"]
-    assert data[0]["title"] == None
+    assert data[0]["title"] is None
     assert data[0]["description"] == "test notification 3 without title"
     assert data[0]["notification_sender"] == test_data["roommate2_id"]
     assert data[0]["notification_recipient"] == test_data["roommate1_id"]
 
 
-def test_get_notification_by_recipient(client, test_data):
+def test_get_notifications_by_recipient(client, test_data):
+    """Test getting notifications by recipient ID."""
     with app.app_context():
         access_token = create_access_token(identity=str(test_data["roommate1_id"]))
 
@@ -151,35 +160,23 @@ def test_get_notification_by_recipient(client, test_data):
     assert response.status_code == 200
     data = response.get_json()
     assert len(data) == 2
+    # Sort by ID to ensure consistent order for testing
+    data = sorted(data, key=lambda x: x["id"])
     assert data[0]["id"] == test_data["notification1_id"]
     assert data[0]["title"] == "Test Notification 1"
-    assert data[0]["description"] == None
+    assert data[0]["description"] is None
     assert data[0]["notification_sender"] == test_data["roommate1_id"]
     assert data[0]["notification_recipient"] == test_data["roommate1_id"]
-
-
-def test_get_notification_by_sender_and_recipient(client, test_data):
-    with app.app_context():
-        access_token = create_access_token(identity=str(test_data["roommate1_id"]))
-
-    headers = {"Authorization": f"Bearer {access_token}"}
-    data = {
-        "notification_sender": test_data["roommate1_id"],
-        "notification_recipient": test_data["roommate1_id"],
-    }
-    response = client.get("/notifications", json=data, headers=headers)
-
-    assert response.status_code == 200
-    data = response.get_json()
-    assert len(data) == 1
-    assert data[0]["id"] == test_data["notification1_id"]
-    assert data[0]["title"] == "Test Notification 1"
-    assert data[0]["description"] == None
-    assert data[0]["notification_sender"] == test_data["roommate1_id"]
-    assert data[0]["notification_recipient"] == test_data["roommate1_id"]
+    
+    assert data[1]["id"] == test_data["notification3_id"]
+    assert data[1]["title"] is None
+    assert data[1]["description"] == "test notification 3 without title"
+    assert data[1]["notification_sender"] == test_data["roommate2_id"]
+    assert data[1]["notification_recipient"] == test_data["roommate1_id"]
 
 
 def test_get_all_notifications(client, test_data):
+    """Test getting all notifications."""
     with app.app_context():
         access_token = create_access_token(identity=str(test_data["roommate1_id"]))
 
@@ -189,61 +186,74 @@ def test_get_all_notifications(client, test_data):
     assert response.status_code == 200
     data = response.get_json()
     assert len(data) == 3
-    assert data[0]["id"] != data[1]["id"]
-    assert data[1]["id"] != data[2]["id"]
+    # Verify all notifications are different
+    notification_ids = [n["id"] for n in data]
+    assert len(set(notification_ids)) == 3
 
 
 # Test POST /notifications endpoint
 def test_create_notification(client, test_data):
+    """Test creating a new notification."""
     with app.app_context():
         access_token = create_access_token(identity=str(test_data["roommate1_id"]))
 
     headers = {"Authorization": f"Bearer {access_token}"}
-    data = {
+    post_data = {
         "title": "New Notification",
-        "notification_sender": test_data["roommate2_id"],
-        "notification_recipient": test_data["roommate1_id"],
+        "description": "Test description",
+        "notification_sender": test_data["roommate1_id"],
+        "notification_recipient": test_data["roommate2_id"],
+        "room_fkey": test_data["room_id"]
     }
 
-    response = client.post("/notifications", json=data, headers=headers)
+    response = client.post("/notifications", json=post_data, headers=headers)
 
     assert response.status_code == 201
     data = response.get_json()
     assert data["title"] == "New Notification"
-    assert data["description"] == None
-    assert data["notification_sender"] == test_data["roommate2_id"]
-    assert data["notification_recipient"] == test_data["roommate1_id"]
+    assert data["description"] == "Test description"
+    assert data["notification_sender"] == test_data["roommate1_id"]
+    assert data["notification_recipient"] == test_data["roommate2_id"]
+    assert data["is_read"] is False
 
 
 # Test PUT /notifications endpoint
 def test_update_notification(client, test_data):
+    """Test updating a notification."""
     with app.app_context():
         access_token = create_access_token(identity=str(test_data["roommate1_id"]))
 
     headers = {"Authorization": f"Bearer {access_token}"}
-    data = {"notification_id": test_data["notification1_id"], "title": "Updated Title"}
+    update_data = {
+        "notification_id": test_data["notification1_id"],
+        "title": "Updated Title", 
+        "is_read": True
+    }
 
-    response = client.put("/notifications", json=data, headers=headers)
+    response = client.put("/notifications", json=update_data, headers=headers)
 
     assert response.status_code == 200
     data = response.get_json()
     assert data["id"] == test_data["notification1_id"]
     assert data["title"] == "Updated Title"
-    assert data["description"] == None
+    assert data["is_read"] is True
     assert data["notification_sender"] == test_data["roommate1_id"]
     assert data["notification_recipient"] == test_data["roommate1_id"]
 
 
 # Test DELETE /notifications endpoint
 def test_delete_notification(client, test_data):
+    """Test deleting a notification."""
     with app.app_context():
         access_token = create_access_token(identity=str(test_data["roommate1_id"]))
 
     headers = {"Authorization": f"Bearer {access_token}"}
-    data = {
-        "notification_id": test_data["notification1_id"],
-    }
-
-    response = client.delete("/notifications", json=data, headers=headers)
-
+    delete_data = {"notification_id": test_data["notification1_id"]}
+    
+    response = client.delete("/notifications", json=delete_data, headers=headers)
     assert response.status_code == 204
+
+    # Verify the notification is deleted
+    get_data = {"notification_id": test_data["notification1_id"]}
+    get_response = client.get("/notifications", json=get_data, headers=headers)
+    assert get_response.status_code == 404

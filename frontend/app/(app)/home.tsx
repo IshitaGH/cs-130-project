@@ -81,16 +81,20 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
+  // Memoized function to fetch roommates data optimally
   const fetchRoommates = useCallback(async () => {
     if (!session) return;
     
     setLoadingRoommates(true);
     
     try {
+      // Use the optimized function to get roommates with their profile pictures
       const roommatesWithProfiles = await apiGetRoommatesWithProfiles(session);
       
+      // Find current user
       const currentUser = roommatesWithProfiles.find(roommate => roommate.id === userId);
       
+      // Format roommates data - separate current user from other roommates
       const otherRoommates = roommatesWithProfiles
         .filter(roommate => roommate.id !== userId)
         .map(roommate => ({
@@ -100,8 +104,10 @@ export default function HomeScreen() {
           avatar: roommate.profilePicture,
         }));
       
+      // Create array with current user first (if found), then other roommates
       const formattedRoommates = [];
       
+      // Add current user first if found
       if (currentUser) {
         formattedRoommates.push({
           id: currentUser.id,
@@ -112,6 +118,7 @@ export default function HomeScreen() {
         });
       }
       
+      // Add other roommates
       formattedRoommates.push(...otherRoommates);
       
       setRoommates(formattedRoommates);
@@ -213,12 +220,8 @@ export default function HomeScreen() {
                           }}
                         />
                       </View>
-                      <Text 
-                        style={styles.roommate}
-                        numberOfLines={1}
-                        ellipsizeMode="tail"
-                      >
-                        {item.first_name} {item.last_name}
+                      <Text style={styles.roommate} numberOfLines={1} ellipsizeMode="tail">
+                        {item.isCurrentUser ? "You" : `${item.first_name} ${item.last_name}`}
                       </Text>
                     </TouchableOpacity>
                   ))}
