@@ -14,6 +14,12 @@ export default function NotificationsLayout() {
   }, [session, sessionLoading]);
 
   return (
-    <Stack screenOptions={{ headerShown: true, title: 'Notifications' }} />
+    <Stack
+      screenOptions={{
+        headerShown: true,
+        title: 'Notifications',
+        headerShadowVisible: false,
+      }}
+    />
   );
 }

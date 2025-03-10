@@ -476,30 +476,34 @@ export default function ExpensesScreen() {
         </View>
 
         <View style={styles.balanceCard}>
-          {roommates
-            .filter((roommate) => roommate.id !== userId) // Exclude the current user
-            .map((roommate) => (
-              <View key={roommate.id} style={styles.balanceRow}>
-                <Text style={styles.roommateName}>
-                  {roommate.first_name} {roommate.last_name}:
-                </Text>
-                <Text
-                  style={[
-                    styles.balanceAmount,
-                    {
-                      color:
-                        balances[roommate.id] > 0
-                          ? '#00D09E'
-                          : balances[roommate.id] < 0
-                            ? '#E57373'
-                            : '#333',
-                    },
-                  ]}
-                >
-                  ${balances[roommate.id]?.toFixed(2) || '0.00'}
-                </Text>
-              </View>
-            ))}
+          {roommates.filter((roommate) => roommate.id !== userId).length === 0 ? (
+            <Text style={styles.emptyText}>You have no roommates!</Text>
+          ) : (
+            roommates
+              .filter((roommate) => roommate.id !== userId)
+              .map((roommate) => (
+                <View key={roommate.id} style={styles.balanceRow}>
+                  <Text style={styles.roommateName}>
+                    {roommate.first_name} {roommate.last_name}:
+                  </Text>
+                  <Text
+                    style={[
+                      styles.balanceAmount,
+                      {
+                        color:
+                          balances[roommate.id] > 0
+                            ? '#00D09E'
+                            : balances[roommate.id] < 0
+                              ? '#E57373'
+                              : '#333',
+                      },
+                    ]}
+                  >
+                    ${balances[roommate.id]?.toFixed(2) || '0.00'}
+                  </Text>
+                </View>
+              ))
+          )}
         </View>
 
         <View style={styles.sectionHeader}>
