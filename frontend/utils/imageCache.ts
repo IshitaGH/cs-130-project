@@ -50,7 +50,7 @@ export const formatBase64Image = (base64Image: string): string => {
  * Use this when you want to force a refresh of all images
  */
 export const clearImageCache = (): void => {
-  Object.keys(imageCache).forEach(key => {
+  Object.keys(imageCache).forEach((key) => {
     delete imageCache[key];
   });
-}; 
+};

@@ -1,4 +1,9 @@
-import { render, RenderResult, fireEvent, waitFor } from '@testing-library/react-native';
+import {
+  render,
+  RenderResult,
+  fireEvent,
+  waitFor,
+} from '@testing-library/react-native';
 import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -28,14 +33,14 @@ describe('<LoginScreen />', () => {
   let renderResult: RenderResult;
   let mockRouter: { push: jest.Mock; back: jest.Mock };
   let mockSignIn: jest.Mock;
-  
+
   beforeEach(() => {
     mockRouter = {
       push: jest.fn(),
       back: jest.fn(),
     };
     mockSignIn = jest.fn();
-    
+
     (useRouter as jest.Mock).mockReturnValue(mockRouter);
     (useAuthContext as jest.Mock).mockReturnValue({
       signIn: mockSignIn,
@@ -48,7 +53,7 @@ describe('<LoginScreen />', () => {
 
   test('renders login form elements correctly', () => {
     const { getByPlaceholderText, getByText } = renderResult;
-    
+
     expect(getByPlaceholderText('Username')).toBeTruthy();
     expect(getByPlaceholderText('Password')).toBeTruthy();
     expect(getByText('Sign In')).toBeTruthy();
@@ -57,28 +62,28 @@ describe('<LoginScreen />', () => {
 
   test('handles user input correctly', () => {
     const { getByPlaceholderText } = renderResult;
-    
+
     const usernameInput = getByPlaceholderText('Username');
     const passwordInput = getByPlaceholderText('Password');
-    
+
     fireEvent.changeText(usernameInput, 'testuser');
     fireEvent.changeText(passwordInput, 'password123');
-    
+
     expect(usernameInput.props.value).toBe('testuser');
     expect(passwordInput.props.value).toBe('password123');
   });
 
   test('calls signIn with correct credentials when login button is pressed', async () => {
     const { getByPlaceholderText, getByText } = renderResult;
-    
+
     const usernameInput = getByPlaceholderText('Username');
     const passwordInput = getByPlaceholderText('Password');
     const signInButton = getByText('Sign In');
-    
+
     fireEvent.changeText(usernameInput, 'testuser');
     fireEvent.changeText(passwordInput, 'password123');
     fireEvent.press(signInButton);
-    
+
     expect(mockSignIn).toHaveBeenCalledWith('testuser', 'password123');
   });
 
@@ -86,9 +91,9 @@ describe('<LoginScreen />', () => {
     const { getByText } = renderResult;
     const error = new Error('Invalid credentials');
     mockSignIn.mockRejectedValueOnce(error);
-    
+
     fireEvent.press(getByText('Sign In'));
-    
+
     await waitFor(() => {
       expect(Toast.show).toHaveBeenCalledWith({
         type: 'error',
@@ -101,9 +106,9 @@ describe('<LoginScreen />', () => {
   test('navigates back when back button is pressed', () => {
     const { getByText } = renderResult;
     const backButton = getByText('Back to Welcome');
-    
+
     fireEvent.press(backButton);
-    
+
     expect(mockRouter.back).toHaveBeenCalled();
   });
 

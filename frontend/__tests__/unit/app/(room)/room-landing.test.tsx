@@ -21,7 +21,7 @@ describe('<RoomLandingScreen />', () => {
   beforeEach(() => {
     mockRouter = { push: jest.fn() };
     mockSignOut = jest.fn();
-    
+
     (useRouter as jest.Mock).mockReturnValue(mockRouter);
     (useAuthContext as jest.Mock).mockReturnValue({
       signOut: mockSignOut,
@@ -50,27 +50,27 @@ describe('<RoomLandingScreen />', () => {
   test('navigates to join-room screen when Join Room is pressed', () => {
     const { getByText } = renderResult;
     const joinRoomButton = getByText('Join Room');
-    
+
     fireEvent.press(joinRoomButton);
-    
+
     expect(mockRouter.push).toHaveBeenCalledWith('/join-room');
   });
 
   test('navigates to create-room screen when Create Room is pressed', () => {
     const { getByText } = renderResult;
     const createRoomButton = getByText('Create Room');
-    
+
     fireEvent.press(createRoomButton);
-    
+
     expect(mockRouter.push).toHaveBeenCalledWith('/create-room');
   });
 
   test('calls signOut when Sign Out button is pressed', () => {
     const { getByText } = renderResult;
     const signOutButton = getByText('Sign Out');
-    
+
     fireEvent.press(signOutButton);
-    
+
     expect(mockSignOut).toHaveBeenCalled();
   });
-}); 
+});
