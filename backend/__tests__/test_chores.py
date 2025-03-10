@@ -1,6 +1,7 @@
-import pytest
 from datetime import datetime, timedelta
 from unittest.mock import Mock
+
+import pytest
 from flask_jwt_extended import create_access_token
 
 from app import app

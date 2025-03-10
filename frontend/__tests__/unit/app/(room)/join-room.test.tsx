@@ -1,4 +1,9 @@
-import { render, RenderResult, fireEvent, waitFor } from '@testing-library/react-native';
+import {
+  render,
+  RenderResult,
+  fireEvent,
+  waitFor,
+} from '@testing-library/react-native';
 import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -28,14 +33,14 @@ describe('<JoinRoomScreen />', () => {
   let renderResult: RenderResult;
   let mockRouter: { replace: jest.Mock; back: jest.Mock };
   let mockSession: string;
-  
+
   beforeEach(() => {
     mockRouter = {
       replace: jest.fn(),
       back: jest.fn(),
     };
     mockSession = 'fake-session-token';
-    
+
     (useRouter as jest.Mock).mockReturnValue(mockRouter);
     (useAuthContext as jest.Mock).mockReturnValue({
       session: mockSession,
@@ -47,7 +52,7 @@ describe('<JoinRoomScreen />', () => {
 
   test('renders join room form elements correctly', () => {
     const { getByPlaceholderText, getByText } = renderResult;
-    
+
     expect(getByText('Join a Room')).toBeTruthy();
     expect(getByPlaceholderText('Enter Invite Code')).toBeTruthy();
     expect(getByText('Join Room')).toBeTruthy();
@@ -56,23 +61,23 @@ describe('<JoinRoomScreen />', () => {
 
   test('handles invite code input correctly', () => {
     const { getByPlaceholderText } = renderResult;
-    
+
     const inviteCodeInput = getByPlaceholderText('Enter Invite Code');
-    
+
     fireEvent.changeText(inviteCodeInput, 'ABC123');
-    
+
     expect(inviteCodeInput.props.value).toBe('ABC123');
   });
 
   test('calls apiJoinRoom with correct parameters when join button is pressed', async () => {
     const { getByPlaceholderText, getByText } = renderResult;
-    
+
     const inviteCodeInput = getByPlaceholderText('Enter Invite Code');
     const joinButton = getByText('Join Room');
-    
+
     fireEvent.changeText(inviteCodeInput, 'ABC123');
     fireEvent.press(joinButton);
-    
+
     await waitFor(() => {
       expect(apiJoinRoom).toHaveBeenCalledWith(mockSession, 'ABC123');
     });
@@ -80,9 +85,9 @@ describe('<JoinRoomScreen />', () => {
 
   test('navigates to home screen after successfully joining a room', async () => {
     const { getByText } = renderResult;
-    
+
     fireEvent.press(getByText('Join Room'));
-    
+
     await waitFor(() => {
       expect(mockRouter.replace).toHaveBeenCalledWith('/home');
     });
@@ -92,9 +97,9 @@ describe('<JoinRoomScreen />', () => {
     const { getByText } = renderResult;
     const error = new Error('Invalid invite code');
     (apiJoinRoom as jest.Mock).mockRejectedValueOnce(error);
-    
+
     fireEvent.press(getByText('Join Room'));
-    
+
     await waitFor(() => {
       expect(Toast.show).toHaveBeenCalledWith({
         type: 'error',
@@ -108,9 +113,9 @@ describe('<JoinRoomScreen />', () => {
   test('navigates back when back button is pressed', () => {
     const { getByText } = renderResult;
     const backButton = getByText('Back to Room Manager');
-    
+
     fireEvent.press(backButton);
-    
+
     expect(mockRouter.back).toHaveBeenCalled();
   });
-}); 
+});

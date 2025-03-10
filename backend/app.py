@@ -1,6 +1,6 @@
 import base64
-import os
 import logging
+import os
 
 from flask import Flask, jsonify, request
 from flask_bcrypt import Bcrypt
@@ -8,6 +8,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token
 
 from database import db, migrate
+from logs.logging_config import log_request_info, log_response_info, setup_logging
 from models.chore import Chore
 from models.expense import Expense, Roommate_Expense
 from models.roommate import Room, Roommate
@@ -33,7 +34,6 @@ from routes.roommate import (
     update_user_info,
 )
 from routes.roommate_expense import get_roommate_expense
-from logs.logging_config import setup_logging, log_request_info, log_response_info
 
 app = Flask(__name__)
 # The following environment variables are set in docker-compose.yml
@@ -164,15 +164,18 @@ def get_roommates_route():
     logger.info("Get roommates endpoint called")
     return get_roommates_in_room()
 
+
 @app.route("/profile_picture", methods=["GET"])
 def get_profile_picture_route():
     logger.info("Get profile picture endpoint called")
     return get_profile_picture()
 
+
 @app.route("/profile_picture", methods=["PUT"])
 def update_profile_picture_route():
     logger.info("Update profile picture endpoint called")
     return update_profile_picture()
+
 
 @app.route("/user", methods=["PUT"])
 def update_user_info_route():

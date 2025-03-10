@@ -1,13 +1,29 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, TextInput, Modal, ActivityIndicator } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import * as FileSystem from "expo-file-system";
-import { useState, useEffect, useCallback } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  Alert,
+  TextInput,
+  Modal,
+  ActivityIndicator,
+} from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { apiLeaveRoom, apiGetProfilePicture, apiUpdateProfilePicture, apiGetRoommates, apiUpdateUserInfo } from "@/utils/api/apiClient";
-import { useRouter } from "expo-router";
-import Toast from "react-native-toast-message";
-import defaultAvatar from "@/assets/images/default_profile.png"; //default avatar
-import { Ionicons } from "@expo/vector-icons";
+import {
+  apiLeaveRoom,
+  apiGetProfilePicture,
+  apiUpdateProfilePicture,
+  apiGetRoommates,
+  apiUpdateUserInfo,
+} from '@/utils/api/apiClient';
+import { useRouter } from 'expo-router';
+import Toast from 'react-native-toast-message';
+import defaultAvatar from '@/assets/images/default_profile.png'; //default avatar
+import { Ionicons } from '@expo/vector-icons';
 
 export default function SettingsScreen() {
   const { session, signOut, userId } = useAuthContext();
@@ -15,11 +31,11 @@ export default function SettingsScreen() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isImageLoading, setIsImageLoading] = useState<boolean>(false);
-  const [firstName, setFirstName] = useState<string>("");
-  const [lastName, setLastName] = useState<string>("");
+  const [firstName, setFirstName] = useState<string>('');
+  const [lastName, setLastName] = useState<string>('');
   const [showEditNameModal, setShowEditNameModal] = useState<boolean>(false);
-  const [editFirstName, setEditFirstName] = useState<string>("");
-  const [editLastName, setEditLastName] = useState<string>("");
+  const [editFirstName, setEditFirstName] = useState<string>('');
+  const [editLastName, setEditLastName] = useState<string>('');
 
   // Optimize profile image loading with useCallback
   const fetchProfileImage = useCallback(async () => {
@@ -35,11 +51,11 @@ export default function SettingsScreen() {
         setProfileImage(null); //use default avatar
       }
     } catch (error) {
-      console.error("Error fetching profile picture:", error);
+      console.error('Error fetching profile picture:', error);
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Failed to fetch profile picture.'
+        text2: 'Failed to fetch profile picture.',
       });
       setProfileImage(null); //set to null on error
     } finally {
@@ -53,7 +69,9 @@ export default function SettingsScreen() {
     if (!session) return;
     try {
       const roommatesData = await apiGetRoommates(session);
-      const currentUser = roommatesData.find((roommate: any) => roommate.id === userId);
+      const currentUser = roommatesData.find(
+        (roommate: any) => roommate.id === userId,
+      );
       if (currentUser) {
         setFirstName(currentUser.first_name);
         setLastName(currentUser.last_name);
@@ -62,7 +80,7 @@ export default function SettingsScreen() {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: error.message
+        text2: error.message,
       });
     }
   }, [session, userId]);
@@ -78,30 +96,30 @@ export default function SettingsScreen() {
 
   const handleLeaveRoom = async () => {
     Alert.alert(
-      "Leave Room",
-      "Are you sure? All your chores will be deleted.",
+      'Leave Room',
+      'Are you sure? All your chores will be deleted.',
       [
         {
-          text: "Cancel",
-          style: "cancel"
+          text: 'Cancel',
+          style: 'cancel',
         },
         {
-          text: "Leave",
-          style: "destructive",
+          text: 'Leave',
+          style: 'destructive',
           onPress: async () => {
             try {
               await apiLeaveRoom(session);
-              router.replace("/room-landing");
+              router.replace('/room-landing');
             } catch (error: any) {
               Toast.show({
                 type: 'error',
                 text1: 'Error',
-                text2: error.message || 'Failed to leave the room.'
+                text2: error.message || 'Failed to leave the room.',
               });
             }
-          }
-        }
-      ]
+          },
+        },
+      ],
     );
   };
 
@@ -116,7 +134,7 @@ export default function SettingsScreen() {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'First name and last name cannot be empty.'
+        text2: 'First name and last name cannot be empty.',
       });
       return;
     }
@@ -124,62 +142,64 @@ export default function SettingsScreen() {
     try {
       await apiUpdateUserInfo(session, {
         first_name: editFirstName.trim(),
-        last_name: editLastName.trim()
+        last_name: editLastName.trim(),
       });
-      
+
       setFirstName(editFirstName.trim());
       setLastName(editLastName.trim());
       setShowEditNameModal(false);
-      
+
       Toast.show({
         type: 'success',
         text1: 'Success',
-        text2: 'Name updated successfully!'
+        text2: 'Name updated successfully!',
       });
     } catch (error: any) {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: error.message || 'Failed to update name. Please try again.'
+        text2: error.message || 'Failed to update name. Please try again.',
       });
     }
   };
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'], 
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 1,
       base64: true, // Ensure the image is converted to base64
     });
-  
+
     if (!result.canceled) {
       const imageUri = result.assets[0].uri;
       setIsImageLoading(true);
-  
+
       // Convert to base64 if needed by the API
       try {
-        const base64 = await FileSystem.readAsStringAsync(imageUri, { encoding: FileSystem.EncodingType.Base64 });
+        const base64 = await FileSystem.readAsStringAsync(imageUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
         const base64Image = `data:image/jpeg;base64,${base64}`;
-    
+
         // Update UI immediately
         setProfileImage(base64Image);
-    
+
         // Update the server
         await apiUpdateProfilePicture(session, base64Image);
-        
+
         Toast.show({
           type: 'success',
           text1: 'Success',
-          text2: 'Profile picture updated successfully!'
+          text2: 'Profile picture updated successfully!',
         });
       } catch (error: any) {
-        console.error("API error:", error);
+        console.error('API error:', error);
         Toast.show({
           type: 'error',
           text1: 'Error',
-          text2: 'Failed to update profile picture. Please try again later.'
+          text2: 'Failed to update profile picture. Please try again later.',
         });
       } finally {
         setIsImageLoading(false);
@@ -199,7 +219,9 @@ export default function SettingsScreen() {
     <View style={styles.container}>
       <View style={styles.topSection}>
         <View style={styles.nameSection}>
-          <Text style={styles.name}>{firstName} {lastName}</Text>
+          <Text style={styles.name}>
+            {firstName} {lastName}
+          </Text>
           <TouchableOpacity onPress={handleEditName} style={styles.editButton}>
             <Ionicons name="pencil" size={18} color="#00D09E" />
           </TouchableOpacity>
@@ -224,7 +246,7 @@ export default function SettingsScreen() {
         </TouchableOpacity>
         <Text style={styles.tapHint}>Tap to change</Text>
       </View>
-      
+
       <View style={styles.bottomSection}>
         <TouchableOpacity style={styles.button} onPress={handleLeaveRoom}>
           <Text style={styles.buttonText}>Leave Room</Text>
@@ -244,7 +266,7 @@ export default function SettingsScreen() {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Edit Name</Text>
-            
+
             <Text style={styles.inputLabel}>First Name</Text>
             <TextInput
               style={styles.input}
@@ -252,7 +274,7 @@ export default function SettingsScreen() {
               onChangeText={setEditFirstName}
               placeholder="First Name"
             />
-            
+
             <Text style={styles.inputLabel}>Last Name</Text>
             <TextInput
               style={styles.input}
@@ -260,17 +282,17 @@ export default function SettingsScreen() {
               onChangeText={setEditLastName}
               placeholder="Last Name"
             />
-            
+
             <View style={styles.modalButtons}>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.cancelButton]} 
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setShowEditNameModal(false)}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.saveButton]} 
+
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton]}
                 onPress={handleSaveName}
               >
                 <Text style={styles.saveButtonText}>Save</Text>
@@ -286,25 +308,25 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
     paddingVertical: 40,
   },
   topSection: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   bottomSection: {
-    width: "100%",
-    alignItems: "center",
+    width: '100%',
+    alignItems: 'center',
     marginBottom: 40,
   },
   title: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#00D09E",
+    fontWeight: 'bold',
+    color: '#00D09E',
   },
   nameSection: {
     flexDirection: 'row',
@@ -319,43 +341,43 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    overflow: "hidden",
+    overflow: 'hidden',
     marginBottom: 10,
   },
   profileImage: {
-    width: "100%",
-    height: "100%",
+    width: '100%',
+    height: '100%',
     borderRadius: 50,
   },
   profileLabel: {
     fontSize: 16,
-    fontWeight: "500",
-    color: "#666666",
+    fontWeight: '500',
+    color: '#666666',
     marginBottom: 15,
   },
   tapHint: {
     fontSize: 14,
-    color: "#666666",
+    color: '#666666',
     marginBottom: 15,
   },
   button: {
     width: 200,
     paddingVertical: 10,
-    backgroundColor: "#00D09E",
+    backgroundColor: '#00D09E',
     borderRadius: 25,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 15,
   },
   buttonText: {
-    color: "#FFFFFF",
+    color: '#FFFFFF',
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   name: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#000000",
+    fontWeight: 'bold',
+    color: '#000000',
   },
   spacer: {
     height: 20,

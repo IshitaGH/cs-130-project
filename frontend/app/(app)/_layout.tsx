@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useAuthContext } from "@/contexts/AuthContext";
-import { useRouter, Tabs } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { useAuthContext } from '@/contexts/AuthContext';
+import { useRouter, Tabs } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity, View } from 'react-native';
 import { NotificationBadge } from '@/components/NotificationBadge';
 import { apiGetNotifications } from '@/utils/api/apiClient';
@@ -25,7 +25,7 @@ export default function AppLayout() {
   // Effect to redirect if not logged in
   useEffect(() => {
     if (!sessionLoading && !session) {
-      router.replace("/");
+      router.replace('/');
     }
   }, [session, sessionLoading]);
 
@@ -33,17 +33,17 @@ export default function AppLayout() {
   useEffect(() => {
     const fetchNotifications = async () => {
       if (!session || !userId) return;
-      
+
       try {
         const data = await apiGetNotifications(session);
-        
+
         // Only count unread notifications for the current user
         const unreadUserNotifications = data.filter(
-          (notification: Notification) => 
-            notification.notification_recipient === userId && 
-            !notification.is_read
+          (notification: Notification) =>
+            notification.notification_recipient === userId &&
+            !notification.is_read,
         );
-        
+
         setNotificationCount(unreadUserNotifications.length);
       } catch (error) {
         console.error('Failed to fetch notifications:', error);
@@ -52,10 +52,10 @@ export default function AppLayout() {
 
     // Fetch initially
     fetchNotifications();
-    
+
     // Set up a refresh interval (every 30 seconds)
     const intervalId = setInterval(fetchNotifications, 30000);
-    
+
     // Clean up
     return () => clearInterval(intervalId);
   }, [session, userId]);
@@ -63,7 +63,7 @@ export default function AppLayout() {
   // Create a reusable header right component with notification badge
   const headerRightComponent = () => (
     <TouchableOpacity
-      onPress={() => router.push("/(reminder)/reminder")}
+      onPress={() => router.push('/(reminder)/reminder')}
       style={{ marginRight: 15 }}
     >
       <View>
@@ -76,14 +76,14 @@ export default function AppLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarStyle: { backgroundColor: "#ffffff" },
-        tabBarActiveTintColor: "#00D09E",
-        tabBarInactiveTintColor: "#555",
+        tabBarStyle: { backgroundColor: '#ffffff' },
+        tabBarActiveTintColor: '#00D09E',
+        tabBarInactiveTintColor: '#555',
         headerStyle: {
           elevation: 0,
           shadowOpacity: 0,
           borderBottomWidth: 0,
-        }
+        },
       }}
     >
       <Tabs.Screen
@@ -92,8 +92,8 @@ export default function AppLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" color={color} size={size} />
           ),
-          title: "Home",
-          headerTitle: "",
+          title: 'Home',
+          headerTitle: '',
           headerRight: headerRightComponent,
         }}
       />
@@ -103,7 +103,7 @@ export default function AppLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="list" color={color} size={size} />
           ),
-          title: "Chores",
+          title: 'Chores',
           headerRight: headerRightComponent,
         }}
       />
@@ -113,7 +113,7 @@ export default function AppLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="wallet" color={color} size={size} />
           ),
-          title: "Expenses",
+          title: 'Expenses',
           headerRight: headerRightComponent,
         }}
       />
@@ -123,8 +123,8 @@ export default function AppLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings" color={color} size={size} />
           ),
-          title: "Settings",
-          headerTitle: ""
+          title: 'Settings',
+          headerTitle: '',
         }}
       />
     </Tabs>

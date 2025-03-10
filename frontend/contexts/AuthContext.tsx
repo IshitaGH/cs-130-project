@@ -1,4 +1,11 @@
-import { useContext, createContext, useState, useEffect, useCallback, type PropsWithChildren } from 'react';
+import {
+  useContext,
+  createContext,
+  useState,
+  useEffect,
+  useCallback,
+  type PropsWithChildren,
+} from 'react';
 import { useStorageState } from '@/hooks/useStorageState';
 import { apiSignIn, apiCreateAccount } from '@/utils/api/apiClient';
 import { jwtDecode } from 'jwt-decode';
@@ -13,7 +20,7 @@ interface AuthContextType {
     firstName: string,
     lastName: string,
     username: string,
-    password: string
+    password: string,
   ) => Promise<void>;
 }
 
@@ -57,30 +64,50 @@ export function SessionProvider({ children }: PropsWithChildren) {
     }
   }, [session]);
 
-  const signIn = useCallback(async (username: string, password: string) => {
-    try {
-      const jwt = await apiSignIn(username, password);
-      setSession(jwt);
-    } catch (error: any) {
-      throw error;
-    } finally {
-    }
-  }, [setSession]);
+  const signIn = useCallback(
+    async (username: string, password: string) => {
+      try {
+        const jwt = await apiSignIn(username, password);
+        setSession(jwt);
+      } catch (error: any) {
+        throw error;
+      } finally {
+      }
+    },
+    [setSession],
+  );
 
   const signOut = useCallback(() => {
     setSession(null);
   }, [setSession]);
 
-  const createAccount = useCallback(async (firstName: string, lastName: string, username: string, password: string) => {
-    try {
-      await apiCreateAccount(firstName, lastName, username, password);
-    } catch (error: any) {
-      throw error;
-    }
-  }, []);
+  const createAccount = useCallback(
+    async (
+      firstName: string,
+      lastName: string,
+      username: string,
+      password: string,
+    ) => {
+      try {
+        await apiCreateAccount(firstName, lastName, username, password);
+      } catch (error: any) {
+        throw error;
+      }
+    },
+    [],
+  );
 
   return (
-    <AuthContext.Provider value={{ session, sessionLoading, userId, signIn, signOut, createAccount }}>
+    <AuthContext.Provider
+      value={{
+        session,
+        sessionLoading,
+        userId,
+        signIn,
+        signOut,
+        createAccount,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

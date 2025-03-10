@@ -1,6 +1,6 @@
 import pytest
-from flask_jwt_extended import create_access_token
 from flask import g
+from flask_jwt_extended import create_access_token
 
 from app import app
 from database import db
@@ -67,12 +67,12 @@ def test_no_room_create_expense(client):
         )
         db.session.add(roommate)
         db.session.commit()
-        
+
         access_token = create_access_token(identity=str(roommate.id))
-    
+
     headers = {"Authorization": f"Bearer {access_token}"}
     response = client.post("/expense", json={"expenses": []}, headers=headers)
-    
+
     assert response.status_code == 404
     data = response.get_json()
     assert data["room_id"] is None
@@ -90,12 +90,12 @@ def test_no_room_create_expense_period(client):
         )
         db.session.add(roommate)
         db.session.commit()
-        
+
         access_token = create_access_token(identity=str(roommate.id))
-    
+
     headers = {"Authorization": f"Bearer {access_token}"}
     response = client.post("/expense_period", json={}, headers=headers)
-    
+
     assert response.status_code == 404
     data = response.get_json()
     assert data["room_id"] is None
@@ -105,10 +105,10 @@ def test_get_expense_period_with_no_expense_periods(client, test_data):
     """Test getting expense periods when none exist"""
     with app.app_context():
         access_token = create_access_token(identity=str(test_data["roommate_id"]))
-    
+
     headers = {"Authorization": f"Bearer {access_token}"}
     response = client.get("/expense_period", headers=headers)
-    
+
     assert response.status_code == 200
     data = response.get_json()
     assert data == []
@@ -118,15 +118,15 @@ def test_normal_get_expense_period(client, test_data):
     """Test getting expense periods normally"""
     with app.app_context():
         access_token = create_access_token(identity=str(test_data["roommate_id"]))
-    
+
     headers = {"Authorization": f"Bearer {access_token}"}
-    
+
     # Create 5 expense periods
     for i in range(5):
         client.post("/expense_period", json={}, headers=headers)
-    
+
     response = client.get("/expense_period", headers=headers)
-    
+
     assert response.status_code == 200
     data = response.get_json()
     assert len(data) == 5
@@ -136,30 +136,30 @@ def test_close_expense_period(client, test_data):
     """Test closing an expense period"""
     with app.app_context():
         access_token = create_access_token(identity=str(test_data["roommate_id"]))
-    
+
     headers = {"Authorization": f"Bearer {access_token}"}
-    
+
     # Try to close when none exist
     close_response = client.put("/expense_period", json={}, headers=headers)
     assert close_response.status_code == 404
     close_data = close_response.get_json()
     assert close_data["message"] == "Open expense period not found"
-    
+
     # Create an expense period
     client.post("/expense_period", json={}, headers=headers)
-    
+
     # Verify it exists
     get_response = client.get("/expense_period", headers=headers)
     assert get_response.status_code == 200
     get_data = get_response.get_json()
     assert len(get_data) == 1
-    
+
     # Close it and verify a new one is created
     close_response = client.put("/expense_period", json={}, headers=headers)
     assert close_response.status_code == 201
     close_data = close_response.get_json()
     assert close_data["open"] is True
-    
+
     # Verify we now have two expense periods
     get_response = client.get("/expense_period", headers=headers)
     get_data = get_response.get_json()
@@ -170,17 +170,17 @@ def test_delete_expense_period(client, test_data):
     """Test deleting an expense period"""
     with app.app_context():
         access_token = create_access_token(identity=str(test_data["roommate_id"]))
-    
+
     headers = {"Authorization": f"Bearer {access_token}"}
-    
+
     # Create an expense period
     client.post("/expense_period", json={}, headers=headers)
-    
+
     # Get its ID
     get_response = client.get("/expense_period", headers=headers)
     get_data = get_response.get_json()
     assert len(get_data) == 1
-    
+
     # Delete it
     delete_response = client.delete(
         "/expense_period", json={"id": get_data[0]["id"]}, headers=headers
@@ -188,8 +188,8 @@ def test_delete_expense_period(client, test_data):
     assert delete_response.status_code == 200
     delete_data = delete_response.get_json()
     assert delete_data["message"] == "Expense period deleted successfully"
-    
+
     # Verify it's gone
     get_response = client.get("/expense_period", headers=headers)
     get_data = get_response.get_json()
-    assert len(get_data) == 0 
+    assert len(get_data) == 0

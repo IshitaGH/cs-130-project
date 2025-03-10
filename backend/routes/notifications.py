@@ -1,6 +1,5 @@
 from datetime import datetime
 
-from database import db
 from flask import jsonify, request
 from flask_jwt_extended import (
     JWTManager,
@@ -8,6 +7,8 @@ from flask_jwt_extended import (
     get_jwt_identity,
     jwt_required,
 )
+
+from database import db
 from models.notifications import Notification
 from models.roommate import Room, Roommate
 

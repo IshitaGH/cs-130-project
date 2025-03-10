@@ -87,23 +87,28 @@ def update_user_info():
     roommate = Roommate.query.get_or_404(roommate_id)
 
     data = request.get_json()
-    
-    if 'first_name' in data:
-        roommate.first_name = data['first_name']
-    
-    if 'last_name' in data:
-        roommate.last_name = data['last_name']
-    
+
+    if "first_name" in data:
+        roommate.first_name = data["first_name"]
+
+    if "last_name" in data:
+        roommate.last_name = data["last_name"]
+
     db.session.commit()
-    
-    return jsonify({
-        "message": "User information updated successfully",
-        "user": {
-            "id": roommate.id,
-            "first_name": roommate.first_name,
-            "last_name": roommate.last_name,
-            "username": roommate.username,
-            "created_at": roommate.created_at.isoformat(),
-            "updated_at": roommate.updated_at.isoformat(),
-        }
-    }), 200
+
+    return (
+        jsonify(
+            {
+                "message": "User information updated successfully",
+                "user": {
+                    "id": roommate.id,
+                    "first_name": roommate.first_name,
+                    "last_name": roommate.last_name,
+                    "username": roommate.username,
+                    "created_at": roommate.created_at.isoformat(),
+                    "updated_at": roommate.updated_at.isoformat(),
+                },
+            }
+        ),
+        200,
+    )

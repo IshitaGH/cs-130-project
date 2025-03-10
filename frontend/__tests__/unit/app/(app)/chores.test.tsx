@@ -3,18 +3,18 @@ import { View, Alert } from 'react-native';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import ChoresScreen from '@/app/(app)/chores';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { 
-  apiGetChores, 
-  apiUpdateChore, 
-  apiCreateChore, 
-  apiDeleteChore, 
-  apiGetRoommates 
+import {
+  apiGetChores,
+  apiUpdateChore,
+  apiCreateChore,
+  apiDeleteChore,
+  apiGetRoommates,
 } from '@/utils/api/apiClient';
 import Toast from 'react-native-toast-message';
 
 // Mock Alert
 jest.mock('react-native/Libraries/Alert/Alert', () => ({
-  alert: jest.fn()
+  alert: jest.fn(),
 }));
 
 // Mock Animated components
@@ -27,36 +27,40 @@ jest.mock('react-native', () => {
 });
 
 // Simplified Swipeable mock with proper types
-const mockView = ({ children, ...props }: { children: React.ReactNode; [key: string]: any }) => (
-  <View {...props}>{children}</View>
-);
+const mockView = ({
+  children,
+  ...props
+}: {
+  children: React.ReactNode;
+  [key: string]: any;
+}) => <View {...props}>{children}</View>;
 
 jest.mock('react-native-gesture-handler', () => ({
-  GestureHandlerRootView: ({ children }: { children: React.ReactNode }) => children,
-  Swipeable: ({ 
-    children, 
-    renderRightActions, 
-    renderLeftActions, 
-    onSwipeableRightOpen, 
-    onSwipeableLeftOpen 
+  GestureHandlerRootView: ({ children }: { children: React.ReactNode }) =>
+    children,
+  Swipeable: ({
+    children,
+    renderRightActions,
+    renderLeftActions,
+    onSwipeableRightOpen,
+    onSwipeableLeftOpen,
   }: {
     children: React.ReactNode;
     renderRightActions?: () => React.ReactNode;
     renderLeftActions?: () => React.ReactNode;
     onSwipeableRightOpen?: () => void;
     onSwipeableLeftOpen?: () => void;
-  }) => (
-    mockView({ 
-      testID: "swipeable",
+  }) =>
+    mockView({
+      testID: 'swipeable',
       onSwipeableRightOpen,
       onSwipeableLeftOpen,
       children: [
         children,
         renderRightActions && renderRightActions(),
-        renderLeftActions && renderLeftActions()
-      ]
-    })
-  )
+        renderLeftActions && renderLeftActions(),
+      ],
+    }),
 }));
 
 // Mock the dependencies: { children: React.ReactNode }
@@ -65,17 +69,17 @@ jest.mock('@/contexts/AuthContext');
 jest.mock('@/utils/api/apiClient');
 jest.mock('react-native-toast-message');
 jest.mock('@expo/vector-icons', () => ({
-  MaterialIcons: 'MaterialIcons'
+  MaterialIcons: 'MaterialIcons',
 }));
 
 // Mock the DateTimePickerModal component
 jest.mock('react-native-modal-datetime-picker', () => {
   const RN = require('react-native');
-  return function MockDateTimePicker({ 
-    onConfirm, 
-    onCancel, 
-    isVisible 
-  }: { 
+  return function MockDateTimePicker({
+    onConfirm,
+    onCancel,
+    isVisible,
+  }: {
     onConfirm: (date: Date) => void;
     onCancel: () => void;
     isVisible: boolean;
@@ -83,7 +87,10 @@ jest.mock('react-native-modal-datetime-picker', () => {
     if (!isVisible) return null;
     return (
       <RN.View>
-        <RN.TouchableOpacity testID="confirmDate" onPress={() => onConfirm(new Date())} />
+        <RN.TouchableOpacity
+          testID="confirmDate"
+          onPress={() => onConfirm(new Date())}
+        />
         <RN.TouchableOpacity testID="cancelDate" onPress={() => onCancel()} />
       </RN.View>
     );
@@ -93,46 +100,51 @@ jest.mock('react-native-modal-datetime-picker', () => {
 describe('ChoresScreen', () => {
   const mockSession = 'fake-session-token';
   const mockUserId = 1;
-  
-  // TODO: Put types in separate file and import them
-  const mockChores: any[] = [{
-    id: 1,
-    description: 'Clean Kitchen',
-    start_date: '2024-01-01T00:00:00.000Z',
-    end_date: '2024-01-02T23:59:59.999Z',
-    is_task: true,
-    completed: false,
-    recurrence: 'none',
-    assigned_roommate: {
-      id: 1,
-      first_name: 'John',
-      last_name: 'Doe'
-    },
-    roommate_assignor_id: 2,
-    room_id: 1,
-    rotation_order: null
-  }];
 
   // TODO: Put types in separate file and import them
-  const mockRoommates: any[] = [{
-    id: 1,
-    first_name: 'John',
-    last_name: 'Doe',
-    username: 'johndoe'
-  }];
+  const mockChores: any[] = [
+    {
+      id: 1,
+      description: 'Clean Kitchen',
+      start_date: '2024-01-01T00:00:00.000Z',
+      end_date: '2024-01-02T23:59:59.999Z',
+      is_task: true,
+      completed: false,
+      recurrence: 'none',
+      assigned_roommate: {
+        id: 1,
+        first_name: 'John',
+        last_name: 'Doe',
+      },
+      roommate_assignor_id: 2,
+      room_id: 1,
+      rotation_order: null,
+    },
+  ];
+
+  // TODO: Put types in separate file and import them
+  const mockRoommates: any[] = [
+    {
+      id: 1,
+      first_name: 'John',
+      last_name: 'Doe',
+      username: 'johndoe',
+    },
+  ];
 
   beforeEach(() => {
     jest.clearAllMocks();
     (useAuthContext as jest.Mock).mockReturnValue({
       session: mockSession,
-      userId: mockUserId
+      userId: mockUserId,
     });
     (apiGetChores as jest.Mock).mockResolvedValue(mockChores);
     (apiGetRoommates as jest.Mock).mockResolvedValue(mockRoommates);
   });
 
   // Helper function to wait for animations
-  const waitForAnimations = () => new Promise(resolve => setTimeout(resolve, 0));
+  const waitForAnimations = () =>
+    new Promise((resolve) => setTimeout(resolve, 0));
 
   it('renders correctly and fetches initial data', async () => {
     const { getByText } = render(<ChoresScreen />);
@@ -173,8 +185,8 @@ describe('ChoresScreen', () => {
     expect(Toast.show).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'error',
-        text2: 'Must fill in name'
-      })
+        text2: 'Must fill in name',
+      }),
     );
   });
 
@@ -190,12 +202,14 @@ describe('ChoresScreen', () => {
       assigned_roommate: mockRoommates[0],
       roommate_assignor_id: mockUserId,
       room_id: 1,
-      rotation_order: null
+      rotation_order: null,
     };
 
     (apiCreateChore as jest.Mock).mockResolvedValue(newChore);
 
-    const { getByText, getByPlaceholderText, getByTestId } = render(<ChoresScreen />);
+    const { getByText, getByPlaceholderText, getByTestId } = render(
+      <ChoresScreen />,
+    );
 
     await act(async () => {
       fireEvent.press(getByText('Add Chore'));
@@ -228,14 +242,14 @@ describe('ChoresScreen', () => {
     const mockChore = {
       ...mockChores[0],
       completed: false,
-      is_task: true
+      is_task: true,
     };
-    
+
     (apiGetChores as jest.Mock).mockResolvedValue([mockChore]);
     (apiUpdateChore as jest.Mock).mockImplementation((session, id, updates) => {
       return Promise.resolve({
         ...mockChore,
-        ...updates
+        ...updates,
       });
     });
 
@@ -255,11 +269,9 @@ describe('ChoresScreen', () => {
     });
 
     // Verify the API was called with the right parameters
-    expect(apiUpdateChore).toHaveBeenCalledWith(
-      mockSession,
-      mockChore.id,
-      { completed: true }
-    );
+    expect(apiUpdateChore).toHaveBeenCalledWith(mockSession, mockChore.id, {
+      completed: true,
+    });
   });
 
   it('deletes a chore when confirmed', async () => {
@@ -269,7 +281,7 @@ describe('ChoresScreen', () => {
     // Mock Alert.alert
     jest.spyOn(Alert, 'alert').mockImplementation((title, message, buttons) => {
       // Find and trigger the delete button callback
-      const deleteButton = buttons?.find(button => button.text === 'Delete');
+      const deleteButton = buttons?.find((button) => button.text === 'Delete');
       if (deleteButton && deleteButton.onPress) {
         deleteButton.onPress();
       }
@@ -288,30 +300,30 @@ describe('ChoresScreen', () => {
     await act(async () => {
       // Simulate the alert and deletion process
       Alert.alert(
-        "Delete Chore",
-        "Are you sure you want to delete this chore?",
+        'Delete Chore',
+        'Are you sure you want to delete this chore?',
         [
-          { text: "Cancel", style: "cancel", onPress: () => {} },
-          { 
-            text: "Delete", 
-            style: "destructive", 
+          { text: 'Cancel', style: 'cancel', onPress: () => {} },
+          {
+            text: 'Delete',
+            style: 'destructive',
             onPress: async () => {
               await apiDeleteChore(mockSession, mockChores[0].id);
-            }
-          }
-        ]
+            },
+          },
+        ],
       );
       await waitForAnimations();
     });
 
     // Verify Alert was shown with correct parameters
     expect(Alert.alert).toHaveBeenCalledWith(
-      "Delete Chore",
-      "Are you sure you want to delete this chore?",
+      'Delete Chore',
+      'Are you sure you want to delete this chore?',
       expect.arrayContaining([
-        expect.objectContaining({ text: "Cancel" }),
-        expect.objectContaining({ text: "Delete" })
-      ])
+        expect.objectContaining({ text: 'Cancel' }),
+        expect.objectContaining({ text: 'Delete' }),
+      ]),
     );
 
     // Verify the API was called with the right parameters

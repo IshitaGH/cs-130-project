@@ -1,7 +1,8 @@
-import pytest
 from datetime import datetime
-from flask_jwt_extended import create_access_token
+
+import pytest
 from flask import g
+from flask_jwt_extended import create_access_token
 
 from app import app
 from database import db
@@ -70,7 +71,7 @@ def test_data(client):
             notification_time=datetime.utcnow(),
             room_fkey=room.id,
         )
-        
+
         notification2 = Notification(
             notification_sender=roommate1.id,
             notification_recipient=roommate2.id,
@@ -80,7 +81,7 @@ def test_data(client):
             notification_time=datetime.utcnow(),
             room_fkey=room.id,
         )
-        
+
         notification3 = Notification(
             notification_sender=roommate2.id,
             notification_recipient=roommate1.id,
@@ -90,7 +91,7 @@ def test_data(client):
             notification_time=datetime.utcnow(),
             room_fkey=room.id,
         )
-        
+
         db.session.add(notification1)
         db.session.add(notification2)
         db.session.add(notification3)
@@ -167,7 +168,7 @@ def test_get_notifications_by_recipient(client, test_data):
     assert data[0]["description"] is None
     assert data[0]["notification_sender"] == test_data["roommate1_id"]
     assert data[0]["notification_recipient"] == test_data["roommate1_id"]
-    
+
     assert data[1]["id"] == test_data["notification3_id"]
     assert data[1]["title"] is None
     assert data[1]["description"] == "test notification 3 without title"
@@ -203,7 +204,7 @@ def test_create_notification(client, test_data):
         "description": "Test description",
         "notification_sender": test_data["roommate1_id"],
         "notification_recipient": test_data["roommate2_id"],
-        "room_fkey": test_data["room_id"]
+        "room_fkey": test_data["room_id"],
     }
 
     response = client.post("/notifications", json=post_data, headers=headers)
@@ -226,8 +227,8 @@ def test_update_notification(client, test_data):
     headers = {"Authorization": f"Bearer {access_token}"}
     update_data = {
         "notification_id": test_data["notification1_id"],
-        "title": "Updated Title", 
-        "is_read": True
+        "title": "Updated Title",
+        "is_read": True,
     }
 
     response = client.put("/notifications", json=update_data, headers=headers)
@@ -249,7 +250,7 @@ def test_delete_notification(client, test_data):
 
     headers = {"Authorization": f"Bearer {access_token}"}
     delete_data = {"notification_id": test_data["notification1_id"]}
-    
+
     response = client.delete("/notifications", json=delete_data, headers=headers)
     assert response.status_code == 204
 

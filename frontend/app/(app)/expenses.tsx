@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,11 +13,18 @@ import {
   ScrollView,
   Alert,
   RefreshControl,
-} from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
-import Toast from "react-native-toast-message";
-import { useAuthContext } from "@/contexts/AuthContext";
-import { apiCloseExpensePeriod, apiCreateExpense, apiDeleteExpense, apiGetExpenses, apiGetRoom, apiGetRoommates } from "@/utils/api/apiClient";
+} from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
+import { useAuthContext } from '@/contexts/AuthContext';
+import {
+  apiCloseExpensePeriod,
+  apiCreateExpense,
+  apiDeleteExpense,
+  apiGetExpenses,
+  apiGetRoom,
+  apiGetRoommates,
+} from '@/utils/api/apiClient';
 
 interface Expense {
   id: number;
@@ -42,11 +49,11 @@ interface ExpensePeriodCard extends ExpensePeriod {
     roommates: Roommate[];
     currentUser: number;
     refresh: any;
-  }
+  };
 }
 
 interface BalanceMap {
-  [key: number]: number
+  [key: number]: number;
 }
 
 type Roommate = {
@@ -60,14 +67,21 @@ const dateFormat = (date: Date) => {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 };
 
-const calculatePersonalBalances = (expenses: Expense[], setBalances: any, roommates: Roommate[], currentUser: number) => {
+const calculatePersonalBalances = (
+  expenses: Expense[],
+  setBalances: any,
+  roommates: Roommate[],
+  currentUser: number,
+) => {
   let balanceSheet: BalanceMap = {};
-  roommates.forEach(roommate => { balanceSheet[roommate.id] = 0 });
+  roommates.forEach((roommate) => {
+    balanceSheet[roommate.id] = 0;
+  });
   let totalRoommates = roommates.length;
 
   expenses.forEach(({ cost, roommate_fkey: payer }) => {
     let splitAmount = cost / totalRoommates;
-    
+
     roommates.forEach((roommate) => {
       if (roommate.id !== currentUser) {
         if (payer === currentUser) {
@@ -81,14 +95,22 @@ const calculatePersonalBalances = (expenses: Expense[], setBalances: any, roomma
     });
   });
 
-  setBalances(balanceSheet); 
+  setBalances(balanceSheet);
 };
 
-const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_date, end_date, expenses, updateExpenses, sessionState }) => {
+const ExpenseCard: React.FC<ExpensePeriodCard> = ({
+  id,
+  open: current,
+  start_date,
+  end_date,
+  expenses,
+  updateExpenses,
+  sessionState,
+}) => {
   const { roommates, currentUser, session, refresh } = sessionState;
 
   const title = current
-    ? "Current"
+    ? 'Current'
     : `${dateFormat(new Date(start_date))} to ${dateFormat(new Date(end_date))}`;
 
   const [expanded, setExpanded] = useState<boolean>(current);
@@ -106,25 +128,33 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
         {
           text: 'Delete',
           onPress: () => {
-            apiDeleteExpense(session, expenseId).then(() => {
-              const updatedExpenses = expenses.filter((exp) => exp.id !== expenseId);
-              updateExpenses(id, updatedExpenses);
-            }).catch(error => {
-              Toast.show({
-                type: 'error',
-                text1: 'Error Deleting Expense',
-                text2: error.message || 'Failed to delete expense'
-              });
+            apiDeleteExpense(session, expenseId)
+              .then(() => {
+                const updatedExpenses = expenses.filter(
+                  (exp) => exp.id !== expenseId,
+                );
+                updateExpenses(id, updatedExpenses);
+              })
+              .catch((error) => {
+                Toast.show({
+                  type: 'error',
+                  text1: 'Error Deleting Expense',
+                  text2: error.message || 'Failed to delete expense',
+                });
 
-              console.error(error);
-            });
-          }
-        }
-      ]
+                console.error(error);
+              });
+          },
+        },
+      ],
     );
   };
 
-  useEffect(() => calculatePersonalBalances(expenses, setBalances, roommates, currentUser), [expenses, roommates, currentUser]);
+  useEffect(
+    () =>
+      calculatePersonalBalances(expenses, setBalances, roommates, currentUser),
+    [expenses, roommates, currentUser],
+  );
 
   const closeCurrentPeriod = () => {
     Alert.alert(
@@ -138,20 +168,22 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
         {
           text: 'Close period',
           onPress: () => {
-            apiCloseExpensePeriod(session).then(() => {
-              refresh();
-            }).catch(error => {
-              Toast.show({
-                type: 'error',
-                text1: 'Error Closing Period',
-                text2: error.message || 'Failed to close expense period'
+            apiCloseExpensePeriod(session)
+              .then(() => {
+                refresh();
+              })
+              .catch((error) => {
+                Toast.show({
+                  type: 'error',
+                  text1: 'Error Closing Period',
+                  text2: error.message || 'Failed to close expense period',
+                });
+
+                console.error(error);
               });
-        
-              console.error(error);
-            });
-          }
-        }
-      ]
+          },
+        },
+      ],
     );
   };
 
@@ -161,30 +193,47 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
 
   return (
     <View style={styles.card}>
-      <TouchableOpacity style={styles.cardHeader} onPress={() => setExpanded(!expanded)}>
+      <TouchableOpacity
+        style={styles.cardHeader}
+        onPress={() => setExpanded(!expanded)}
+      >
         <Text style={styles.cardTitle}>{title}</Text>
-        <MaterialIcons name={expanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={24} color="#007F5F" />
+        <MaterialIcons
+          name={expanded ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+          size={24}
+          color="#007F5F"
+        />
       </TouchableOpacity>
 
       {expanded && (
         <>
           {expenses.length === 0 ? (
-            <Text style={styles.emptyText}>There are no expenses in the current period</Text>
+            <Text style={styles.emptyText}>
+              There are no expenses in the current period
+            </Text>
           ) : (
-            expenses.map(item => {
-              const payer = roommates.find(roommate => roommate.id === item.roommate_fkey);
-              const payerName = payer ? `${payer.first_name} ${payer.last_name}` : 'Unknown';
-              
+            expenses.map((item) => {
+              const payer = roommates.find(
+                (roommate) => roommate.id === item.roommate_fkey,
+              );
+              const payerName = payer
+                ? `${payer.first_name} ${payer.last_name}`
+                : 'Unknown';
+
               return (
                 <View key={item.id} style={styles.expenseRow}>
                   <View style={styles.avatar}>
                     <Text style={styles.avatarText}>
-                      {payer ? getInitials(payer.first_name, payer.last_name) : "??"}
+                      {payer
+                        ? getInitials(payer.first_name, payer.last_name)
+                        : '??'}
                     </Text>
                   </View>
                   <View style={styles.expenseInfo}>
                     <View style={styles.choreNameRow}>
-                      <Text style={styles.expenseDescription}>{item.description}</Text>
+                      <Text style={styles.expenseDescription}>
+                        {item.description}
+                      </Text>
                       <Text style={styles.expenseDate}>
                         {dateFormat(new Date(item.created_at))}
                       </Text>
@@ -193,17 +242,19 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
                       ${item.cost.toFixed(2)} • Paid by {payerName}
                     </Text>
                   </View>
-                  { current && <TouchableOpacity 
-                    onPress={() => handleDeleteExpense(item.id)}
-                    style={styles.deleteButton}
-                  >
-                    <MaterialIcons name="delete" size={24} color="#E57373" />
-                  </TouchableOpacity> }
+                  {current && (
+                    <TouchableOpacity
+                      onPress={() => handleDeleteExpense(item.id)}
+                      style={styles.deleteButton}
+                    >
+                      <MaterialIcons name="delete" size={24} color="#E57373" />
+                    </TouchableOpacity>
+                  )}
                 </View>
               );
             })
           )}
-          
+
           {!current && Object.keys(balances).length > 0 && (
             <Text style={styles.balanceTitle}>Your Balance</Text>
           )}
@@ -214,14 +265,23 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
                 .filter((roommate) => roommate.id !== currentUser) // Exclude the current user
                 .map((roommate) => (
                   <View key={roommate.id} style={styles.balanceRow}>
-                    <Text style={styles.roommateName}>{roommate.first_name} {roommate.last_name}:</Text>
+                    <Text style={styles.roommateName}>
+                      {roommate.first_name} {roommate.last_name}:
+                    </Text>
                     <Text
                       style={[
                         styles.balanceAmount,
-                        { color: balances[roommate.id] > 0 ? "#00D09E" : balances[roommate.id] < 0 ? "#E57373" : "#333" },
+                        {
+                          color:
+                            balances[roommate.id] > 0
+                              ? '#00D09E'
+                              : balances[roommate.id] < 0
+                                ? '#E57373'
+                                : '#333',
+                        },
                       ]}
                     >
-                      ${balances[roommate.id]?.toFixed(2) || "0.00"}
+                      ${balances[roommate.id]?.toFixed(2) || '0.00'}
                     </Text>
                   </View>
                 ))}
@@ -229,8 +289,13 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({ id, open: current, start_dat
           )}
 
           {current && expenses.length > 0 && (
-            <TouchableOpacity style={styles.expenseCloseButton} onPress={closeCurrentPeriod}>
-              <Text style={styles.expenseCloseButtonText}>Close expense period</Text>
+            <TouchableOpacity
+              style={styles.expenseCloseButton}
+              onPress={closeCurrentPeriod}
+            >
+              <Text style={styles.expenseCloseButtonText}>
+                Close expense period
+              </Text>
             </TouchableOpacity>
           )}
         </>
@@ -248,13 +313,15 @@ export default function ExpensesScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [refreshCount, setRefreshCount] = useState(0);
   // modal data
-  const [description, setDescription] = useState("");
-  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState('');
+  const [amount, setAmount] = useState('');
   const [payerId, setPayerId] = useState(userId);
   // main view data
   const [balances, setBalances] = useState<BalanceMap>({});
   const [refreshing, setRefreshing] = useState(false);
-  const slideAnim = React.useRef(new Animated.Value(Dimensions.get("window").height)).current;
+  const slideAnim = React.useRef(
+    new Animated.Value(Dimensions.get('window').height),
+  ).current;
 
   const fetchRoommates = async () => {
     if (!session) return;
@@ -265,7 +332,7 @@ export default function ExpensesScreen() {
       Toast.show({
         type: 'error',
         text1: 'Error Fetching Roommates',
-        text2: error.message || 'Failed to fetch roommates'
+        text2: error.message || 'Failed to fetch roommates',
       });
     }
   };
@@ -275,30 +342,33 @@ export default function ExpensesScreen() {
 
     try {
       const expensesData = await apiGetExpenses(session);
-      setExpensePeriods(expensesData.sort((a: ExpensePeriod, b: ExpensePeriod) => b.id - a.id));
+      setExpensePeriods(
+        expensesData.sort((a: ExpensePeriod, b: ExpensePeriod) => b.id - a.id),
+      );
     } catch (error: any) {
       Toast.show({
         type: 'error',
         text1: 'Error Fetching Expenses',
-        text2: error.message || 'Failed to fetch expenses'
+        text2: error.message || 'Failed to fetch expenses',
       });
       console.error(error);
     }
-  }
+  };
 
   const fetchAll = async () => {
-    return Promise.all([
-      fetchRoommates(),
-      fetchExpenses(),
-    ]);
-  }
+    return Promise.all([fetchRoommates(), fetchExpenses()]);
+  };
 
-  useEffect(() => {fetchAll()}, [session]);
+  useEffect(() => {
+    fetchAll();
+  }, [session]);
 
   // Function to update expenses for a specific card
   const updateExpenses = (id: number, updatedExpenses: Expense[]) => {
     setExpensePeriods((prevPeriods) =>
-      prevPeriods.map((period) => (period.id === id ? { ...period, expenses: updatedExpenses } : period))
+      prevPeriods.map((period) =>
+        period.id === id ? { ...period, expenses: updatedExpenses } : period,
+      ),
     );
   };
 
@@ -310,18 +380,27 @@ export default function ExpensesScreen() {
         useNativeDriver: true,
       }).start();
     } else {
-      slideAnim.setValue(Dimensions.get("window").height);
+      slideAnim.setValue(Dimensions.get('window').height);
     }
   }, [modalVisible, slideAnim]);
 
-  useEffect(() => calculatePersonalBalances(expensePeriods.find(period => period.open)?.expenses || [], setBalances, roommates, userId || 0), [expensePeriods, roommates, userId]);
+  useEffect(
+    () =>
+      calculatePersonalBalances(
+        expensePeriods.find((period) => period.open)?.expenses || [],
+        setBalances,
+        roommates,
+        userId || 0,
+      ),
+    [expensePeriods, roommates, userId],
+  );
 
   const addExpense = () => {
     if (!description || !amount || !payerId) {
       Toast.show({
         type: 'error',
         text1: 'Error adding expense',
-        text2: 'Must include description, cost, and responsible roommate'
+        text2: 'Must include description, cost, and responsible roommate',
       });
       return;
     }
@@ -330,34 +409,46 @@ export default function ExpensesScreen() {
       Toast.show({
         type: 'error',
         text1: 'Error adding expense',
-        text2: 'Expense amount must be numeric'
+        text2: 'Expense amount must be numeric',
       });
       return;
     }
 
-    apiCreateExpense(session, parseFloat(amount), description, payerId, roommates.map(roommate => {
-      return {
-        username: roommate.username,
-        percentage: 1 / roommates.length
-      }
-    })).then(newExpense => {
-      setExpensePeriods((prevPeriods) =>
-        prevPeriods.map((period) => (period.open ? { ...period, expenses: [...period.expenses, newExpense] } : period))
-      );
+    apiCreateExpense(
+      session,
+      parseFloat(amount),
+      description,
+      payerId,
+      roommates.map((roommate) => {
+        return {
+          username: roommate.username,
+          percentage: 1 / roommates.length,
+        };
+      }),
+    )
+      .then((newExpense) => {
+        setExpensePeriods((prevPeriods) =>
+          prevPeriods.map((period) =>
+            period.open
+              ? { ...period, expenses: [...period.expenses, newExpense] }
+              : period,
+          ),
+        );
 
-      setDescription("");
-      setAmount("");
-      setPayerId(userId);
-      setModalVisible(false);
-    }).catch(error => {
-      Toast.show({
-        type: 'error',
-        text1: 'Error Adding Expense',
-        text2: error.message || 'Failed to add expense'
+        setDescription('');
+        setAmount('');
+        setPayerId(userId);
+        setModalVisible(false);
+      })
+      .catch((error) => {
+        Toast.show({
+          type: 'error',
+          text1: 'Error Adding Expense',
+          text2: error.message || 'Failed to add expense',
+        });
+
+        console.error(error);
       });
-
-      console.error(error);
-    });
   };
 
   const refresh = async () => {
@@ -367,17 +458,23 @@ export default function ExpensesScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={{ paddingBottom: 80 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh}
-          tintColor="#00D09E" colors={["#00D09E"]} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refresh}
+            tintColor="#00D09E"
+            colors={['#00D09E']}
+          />
+        }
       >
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionHeaderText}>Your Current Balance</Text>
         </View>
-        
+
         <View style={styles.balanceCard}>
           {roommates.filter((roommate) => roommate.id !== userId).length === 0 ? (
             <Text style={styles.emptyText}>You have no roommates!</Text>
@@ -386,14 +483,23 @@ export default function ExpensesScreen() {
               .filter((roommate) => roommate.id !== userId)
               .map((roommate) => (
                 <View key={roommate.id} style={styles.balanceRow}>
-                  <Text style={styles.roommateName}>{roommate.first_name} {roommate.last_name}:</Text>
+                  <Text style={styles.roommateName}>
+                    {roommate.first_name} {roommate.last_name}:
+                  </Text>
                   <Text
                     style={[
                       styles.balanceAmount,
-                      { color: balances[roommate.id] > 0 ? "#00D09E" : balances[roommate.id] < 0 ? "#E57373" : "#333" },
+                      {
+                        color:
+                          balances[roommate.id] > 0
+                            ? '#00D09E'
+                            : balances[roommate.id] < 0
+                              ? '#E57373'
+                              : '#333',
+                      },
                     ]}
                   >
-                    ${balances[roommate.id]?.toFixed(2) || "0.00"}
+                    ${balances[roommate.id]?.toFixed(2) || '0.00'}
                   </Text>
                 </View>
               ))
@@ -405,29 +511,62 @@ export default function ExpensesScreen() {
         </View>
 
         {expensePeriods.map((period) => (
-          <ExpenseCard key={period.id} id={period.id} open={period.open} start_date={period.start_date}
-            end_date={period.end_date} expenses={period.expenses} updateExpenses={updateExpenses}
-            sessionState={{ roommates, currentUser: userId || 0, session, refresh }} />
+          <ExpenseCard
+            key={period.id}
+            id={period.id}
+            open={period.open}
+            start_date={period.start_date}
+            end_date={period.end_date}
+            expenses={period.expenses}
+            updateExpenses={updateExpenses}
+            sessionState={{
+              roommates,
+              currentUser: userId || 0,
+              session,
+              refresh,
+            }}
+          />
         ))}
 
-        <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-          <KeyboardAvoidingView 
-            behavior={Platform.OS === "ios" ? "padding" : "height"} 
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={{ flex: 1 }}
           >
-            <TouchableOpacity 
-              style={styles.modalContainer} 
-              activeOpacity={1} 
+            <TouchableOpacity
+              style={styles.modalContainer}
+              activeOpacity={1}
               onPress={() => setModalVisible(false)}
             >
-              <TouchableOpacity 
-                activeOpacity={1} 
+              <TouchableOpacity
+                activeOpacity={1}
                 onPress={(e) => e.stopPropagation()}
               >
-                <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
+                <Animated.View
+                  style={[
+                    styles.modalContent,
+                    { transform: [{ translateY: slideAnim }] },
+                  ]}
+                >
                   <Text style={styles.modalTitle}>Add Expense</Text>
-                  <TextInput style={styles.input} placeholder="Description" value={description} onChangeText={setDescription} />
-                  <TextInput style={styles.input} placeholder="Cost" keyboardType="numeric" value={amount} onChangeText={setAmount} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Description"
+                    value={description}
+                    onChangeText={setDescription}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Cost"
+                    keyboardType="numeric"
+                    value={amount}
+                    onChangeText={setAmount}
+                  />
                   <Text style={styles.label}>Roommate Responsible</Text>
                   <ScrollView
                     horizontal={true}
@@ -441,34 +580,44 @@ export default function ExpensesScreen() {
                         return 0;
                       })
                       .map((roommate) => (
-                      <TouchableOpacity
-                        key={roommate.id}
-                        onPress={() => setPayerId(roommate.id)}
-                        style={[
-                          styles.roommateOption,
-                          payerId === roommate.id && styles.selectedRoommateOption
-                        ]}
-                      >
-                        <View style={styles.roommateAvatar}>
-                          <Text style={styles.roommateAvatarText}>
-                            {`${roommate.first_name.charAt(0)}${roommate.last_name.charAt(0)}`}
-                          </Text>
-                        </View>
-                        <Text
+                        <TouchableOpacity
+                          key={roommate.id}
+                          onPress={() => setPayerId(roommate.id)}
                           style={[
-                            styles.roommateSelectName,
-                            payerId === roommate.id && styles.selectedRoommateName
+                            styles.roommateOption,
+                            payerId === roommate.id &&
+                              styles.selectedRoommateOption,
                           ]}
                         >
-                          {roommate.id === userId ? "You" : roommate.first_name}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                          <View style={styles.roommateAvatar}>
+                            <Text style={styles.roommateAvatarText}>
+                              {`${roommate.first_name.charAt(0)}${roommate.last_name.charAt(0)}`}
+                            </Text>
+                          </View>
+                          <Text
+                            style={[
+                              styles.roommateSelectName,
+                              payerId === roommate.id &&
+                                styles.selectedRoommateName,
+                            ]}
+                          >
+                            {roommate.id === userId
+                              ? 'You'
+                              : roommate.first_name}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
                   </ScrollView>
-                  <TouchableOpacity style={styles.submitButton} onPress={addExpense}>
+                  <TouchableOpacity
+                    style={styles.submitButton}
+                    onPress={addExpense}
+                  >
                     <Text style={styles.submitButtonText}>Save Expense</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+                  <TouchableOpacity
+                    style={styles.closeButton}
+                    onPress={() => setModalVisible(false)}
+                  >
                     <Text style={styles.closeButtonText}>Cancel</Text>
                   </TouchableOpacity>
                 </Animated.View>
@@ -477,8 +626,11 @@ export default function ExpensesScreen() {
           </KeyboardAvoidingView>
         </Modal>
       </ScrollView>
-      
-      <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
+
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => setModalVisible(true)}
+      >
         <MaterialIcons name="add" size={24} color="#FFFFFF" />
         <Text style={styles.fabText}>Add Expense</Text>
       </TouchableOpacity>
@@ -487,230 +639,230 @@ export default function ExpensesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    padding: 20, 
-    backgroundColor: "#FFFFFF" 
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#FFFFFF',
   },
-  sectionHeader: { 
-    backgroundColor: "#FFFFFF", 
-    paddingVertical: 10, 
+  sectionHeader: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 10,
     paddingHorizontal: 0,
-    marginBottom: 5
+    marginBottom: 5,
   },
-  sectionHeaderText: { 
-    fontSize: 20, 
-    fontWeight: "bold", 
-    color: "#007F5F" 
+  sectionHeaderText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#007F5F',
   },
-  balanceCard: { 
-    backgroundColor: "#DFF7E280", 
-    borderRadius: 12, 
-    padding: 15, 
-    marginBottom: 20 
+  balanceCard: {
+    backgroundColor: '#DFF7E280',
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 20,
   },
-  card: { 
-    backgroundColor: "#FFFFFF", 
-    borderRadius: 12, 
-    padding: 12, 
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#EEE",
+    borderColor: '#EEE',
     elevation: 1,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
-  cardTitle: { 
-    fontSize: 17, 
-    fontWeight: "bold", 
-    color: "#007F5F"
+  cardTitle: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#007F5F',
   },
-  cardHeader: { 
-    flexDirection: "row", 
-    justifyContent: "space-between", 
-    alignItems: "center", 
-    paddingVertical: 8 
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
   },
-  balancesContainer: { 
-    marginTop: 10 
+  balancesContainer: {
+    marginTop: 10,
   },
-  balanceTitle: { 
-    fontSize: 16, 
-    fontWeight: "bold", 
-    color: "#007F5F", 
+  balanceTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#007F5F',
     marginTop: 15,
-    marginBottom: 5
+    marginBottom: 5,
   },
-  balanceRow: { 
-    flexDirection: "row", 
-    justifyContent: "space-between", 
+  balanceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0"
+    borderBottomColor: '#F0F0F0',
   },
-  roommateName: { 
-    fontSize: 16, 
-    fontWeight: "600", 
-    color: "#333" 
+  roommateName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
   },
-  balanceAmount: { 
-    fontSize: 16, 
-    fontWeight: "bold" 
+  balanceAmount: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
-  expenseRow: { 
-    flexDirection: "row", 
-    alignItems: "center", 
-    padding: 12, 
-    borderBottomWidth: 1, 
-    borderColor: "#F0F0F0"
+  expenseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderColor: '#F0F0F0',
   },
-  expenseInfo: { 
+  expenseInfo: {
     flex: 1,
     marginLeft: 10,
   },
-  expenseDescription: { 
-    fontSize: 16, 
-    fontWeight: "bold", 
-    color: "#333",
+  expenseDescription: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
     flex: 1,
     marginRight: 8,
   },
-  expensePayer: { 
-    fontSize: 14, 
-    color: "#666",
+  expensePayer: {
+    fontSize: 14,
+    color: '#666',
     marginTop: 2,
   },
   deleteButton: {
     padding: 8,
   },
-  modalTitle: { 
-    fontSize: 20, 
-    fontWeight: "bold", 
-    color: "#007F5F", 
-    marginBottom: 15 
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#007F5F',
+    marginBottom: 15,
   },
-  modalContainer: { 
-    flex: 1, 
-    justifyContent: "flex-end", 
-    backgroundColor: "rgba(0, 0, 0, 0.5)" 
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  modalContent: { 
-    backgroundColor: "#FFFFFF", 
-    padding: 20, 
-    borderTopLeftRadius: 16, 
-    borderTopRightRadius: 16 
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
-  input: { 
-    borderWidth: 1, 
-    borderColor: "#CCC", 
-    borderRadius: 8, 
+  input: {
+    borderWidth: 1,
+    borderColor: '#CCC',
+    borderRadius: 8,
     padding: 12,
     marginBottom: 15,
     fontSize: 16,
-    color: "#333"
+    color: '#333',
   },
-  submitButton: { 
-    backgroundColor: "#00D09E", 
+  submitButton: {
+    backgroundColor: '#00D09E',
     paddingVertical: 15,
-    paddingHorizontal: 10, 
-    borderRadius: 8, 
-    alignItems: "center",
-    marginTop: 5
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 5,
   },
-  submitButtonText: { 
-    color: "#FFFFFF", 
-    fontSize: 16, 
-    fontWeight: "bold" 
+  submitButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
-  closeButton: { 
-    alignItems: "center", 
+  closeButton: {
+    alignItems: 'center',
     paddingVertical: 12,
-    marginTop: 5
+    marginTop: 5,
   },
-  closeButtonText: { 
-    fontSize: 16, 
-    color: "#007FFF", 
-    fontWeight: "bold" 
+  closeButtonText: {
+    fontSize: 16,
+    color: '#007FFF',
+    fontWeight: 'bold',
   },
-  expenseCloseButton: { 
-    alignSelf: "center", 
-    marginTop: 20, 
+  expenseCloseButton: {
+    alignSelf: 'center',
+    marginTop: 20,
     marginBottom: 10,
-    paddingVertical: 8, 
-    paddingHorizontal: 16, 
-    backgroundColor: "#757575", 
-    borderRadius: 8 
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: '#757575',
+    borderRadius: 8,
   },
-  expenseCloseButtonText: { 
-    color: "#FFFFFF", 
+  expenseCloseButtonText: {
+    color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: "bold" 
+    fontWeight: 'bold',
   },
-  fab: { 
-    position: "absolute", 
-    bottom: 20, 
-    right: 20, 
-    flexDirection: "row", 
-    backgroundColor: "#00D09E", 
+  fab: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    flexDirection: 'row',
+    backgroundColor: '#00D09E',
     padding: 10,
     borderRadius: 12,
     elevation: 4,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
-  fabText: { 
-    color: "#FFFFFF", 
-    fontWeight: "bold", 
-    marginLeft: 8, 
-    alignSelf: "center" 
+  fabText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    marginLeft: 8,
+    alignSelf: 'center',
   },
-  label: { 
-    fontSize: 16, 
-    fontWeight: "bold", 
-    color: "#007F5F", 
-    marginBottom: 8 
+  label: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#007F5F',
+    marginBottom: 8,
   },
-  roommateScrollContainer: { 
+  roommateScrollContainer: {
     paddingBottom: 15,
   },
-  roommateOption: { 
-    alignItems: 'center', 
-    marginRight: 15, 
-    padding: 12, 
-    borderRadius: 8, 
-    borderWidth: 1, 
-    borderColor: '#EEE', 
-    minWidth: 100 
+  roommateOption: {
+    alignItems: 'center',
+    marginRight: 15,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#EEE',
+    minWidth: 100,
   },
-  selectedRoommateOption: { 
-    backgroundColor: '#00D09E', 
-    borderColor: '#00D09E' 
+  selectedRoommateOption: {
+    backgroundColor: '#00D09E',
+    borderColor: '#00D09E',
   },
-  roommateAvatar: { 
-    width: 40, 
-    height: 40, 
-    borderRadius: 20, 
-    backgroundColor: '#CDEEEE', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    marginBottom: 8 
+  roommateAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#CDEEEE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  roommateAvatarText: { 
-    fontSize: 16, 
-    fontWeight: 'bold', 
-    color: '#007F5F' 
+  roommateAvatarText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#007F5F',
   },
-  roommateSelectName: { 
-    fontSize: 14, 
-    color: '#333', 
-    textAlign: 'center' 
+  roommateSelectName: {
+    fontSize: 14,
+    color: '#333',
+    textAlign: 'center',
   },
-  selectedRoommateName: { 
-    color: '#FFFFFF' 
+  selectedRoommateName: {
+    color: '#FFFFFF',
   },
   emptyText: {
     textAlign: 'center',
@@ -718,26 +870,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     paddingVertical: 15,
   },
-  avatar: { 
-    width: 40, 
-    height: 40, 
-    borderRadius: 20, 
-    backgroundColor: "#CDEEEE", 
-    justifyContent: "center", 
-    alignItems: "center" 
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#CDEEEE',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  avatarText: { 
-    fontSize: 16, 
-    fontWeight: "bold", 
-    color: "#007F5F" 
+  avatarText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#007F5F',
   },
   choreNameRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  expenseDate: { 
-    fontSize: 14, 
+  expenseDate: {
+    fontSize: 14,
     color: '#666',
   },
 });

@@ -39,18 +39,18 @@ describe('<IndexScreen />', () => {
   test('navigates to login screen when Sign In is pressed', () => {
     const { getByText } = renderResult;
     const signInButton = getByText('Sign In');
-    
+
     fireEvent.press(signInButton);
-    
+
     expect(mockRouter.push).toHaveBeenCalledWith('/login');
   });
 
   test('navigates to register screen when Sign Up is pressed', () => {
     const { getByText } = renderResult;
     const signUpButton = getByText('Sign Up');
-    
+
     fireEvent.press(signUpButton);
-    
+
     expect(mockRouter.push).toHaveBeenCalledWith('/register');
   });
 });

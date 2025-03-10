@@ -1,6 +1,6 @@
 import { SessionProvider } from '@/contexts/AuthContext';
 import { Slot } from 'expo-router';
-import Toast from "react-native-toast-message";
+import Toast from 'react-native-toast-message';
 import { View, Text, StyleSheet } from 'react-native';
 
 export default function RootLayout() {
@@ -29,7 +29,7 @@ const toastConfig = {
 
 const styles = StyleSheet.create({
   toastContainer: {
-    backgroundColor: "#000000",
+    backgroundColor: '#000000',
     padding: 15,
     borderRadius: 10,
     margin: 10,
@@ -37,12 +37,12 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   toastText: {
-    color: "#FFFFFF",
+    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   toastSubText: {
-    color: "#FFFFFF",
+    color: '#FFFFFF',
     fontSize: 14,
   },
 });

@@ -1,6 +1,7 @@
 import logging
-from flask import request, g
-from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+
+from flask import g, request
+from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request
 
 
 def setup_logging():
