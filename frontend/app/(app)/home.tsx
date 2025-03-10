@@ -199,20 +199,14 @@ export default function HomeScreen() {
                   {roommates.map(item => (
                     <TouchableOpacity 
                       key={item.id.toString()} 
-                      style={[
-                        styles.roommateContainer,
-                        item.isCurrentUser && styles.currentUserContainer
-                      ]}
+                      style={styles.roommateContainer}
                       onPress={() => handleRoommatePress(item)}
                       activeOpacity={0.7}
                     >
                       <View style={styles.avatarContainer}>
                         <Image
                           source={{ uri: item.avatar || defaultAvatar }}
-                          style={[
-                            styles.avatar,
-                            item.isCurrentUser && styles.currentUserAvatar
-                          ]}
+                          style={styles.avatar}
                           fadeDuration={100}
                           onError={(e) => {
                             console.log("Image loading error:", e.nativeEvent.error);
@@ -220,11 +214,8 @@ export default function HomeScreen() {
                         />
                       </View>
                       <Text 
-                        style={[
-                          styles.roommate, 
-                          item.isCurrentUser && styles.currentUserText
-                        ]} 
-                        numberOfLines={1} 
+                        style={styles.roommate}
+                        numberOfLines={1}
                         ellipsizeMode="tail"
                       >
                         {item.first_name} {item.last_name}
@@ -277,16 +268,10 @@ export default function HomeScreen() {
                     </TouchableOpacity>
                   </View>
                   
-                  <View style={[
-                    styles.profileImageContainer,
-                    selectedRoommate.isCurrentUser && styles.currentUserProfileImageContainer
-                  ]}>
+                  <View style={styles.profileImageContainer}>
                     <Image
                       source={{ uri: selectedRoommate.avatar || defaultAvatar }}
-                      style={[
-                        styles.profileImage,
-                        selectedRoommate.isCurrentUser && styles.currentUserProfileImage
-                      ]}
+                      style={styles.profileImage}
                       fadeDuration={100}
                       onError={(e) => {
                         console.log("Image loading error:", e.nativeEvent.error);
@@ -567,20 +552,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-  },
-  currentUserContainer: {
-    // No special styling
-  },
-  currentUserAvatar: {
-    // No special styling
-  },
-  currentUserText: {
-    // No special styling
-  },
-  currentUserProfileImageContainer: {
-    // No special styling
-  },
-  currentUserProfileImage: {
-    // No special styling
   },
 });
