@@ -164,15 +164,18 @@ def get_roommates_route():
     logger.info("Get roommates endpoint called")
     return get_roommates_in_room()
 
+
 @app.route("/profile_picture", methods=["GET"])
 def get_profile_picture_route():
     logger.info("Get profile picture endpoint called")
     return get_profile_picture()
 
+
 @app.route("/profile_picture", methods=["PUT"])
 def update_profile_picture_route():
     logger.info("Update profile picture endpoint called")
     return update_profile_picture()
+
 
 @app.route("/user", methods=["PUT"])
 def update_user_info_route():
