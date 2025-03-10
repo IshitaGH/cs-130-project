@@ -17,6 +17,7 @@ interface Roommate {
   first_name: string;
   last_name: string;
   avatar: string | null;
+  isCurrentUser?: boolean;
 }
 
 export default function HomeScreen() {
@@ -88,15 +89,31 @@ export default function HomeScreen() {
     try {
       const roommatesWithProfiles = await apiGetRoommatesWithProfiles(session);
       
-      const formattedRoommates = roommatesWithProfiles
-        .filter((roommate: any) => roommate.id !== userId)
-        .map((roommate: any) => ({
+      const currentUser = roommatesWithProfiles.find(roommate => roommate.id === userId);
+      
+      const otherRoommates = roommatesWithProfiles
+        .filter(roommate => roommate.id !== userId)
+        .map(roommate => ({
           id: roommate.id,
           first_name: roommate.first_name,
           last_name: roommate.last_name,
           avatar: roommate.profilePicture,
         }));
-        
+      
+      const formattedRoommates = [];
+      
+      if (currentUser) {
+        formattedRoommates.push({
+          id: currentUser.id,
+          first_name: "You",
+          last_name: "",
+          avatar: currentUser.profilePicture,
+          isCurrentUser: true
+        });
+      }
+      
+      formattedRoommates.push(...otherRoommates);
+      
       setRoommates(formattedRoommates);
     } catch (error: any) {
       Toast.show({
@@ -182,21 +199,34 @@ export default function HomeScreen() {
                   {roommates.map(item => (
                     <TouchableOpacity 
                       key={item.id.toString()} 
-                      style={styles.roommateContainer}
+                      style={[
+                        styles.roommateContainer,
+                        item.isCurrentUser && styles.currentUserContainer
+                      ]}
                       onPress={() => handleRoommatePress(item)}
                       activeOpacity={0.7}
                     >
                       <View style={styles.avatarContainer}>
                         <Image
                           source={{ uri: item.avatar || defaultAvatar }}
-                          style={styles.avatar}
+                          style={[
+                            styles.avatar,
+                            item.isCurrentUser && styles.currentUserAvatar
+                          ]}
                           fadeDuration={100}
                           onError={(e) => {
                             console.log("Image loading error:", e.nativeEvent.error);
                           }}
                         />
                       </View>
-                      <Text style={styles.roommate} numberOfLines={1} ellipsizeMode="tail">
+                      <Text 
+                        style={[
+                          styles.roommate, 
+                          item.isCurrentUser && styles.currentUserText
+                        ]} 
+                        numberOfLines={1} 
+                        ellipsizeMode="tail"
+                      >
                         {item.first_name} {item.last_name}
                       </Text>
                     </TouchableOpacity>
@@ -236,7 +266,9 @@ export default function HomeScreen() {
               {selectedRoommate && (
                 <View style={styles.roommateDetailContent}>
                   <View style={styles.modalHeader}>
-                    <Text style={styles.modalTitle}>Roommate Profile</Text>
+                    <Text style={styles.modalTitle}>
+                      {selectedRoommate.isCurrentUser ? "Your Profile" : "Roommate Profile"}
+                    </Text>
                     <TouchableOpacity 
                       onPress={() => setModalVisible(false)}
                       style={styles.closeButton}
@@ -245,10 +277,16 @@ export default function HomeScreen() {
                     </TouchableOpacity>
                   </View>
                   
-                  <View style={styles.profileImageContainer}>
+                  <View style={[
+                    styles.profileImageContainer,
+                    selectedRoommate.isCurrentUser && styles.currentUserProfileImageContainer
+                  ]}>
                     <Image
                       source={{ uri: selectedRoommate.avatar || defaultAvatar }}
-                      style={styles.profileImage}
+                      style={[
+                        styles.profileImage,
+                        selectedRoommate.isCurrentUser && styles.currentUserProfileImage
+                      ]}
                       fadeDuration={100}
                       onError={(e) => {
                         console.log("Image loading error:", e.nativeEvent.error);
@@ -257,13 +295,22 @@ export default function HomeScreen() {
                   </View>
                   
                   <Text style={styles.profileName}>
-                    {selectedRoommate.first_name} {selectedRoommate.last_name}
+                    {selectedRoommate.isCurrentUser ? 
+                      "You" : 
+                      `${selectedRoommate.first_name} ${selectedRoommate.last_name}`
+                    }
                   </Text>
                   
                   <View style={styles.profileInfoContainer}>
                     <View style={styles.profileInfoItem}>
-                      <Ionicons name="person" size={20} color="#007F5F" />
-                      <Text style={styles.profileInfoText}>Roommate</Text>
+                      <Ionicons 
+                        name={selectedRoommate.isCurrentUser ? "person-circle" : "person"} 
+                        size={20} 
+                        color="#007F5F" 
+                      />
+                      <Text style={styles.profileInfoText}>
+                        {selectedRoommate.isCurrentUser ? "You (Current User)" : "Roommate"}
+                      </Text>
                     </View>
                     
                     <View style={styles.profileInfoItem}>
@@ -520,5 +567,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+  },
+  currentUserContainer: {
+    // No special styling
+  },
+  currentUserAvatar: {
+    // No special styling
+  },
+  currentUserText: {
+    // No special styling
+  },
+  currentUserProfileImageContainer: {
+    // No special styling
+  },
+  currentUserProfileImage: {
+    // No special styling
   },
 });
