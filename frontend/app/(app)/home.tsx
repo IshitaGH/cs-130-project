@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { RefreshControl, View, Text, StyleSheet, ScrollView, Image } from "react-native";
+import { RefreshControl, View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Modal, Pressable, Animated } from "react-native";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { apiGetRoom, apiGetRoommates, apiGetProfilePicture } from "@/utils/api/apiClient";
 import Toast from "react-native-toast-message";
@@ -23,11 +23,37 @@ export default function HomeScreen() {
   const [roomData, setRoomData] = useState<RoomData | null>(null);
   const [roommates, setRoommates] = useState<Roommate[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedRoommate, setSelectedRoommate] = useState<Roommate | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [scaleAnim] = useState(new Animated.Value(0.5));
+  const [opacityAnim] = useState(new Animated.Value(0));
   const defaultAvatar = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
 
   useEffect(() => {
     fetchData();
   }, [session]);
+
+  useEffect(() => {
+    if (modalVisible) {
+      // Run animations when modal opens
+      Animated.parallel([
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      // Reset animations
+      scaleAnim.setValue(0.5);
+      opacityAnim.setValue(0);
+    }
+  }, [modalVisible]);
 
   const fetchData = async () => {
     if (!session) return;
@@ -103,6 +129,11 @@ export default function HomeScreen() {
     }
   };
 
+  const handleRoommatePress = (roommate: Roommate) => {
+    setSelectedRoommate(roommate);
+    setModalVisible(true);
+  };
+
   if (sessionLoading) {
     return (
       <View style={styles.container}>
@@ -164,7 +195,12 @@ export default function HomeScreen() {
               >
                 <View style={styles.roommatesGrid}>
                   {roommates.map(item => (
-                    <View key={item.id.toString()} style={styles.roommateContainer}>
+                    <TouchableOpacity 
+                      key={item.id.toString()} 
+                      style={styles.roommateContainer}
+                      onPress={() => handleRoommatePress(item)}
+                      activeOpacity={0.7}
+                    >
                       <View style={styles.avatarContainer}>
                         <Image
                           source={{ uri: item.avatar || defaultAvatar }}
@@ -177,7 +213,7 @@ export default function HomeScreen() {
                       <Text style={styles.roommate} numberOfLines={1} ellipsizeMode="tail">
                         {item.first_name} {item.last_name}
                       </Text>
-                    </View>
+                    </TouchableOpacity>
                   ))}
                 </View>
               </ScrollView>
@@ -189,6 +225,73 @@ export default function HomeScreen() {
           )}
         </View>
       </View>
+
+      {/* Roommate Detail Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay} 
+          onPress={() => setModalVisible(false)}
+        >
+          <Animated.View 
+            style={[
+              styles.modalContent,
+              {
+                transform: [{ scale: scaleAnim }],
+                opacity: opacityAnim,
+              }
+            ]} 
+          >
+            <Pressable onPress={e => e.stopPropagation()}>
+              {selectedRoommate && (
+                <View style={styles.roommateDetailContent}>
+                  <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>Roommate Profile</Text>
+                    <TouchableOpacity 
+                      onPress={() => setModalVisible(false)}
+                      style={styles.closeButton}
+                    >
+                      <Ionicons name="close" size={24} color="#666" />
+                    </TouchableOpacity>
+                  </View>
+                  
+                  <View style={styles.profileImageContainer}>
+                    <Image
+                      source={{ uri: selectedRoommate.avatar || defaultAvatar }}
+                      style={styles.profileImage}
+                      onError={(e) => {
+                        console.log("Image loading error:", e.nativeEvent.error);
+                      }}
+                    />
+                  </View>
+                  
+                  <Text style={styles.profileName}>
+                    {selectedRoommate.first_name} {selectedRoommate.last_name}
+                  </Text>
+                  
+                  <View style={styles.profileInfoContainer}>
+                    <View style={styles.profileInfoItem}>
+                      <Ionicons name="person" size={20} color="#007F5F" />
+                      <Text style={styles.profileInfoText}>Roommate</Text>
+                    </View>
+                    
+                    <View style={styles.profileInfoItem}>
+                      <Ionicons name="home" size={20} color="#007F5F" />
+                      <Text style={styles.profileInfoText}>
+                        {roomData?.name || "Shared Room"}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -343,5 +446,86 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
     fontStyle: "italic",
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalHeader: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#007F5F',
+  },
+  closeButton: {
+    padding: 5,
+  },
+  roommateDetailContent: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  profileImageContainer: {
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+    borderRadius: 75,
+  },
+  profileImage: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    borderWidth: 3,
+    borderColor: "#DFF7E2",
+  },
+  profileName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  profileInfoContainer: {
+    width: '100%',
+    marginTop: 10,
+  },
+  profileInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    backgroundColor: '#F8F8F8',
+    padding: 10,
+    borderRadius: 10,
+  },
+  profileInfoText: {
+    fontSize: 16,
+    color: '#333',
+    marginLeft: 10,
   },
 });
