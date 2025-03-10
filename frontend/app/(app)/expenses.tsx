@@ -239,7 +239,7 @@ const ExpenseCard: React.FC<ExpensePeriodCard> = ({
                       </Text>
                     </View>
                     <Text style={styles.expensePayer}>
-                      ${item.cost.toFixed(2)} • Paid by {payerName}
+                      ${item.cost.toFixed(2)} • Paid by {payerName.split(' ')[0]}
                     </Text>
                   </View>
                   {current && (
